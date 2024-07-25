@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Tinyflux</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="icon" sizes="32x32" href="assets/icon-dark-32x32.png" />
+    <link rel="icon" sizes="16x16" href="assets/icon-dark-16x16.png" />
+    <link rel="icon" sizes="48x48" href="assets/icon-dark-48x48.png" />
+    <link rel="shortcut icon" href="assets/icon-dark-196x196.png" />
+    <link rel="icon" sizes="196x196" href="assets/icon-dark-196x196.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="167x167"
+      href="assets/apple-touch-icon-ipad.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="assets/apple-touch-icon.png"
+    />
+
+    <link rel="stylesheet" type="text/css" href="./popup.scss" />
+  </head>
+  <body>
+    <script src="./popup.js"></script>
+
+    <nav>
+      <div class="container-fluid">
+        <span class="navbar-brand">
+          <span class="icon-tinyflux"></span> Tinyflux
+        </span>
+        <div class="navbar-nav">
+          <button
+            id="btnOpenWindow"
+            type="button"
+            title="Open in window"
+            class="d-none"
+          >
+            <span class="icon-open-window"></span>
+          </button>
+          <button type="button" title="Settings" id="btnSettings">
+            <span class="icon-settings"></span>
+          </button>
+          <button
+            type="button"
+            title="Mark entries as read"
+            id="btnMarkEntriesAsRead"
+          >
+            <span class="icon-mark-entries-as-read"></span>
+          </button>
+          <button type="button" title="Refresh" id="btnRefresh">
+            <span class="icon-refresh"></span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    <div class="entries">
+      <p id="isEmpty" class="d-none">
+        You have read everything!
+        <span class="icon-no-more-entries" />
+      </p>
+    </div>
+  </body>
+</html>

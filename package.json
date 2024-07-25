@@ -1,0 +1,46 @@
+{
+  "name": "tinyflux",
+  "description": "Tinyflux is a notifier browser extension for Miniflux.",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jlsalvador/tinyflux.git"
+  },
+  "keywords": [
+    "rss",
+    "miniflux",
+    "tinyflux",
+    "browser",
+    "extension"
+  ],
+  "author": {
+    "name": "José Luis Salvador Rufo",
+    "email": "salvador.joseluis@gmail.com",
+    "url": "https://jlsalvador.online"
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/jlsalvador/tinyflux/issues"
+  },
+  "homepage": "https://github.com/jlsalvador/tinyflux#readme",
+  "type": "module",
+  "scripts": {
+    "build": "node src/build build",
+    "watch": "node src/build watch --dev"
+  },
+  "devDependencies": {
+    "@chialab/esbuild-plugin-html": "https://gitpkg.vercel.app/jlsalvador/rna/packages/esbuild-plugin-html?publish",
+    "adm-zip": "^0.5.14",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
+    "dompurify": "^3.1.6",
+    "esbuild": "^0.23.0",
+    "esbuild-sass-plugin": "^3.3.1",
+    "globals": "^15.8.0",
+    "htmlnano": "^2.1.1",
+    "node-watch": "^0.7.4",
+    "sharp": "^0.33.4",
+    "svgo": "^3.3.2",
+    "webextension-polyfill": "^0.12.0"
+  }
+}

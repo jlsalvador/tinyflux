@@ -1,0 +1,247 @@
+@import "~bootstrap/scss/bootstrap.scss";
+
+$bootstrap-icons-font-dir: "bootstrap-icons/font/fonts";
+@import "~bootstrap-icons/font/bootstrap-icons.scss";
+
+body {
+  // min-width: 292px;
+  min-width: 320px;
+
+  &.popup {
+    // max-width: 598px;
+    max-width: 320px;
+  }
+}
+
+span {
+  &.icon-tinyflux {
+    @extend .bi;
+    @extend .bi-rss;
+  }
+
+  &.icon-open-window {
+    @extend .bi;
+    @extend .bi-window;
+  }
+
+  &.icon-settings {
+    @extend .bi;
+    @extend .bi-gear;
+  }
+
+  &.icon-mark-entries-as-read {
+    @extend .bi;
+    @extend .bi-check-all;
+  }
+
+  &.icon-are-you-sure {
+    @extend .bi;
+    @extend .bi-question-lg;
+  }
+
+  &.icon-refresh {
+    @extend .bi;
+    @extend .bi-arrow-clockwise;
+  }
+
+  &.icon-loading {
+    @extend .spinner-border;
+
+    width: 1em;
+    height: 1em;
+  }
+
+  &.icon-calendar {
+    @extend .bi;
+    @extend .bi-calendar-event;
+  }
+
+  &.icon-clock {
+    @extend .bi;
+    @extend .bi-clock;
+  }
+
+  &.icon-bookmark {
+    @extend .bi;
+    @extend .bi-star;
+  }
+
+  &.icon-bookmarked {
+    @extend .bi;
+    @extend .bi-star-fill;
+  }
+
+  &.icon-mark-as-read {
+    @extend .bi;
+    @extend .bi-eye;
+  }
+
+  &.icon-uncollapse {
+    @extend .bi;
+    @extend .bi-chevron-down;
+  }
+
+  &.icon-collapse {
+    @extend .bi;
+    @extend .bi-chevron-up;
+  }
+
+  &.icon-no-more-entries {
+    @extend .bi;
+    @extend .bi-list-check;
+  }
+}
+
+body > nav {
+  @extend .border-bottom;
+  @extend .shadow-sm;
+  @extend .navbar;
+  @extend .navbar-expand;
+  @extend .navbar-light;
+  @extend .bg-light;
+  @extend .sticky-top;
+
+  & .navbar-nav {
+    @extend .justify-content-end;
+
+    & button {
+      @extend .me-1;
+      @extend .btn;
+      @extend .btn-sm;
+
+      &:not(.danger) {
+        @extend .btn-outline-secondary;
+      }
+      &.danger {
+        @extend .btn-outline-danger;
+      }
+
+      &#btnRefresh {
+        @extend .btn-outline-primary;
+      }
+    }
+  }
+}
+
+.entries {
+  &:not(:has(.entry)) #isEmpty {
+    @extend .d-block;
+    @extend .mt-3;
+    @extend .text-center;
+    @extend .text-secondary;
+
+    .icon-no-more-entries {
+      @extend .d-block;
+
+      font-size: 4em;
+    }
+  }
+
+  .entry {
+    @extend .card;
+    @extend .border-0;
+    @extend .border-top;
+    @extend .small;
+    @extend .rounded-0;
+
+    & .entryButton {
+      @extend .btn;
+      @extend .btn-link;
+      @extend .btn-sm;
+
+      @extend .invisible;
+    }
+
+    &:hover .entryButton {
+      @extend .visible;
+    }
+
+    .entryTitle {
+      min-height: 56px; // Navbar size
+      @extend .rounded-0;
+      @extend .small;
+      @extend .card-header;
+      @extend .border-0;
+
+      &.uncollapsed {
+        @extend .sticky-top;
+        @extend .border-bottom;
+        @extend .shadow-sm;
+
+        z-index: 1040; // Fix sticky over Card.Body
+        @extend .bg-light; // By default, transparent. Fix sticky over Card.Body
+      }
+
+      img.feedIcon {
+        @extend .me-1;
+
+        width: 1em;
+        height: 1em;
+      }
+
+      .entryTitleText {
+        @extend .mb-1;
+        @extend .text-body;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .entryTitleFeed {
+        @extend .row;
+        @extend .text-secondary;
+        @extend .align-items-center;
+        @extend .small;
+        min-height: 24px; // TODO: Value from Bootstrap Buttons
+
+        & > div {
+          @extend .col;
+        }
+
+        // Feed title
+        & > div:first-child {
+          @extend .text-truncate;
+          @extend .pe-0;
+
+          cursor: pointer;
+        }
+
+        // Entry Info
+        & > div:not(:first-child):not(:last-child) {
+          @extend .p-0;
+
+          span.entryTitleFeedInfo {
+            @extend .ms-1;
+            @extend .me-1;
+          }
+        }
+
+        // Entry Actions
+        & > div:last-child {
+          @extend .col-auto;
+          @extend .ps-0;
+        }
+      }
+    }
+
+    .entryContent {
+      @extend .rounded-0;
+      @extend .small;
+      @extend .card-body;
+
+      img,
+      video,
+      iframe {
+        max-width: 100%;
+        height: auto;
+      }
+      figcaption {
+        @extend .text-secondary;
+        @extend .small;
+      }
+      blockquote {
+        border-left: 0.25em solid #eceeef;
+        padding-left: 1em;
+      }
+    }
+  }
+}

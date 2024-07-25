@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+
+  "name": "#name#",
+  "description": "#description#",
+  "version": "#version#",
+
+  "icons": {
+    "16": "pages/assets/icon-light-16x16.png",
+    "32": "pages/assets/icon-light-32x32.png",
+    "48": "pages/assets/icon-light-48x48.png",
+    "196": "pages/assets/icon-light-196x196.png"
+  },
+
+  "action": {
+    "default_icon": {
+      "16": "pages/assets/icon-light-16x16.png",
+      "32": "pages/assets/icon-light-32x32.png",
+      "48": "pages/assets/icon-light-48x48.png",
+      "196": "pages/assets/icon-light-196x196.png"
+    },
+    "theme_icons": [
+      {
+        "size": 16,
+        "light": "pages/assets/icon-light-16x16.png",
+        "dark": "pages/assets/icon-dark-16x16.png"
+      },
+      {
+        "size": 32,
+        "light": "pages/assets/icon-light-32x32.png",
+        "dark": "pages/assets/icon-dark-32x32.png"
+      },
+      {
+        "size": 48,
+        "light": "pages/assets/icon-light-48x48.png",
+        "dark": "pages/assets/icon-dark-48x48.png"
+      },
+      {
+        "size": 196,
+        "light": "pages/assets/icon-light-196x196.png",
+        "dark": "pages/assets/icon-dark-196x196.png"
+      }
+    ],
+    "default_title": "#name#",
+    "default_popup": "pages/popup.html"
+  },
+  "options_page": "pages/options.html",
+  "permissions": ["storage", "alarms"]
+}

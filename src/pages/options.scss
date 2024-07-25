@@ -1,0 +1,34 @@
+@import "~bootstrap/scss/bootstrap.scss";
+
+body {
+  @extend .mt-3;
+
+  & > div {
+    @extend .container;
+
+    form {
+      button {
+        @extend .btn;
+        @extend .btn-outline-secondary;
+
+        &[type="submit"] {
+          @extend .btn-outline-primary;
+        }
+      }
+
+      & > div {
+        @extend .mb-3;
+
+        & > label {
+          @extend .form-label;
+        }
+        & > input {
+          @extend .form-control;
+        }
+        & > div {
+          @extend .form-text;
+        }
+      }
+    }
+  }
+}
