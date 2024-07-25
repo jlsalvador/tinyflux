@@ -1,5 +1,11 @@
 {
   "background": {
     "scripts": ["pages/background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{12c2801b-5b88-529c-92bc-3b7a0e3e1ead}",
+      "strict_min_version": "126.0"
+    }
   }
 }
