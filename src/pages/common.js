@@ -234,3 +234,24 @@ export async function refreshEntries() {
       }
     });
 }
+
+const ALARM_REFRESH = "ALARM_REFRESH";
+
+async function handleAlarm(alarmInfo) {
+  console.log(alarmInfo);
+  if (alarmInfo.name === ALARM_REFRESH) {
+    await refreshEntries();
+  }
+}
+
+export async function refreshAlarms() {
+  const periodInMinutes = await browser.storage.local
+    .get("periodInMinutes")
+    .then((r) => Number(r.periodInMinutes || DEFAULT_PERIOD_REFRESH));
+
+  browser.alarms.onAlarm.addListener(handleAlarm);
+  browser.alarms.create(ALARM_REFRESH, {
+    when: Date.now(),
+    periodInMinutes: periodInMinutes,
+  });
+}

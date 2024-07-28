@@ -8,6 +8,7 @@ import {
   updateBadge,
   refreshEntries,
   openSettings,
+  refreshAlarms,
 } from "./common.js";
 
 /**
@@ -400,9 +401,11 @@ async function loadCachedEntries() {
 }
 
 async function refreshViewEntries() {
-  return refreshEntries().then((entries) => {
-    return Promise.all([addEntries(entries), cleanupOldEntries(entries)]);
-  });
+  return refreshEntries()
+    .then((entries) => {
+      return Promise.all([addEntries(entries), cleanupOldEntries(entries)]);
+    })
+    .then(refreshAlarms);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
