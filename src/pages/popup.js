@@ -80,14 +80,10 @@ async function openLink(url) {
  */
 async function addEntries(entries) {
   if (!entries || !entries.length === 0) {
-    return;
+    return Promise.resolve();
   }
 
-  const promises = [];
-  for (const entry of entries) {
-    promises.push(addEntry(entry));
-  }
-  return Promise.all(promises);
+  return Promise.all(entries.map((entry) => addEntry(entry)));
 }
 
 /**
@@ -97,19 +93,20 @@ function cleanupOldEntries(newEntries) {
   const domEntries = document.querySelector(".entries");
   const currentEntries = domEntries.getElementsByClassName("entry");
 
-  for (const currentEntry of currentEntries) {
-    const currentEntryId = currentEntry.dataset.entryId;
-    let found = false;
-    for (const entry of newEntries) {
-      if (entry.id == currentEntryId) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      currentEntry.remove();
-    }
-  }
+  // We only need the new entries IDs to compare with the current ones.
+  const newEntriesIds = newEntries.map((newEntry) => newEntry.id);
+
+  // Check if the current entries are still in the new ones, if not, save it into a list to be deleted.
+  const domsToBeDeleted = Array.from(currentEntries).filter(
+    (currentEntry) => newEntriesIds.indexOf(currentEntry.dataset.entryId) === -1
+  );
+
+  // Delete the DOM elements that are not in the new ones.
+  domsToBeDeleted.forEach((domToBeDeleted) => {
+    domToBeDeleted.remove();
+  });
+
+  return Promise.resolve();
 }
 
 /**
@@ -402,9 +399,9 @@ async function loadCachedEntries() {
 
 async function refreshViewEntries() {
   return refreshEntries()
-    .then((entries) => {
-      return Promise.all([addEntries(entries), cleanupOldEntries(entries)]);
-    })
+    .then((entries) =>
+      Promise.all([cleanupOldEntries(entries), addEntries(entries)])
+    )
     .then(refreshAlarms);
 }
 
