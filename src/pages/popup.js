@@ -62,7 +62,6 @@ async function openLink(url) {
   const active = true;
   const result = browser.tabs.create({
     active: active,
-    discarded: !active,
     url: url,
   });
 
@@ -72,6 +71,9 @@ async function openLink(url) {
     window.close();
   }
 
+  if (!active) {
+    return result.then(tab => browser.tabs.discard(tab.id))
+  }
   return result;
 }
 
