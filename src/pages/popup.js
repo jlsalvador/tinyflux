@@ -169,13 +169,20 @@ async function addEntry(entry) {
     domEntryTitleFeedRowColSpanFeedInfoFavIcon.title = entry.feed.title;
     domEntryTitleFeedRowColSpanFeedInfoFavIcon.src = `data:${icon.data}`;
 
+    const domEntryTitleFeedRowColSpanFeedInfoTitle =
+      document.createElement("span");
+    domEntryTitleFeedRowColSpanFeedInfoTitle.className = "feedTitle";
+    domEntryTitleFeedRowColSpanFeedInfoTitle.textContent = entry.feed.title;
+
     const domEntryTitleFeedRowColSpanFeedInfo = document.createElement("span");
     domEntryTitleFeedRowColSpanFeedInfo.className = "entryTitleFeedInfo";
     domEntryTitleFeedRowColSpanFeedInfo.title = entry.feed.title;
     domEntryTitleFeedRowColSpanFeedInfo.append(
       domEntryTitleFeedRowColSpanFeedInfoFavIcon
     );
-    domEntryTitleFeedRowColSpanFeedInfo.append(entry.feed.title);
+    domEntryTitleFeedRowColSpanFeedInfo.append(
+      domEntryTitleFeedRowColSpanFeedInfoTitle
+    );
     domEntryTitleFeedRowColSpanFeedInfo.addEventListener("click", () => {
       return openLink(entry.feed.site_url);
     });

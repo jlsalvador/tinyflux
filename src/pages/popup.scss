@@ -172,17 +172,10 @@ body > nav {
         @extend .bg-light; // By default, transparent. Fix sticky over Card.Body
       }
 
-      img.feedIcon {
-        @extend .me-1;
-
-        width: 1em;
-        height: 1em;
-      }
-
       .entryTitleText {
         @extend .mb-1;
         @extend .text-body;
-        font-weight: 500;
+        font-weight: $font-weight-medium;
         cursor: pointer;
       }
 
@@ -191,10 +184,15 @@ body > nav {
         @extend .text-secondary;
         @extend .align-items-center;
         @extend .small;
-        min-height: 24px; // TODO: Value from Bootstrap Buttons
+        height: $line-height-base;
 
         & > div {
           @extend .col;
+        }
+
+        span.entryTitleFeedInfo {
+          @extend .ms-1;
+          @extend .me-1;
         }
 
         // Feed title
@@ -203,16 +201,28 @@ body > nav {
           @extend .pe-0;
 
           cursor: pointer;
+
+          span.entryTitleFeedInfo {
+            @extend .d-flex;
+            @extend .align-content-center;
+
+            img.feedIcon {
+              @extend .me-1;
+
+              max-width: $font-size-base;
+              max-height: $font-size-base;
+            }
+
+            span.feedTitle {
+              @extend .overflow-hidden;
+              @extend .text-truncate;
+            }
+          }
         }
 
         // Entry Info
         & > div:not(:first-child):not(:last-child) {
           @extend .p-0;
-
-          span.entryTitleFeedInfo {
-            @extend .ms-1;
-            @extend .me-1;
-          }
         }
 
         // Entry Actions
