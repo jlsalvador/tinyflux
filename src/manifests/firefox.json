@@ -7,5 +7,16 @@
       "id": "{12c2801b-5b88-529c-92bc-3b7a0e3e1ead}",
       "strict_min_version": "126.0"
     }
-  }
+  },
+  "sidebar_action": {
+    "default_icon": {
+      "16": "pages/assets/icon-light-16x16.png",
+      "32": "pages/assets/icon-light-32x32.png",
+      "48": "pages/assets/icon-light-48x48.png",
+      "196": "pages/assets/icon-light-196x196.png"
+    },
+    "default_panel": "pages/popup.html?style=sidebar",
+    "open_at_install": false
+  },
+  "permissions": ["storage", "alarms"]
 }

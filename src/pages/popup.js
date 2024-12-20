@@ -72,7 +72,7 @@ async function openLink(url) {
   }
 
   if (!active) {
-    return result.then(tab => browser.tabs.discard(tab.id))
+    return result.then((tab) => browser.tabs.discard(tab.id));
   }
   return result;
 }
@@ -420,16 +420,31 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.classList.add(style);
 
   const btnOpenWindow = document.getElementById("btnOpenWindow");
-  if (style === "popup") {
-    btnOpenWindow?.classList.remove("d-none");
-  }
-  btnOpenWindow?.addEventListener("click", () => {
+  btnOpenWindow?.addEventListener("click", async () => {
     browser.windows.create({
       url: "/pages/popup.html?style=window",
       type: "popup",
       width: 360,
       height: 600,
     });
+    await browser.sidebarAction?.close();
+    window.close();
+  });
+
+  const btnOpenSidePanel = document.getElementById("btnOpenSidePanel");
+  btnOpenSidePanel?.addEventListener("click", async () => {
+    if (browser.sidebarAction) {
+      browser.sidebarAction.toggle();
+    } else {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        lastFocusedWindow: true
+      });
+      chrome.sidePanel.open({
+        windowId: tab.windowId
+      });
+    }
+    window.close();
   });
 
   const btnSettings = document.getElementById("btnSettings");

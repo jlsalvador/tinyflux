@@ -1,7 +1,10 @@
-import { refreshAlarms } from "./common";
+import { refreshActionBehavior, refreshAlarms } from "./common";
 
 async function init() {
-  await refreshAlarms();
+  await Promise.all([
+    refreshAlarms(),
+    refreshActionBehavior(),
+  ])
 }
 
 init();

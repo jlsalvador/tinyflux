@@ -32,48 +32,73 @@
 
     <div>
       <form>
-        <div>
-          <label for="inputMinifluxUrl">Miniflux URL</label>
-          <input
-            type="url"
-            id="inputMinifluxUrl"
-            aria-describedby="inputMinifluxUrlHelp"
-          />
-          <div id="inputMinifluxUrlHelp">
-            Address to your Miniflux instance, ex: https://reader.miniflux.app/
+        <fieldset>
+          <legend>Miniflux Instance</legend>
+          <div>
+            <label for="inputMinifluxUrl">URL</label>
+            <input
+              type="url"
+              id="inputMinifluxUrl"
+              aria-describedby="inputMinifluxUrlHelp"
+            />
+            <div id="inputMinifluxUrlHelp">
+              Address to your Miniflux instance, ex:
+              https://reader.miniflux.app/
+            </div>
           </div>
-        </div>
-        <div>
-          <label for="inputMinifluxToken">Token</label>
-          <input
-            type="text"
-            id="inputMinifluxToken"
-            aria-describedby="inputMinifluxTokenHelp"
-            autocorrect="off"
-            spellcheck="false"
-            autocomplete="off"
-          />
-          <div id="inputMinifluxTokenHelp">
-            Token to access your Miniflux, ex:
-            CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br />
-            <a href="https://miniflux.app/docs/api.html#authentication"
-              >Documentation</a
-            >.
+          <div>
+            <label for="inputMinifluxToken">Token</label>
+            <input
+              type="text"
+              id="inputMinifluxToken"
+              aria-describedby="inputMinifluxTokenHelp"
+              autocorrect="off"
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <div id="inputMinifluxTokenHelp">
+              Token to access your Miniflux, ex:
+              CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br />
+              <a href="https://miniflux.app/docs/api.html#authentication"
+                >Documentation</a
+              >.
+            </div>
           </div>
-        </div>
-        <div>
-          <label for="inputMinifluxPeriodInMinutes">Period to Refresh (in minutes)</label>
-          <input
-            type="number"
-            min="1"
-            id="inputMinifluxPeriodInMinutes"
-            aria-describedby="inputMinifluxPeriodInMinutesHelp"
-          />
-          <div id="inputMinifluxPeriodInMinutesHelp">
-            Tinyflux will refresh all the user's entries at this period of time,
-            ex: 15
+          <div>
+            <label for="inputMinifluxPeriodInMinutes"
+              >Period to Refresh (in minutes)</label
+            >
+            <input
+              type="number"
+              min="1"
+              id="inputMinifluxPeriodInMinutes"
+              aria-describedby="inputMinifluxPeriodInMinutesHelp"
+            />
+            <div id="inputMinifluxPeriodInMinutesHelp">
+              Tinyflux will refresh all the user's entries at this period of
+              time, ex: 15
+            </div>
           </div>
-        </div>
+        </fieldset>
+        <fieldset>
+          <legend>Browser behavior</legend>
+          <div>
+            <label for="selectExtensionClickBehavior">
+              On extension icon click
+            </label>
+            <select
+              id="selectExtensionClickBehavior"
+              aria-describedby="selectExtensionClickBehaviorHelp"
+            >
+              <option value="popup">Open popup</option>
+              <option value="window">Open window</option>
+              <option value="sidepanel">Open side panel</option>
+            </select>
+            <div id="selectExtensionClickBehaviorHelp">
+              Defines what happen when you click in the extension icon.
+            </div>
+          </div>
+        </fieldset>
         <button type="submit">Save Changes</button>
         <hr />
         <button type="button" id="btnTest">Test Connection</button>

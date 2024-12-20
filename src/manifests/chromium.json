@@ -1,5 +1,10 @@
 {
+  "minimum_chrome_version": "114",
   "background": {
     "service_worker": "pages/background.js"
-  }
+  },
+  "side_panel": {
+    "default_path": "pages/popup.html?style=sidebar"
+  },
+  "permissions": ["storage", "alarms", "sidePanel"]
 }

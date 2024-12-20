@@ -11,6 +11,17 @@ body {
     // max-width: 598px;
     max-width: 320px;
   }
+  &.sidebar {
+    #btnOpenSidePanel {
+      @extend .d-none;
+    }
+  }
+  &.window {
+    #btnOpenWindow,
+    #btnOpenSidePanel {
+      @extend .d-none;
+    }
+  }
 }
 
 span {
@@ -22,6 +33,11 @@ span {
   &.icon-open-window {
     @extend .bi;
     @extend .bi-window;
+  }
+
+  &.icon-open-sidebar {
+    @extend .bi;
+    @extend .bi-window-sidebar;
   }
 
   &.icon-settings {

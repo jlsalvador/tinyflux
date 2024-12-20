@@ -126,6 +126,7 @@ import browser from "webextension-polyfill";
 export const DEFAULT_URL = "";
 export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
+export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 
 /**
  * @typedef {Error}
@@ -254,4 +255,51 @@ export async function refreshAlarms() {
     when: Date.now(),
     periodInMinutes: periodInMinutes,
   });
+}
+
+export async function actionWindow() {
+  return browser.windows.create({
+    url: "/pages/popup.html?style=window",
+    type: "popup",
+    width: 360,
+    height: 600,
+  });
+}
+
+export async function actionSidePanel() {
+  return browser.sidebarAction.toggle();
+}
+
+export async function refreshActionBehavior() {
+  // Disable current behaviour
+  await browser.action.setPopup({ popup: "" });
+  browser.action.onClicked.removeListener(actionWindow);
+  browser.action.onClicked.removeListener(actionSidePanel);
+  // Work-around for Chromium
+  if (!browser.sidebarAction) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+  }
+
+  // Set desired behavior
+  const res = await browser.storage.local.get("extensionClickBehavior");
+  switch (res.extensionClickBehavior) {
+    case "window":
+      browser.action.onClicked.addListener(actionWindow);
+      break;
+
+    case "sidepanel":
+      // Work-around for Chromium
+      if (!browser.sidebarAction) {
+        chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+      } else {
+        browser.action.onClicked.addListener(actionSidePanel);
+      }
+      break;
+
+    case "popup":
+    default:
+      await browser.action.setPopup({
+        popup: "/pages/popup.html?style=popup",
+      });
+  }
 }

@@ -16,17 +16,29 @@ body {
         }
       }
 
-      & > div {
-        @extend .mb-3;
+      & fieldset {
+        @extend .border;
+        @extend .rounded;
+        @extend .px-4;
+        @extend .pt-2;
+        @extend .mb-4;
+        border-style: dashed !important;
 
-        & > label {
-          @extend .form-label;
-        }
-        & > input {
-          @extend .form-control;
-        }
         & > div {
-          @extend .form-text;
+          @extend .mb-3;
+
+          & > label {
+            @extend .form-label;
+          }
+          & > input {
+            @extend .form-control;
+          }
+          & > div {
+            @extend .form-text;
+          }
+          & > select {
+            @extend .form-select;
+          }
         }
       }
     }

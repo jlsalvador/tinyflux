@@ -1,8 +1,10 @@
 import browser from "webextension-polyfill";
 import {
+  DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   DEFAULT_PERIOD_REFRESH,
   DEFAULT_TOKEN,
   DEFAULT_URL,
+  refreshActionBehavior,
   refreshEntries,
   request,
 } from "./common.js";
@@ -15,35 +17,53 @@ async function saveOptions(e) {
   const periodInMinutes = document.querySelector(
     "#inputMinifluxPeriodInMinutes"
   ).valueAsNumber;
+  const extensionClickBehavior = document.querySelector(
+    "#selectExtensionClickBehavior"
+  ).value;
 
-  const res = await browser.storage.local.get(["url", "token"]);
+  const res = await browser.storage.local.get([
+    "url",
+    "token",
+    "extensionClickBehavior",
+  ]);
   const oldUrl = res.url;
   const oldToken = res.token;
+  const oldExtensionClickBehavior = res.extensionClickBehavior;
 
   await browser.storage.local.set({
     url: url,
     token: token,
     periodInMinutes: periodInMinutes,
+    extensionClickBehavior: extensionClickBehavior,
   });
 
   if (url != oldUrl || token != oldToken) {
-    refreshEntries();
+    await refreshEntries();
+  }
+
+  if (extensionClickBehavior != oldExtensionClickBehavior) {
+    await refreshActionBehavior();
   }
 }
 
 async function restoreOptions() {
-  let res;
+  const res = await browser.storage.local.get([
+    "url",
+    "token",
+    "periodInMinutes",
+    "extensionClickBehavior",
+  ]);
 
-  res = await browser.storage.local.get("url");
   document.querySelector("#inputMinifluxUrl").value = res.url || DEFAULT_URL;
 
-  res = await browser.storage.local.get("token");
   document.querySelector("#inputMinifluxToken").value =
     res.token || DEFAULT_TOKEN;
 
-  res = await browser.storage.local.get("periodInMinutes");
   document.querySelector("#inputMinifluxPeriodInMinutes").valueAsNumber =
     res.periodInMinutes || DEFAULT_PERIOD_REFRESH;
+
+  document.querySelector("#selectExtensionClickBehavior").value =
+    res.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
 }
 
 async function testMinifluxApi() {
