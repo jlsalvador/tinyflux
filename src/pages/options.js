@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill";
 import {
+  DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   DEFAULT_PERIOD_REFRESH,
   DEFAULT_TOKEN,
@@ -20,11 +21,15 @@ async function saveOptions(e) {
   const extensionClickBehavior = document.querySelector(
     "#selectExtensionClickBehavior"
   ).value;
+  const markEntryAsReadWhenOpenedAsTab = document.querySelector(
+    "#checkMarkEntryAsReadWhenOpenedAsTab"
+  ).checked;
 
   const res = await browser.storage.local.get([
     "url",
     "token",
     "extensionClickBehavior",
+    "markEntryAsReadWhenOpenedAsTab",
   ]);
   const oldUrl = res.url;
   const oldToken = res.token;
@@ -35,6 +40,7 @@ async function saveOptions(e) {
     token: token,
     periodInMinutes: periodInMinutes,
     extensionClickBehavior: extensionClickBehavior,
+    markEntryAsReadWhenOpenedAsTab: markEntryAsReadWhenOpenedAsTab,
   });
 
   if (url != oldUrl || token != oldToken) {
@@ -52,6 +58,7 @@ async function restoreOptions() {
     "token",
     "periodInMinutes",
     "extensionClickBehavior",
+    "markEntryAsReadWhenOpenedAsTab",
   ]);
 
   document.querySelector("#inputMinifluxUrl").value = res.url || DEFAULT_URL;
@@ -64,6 +71,10 @@ async function restoreOptions() {
 
   document.querySelector("#selectExtensionClickBehavior").value =
     res.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
+
+  document.querySelector("#checkMarkEntryAsReadWhenOpenedAsTab").checked =
+    res.markEntryAsReadWhenOpenedAsTab ||
+    DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
 }
 
 async function testMinifluxApi() {

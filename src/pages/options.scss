@@ -27,15 +27,28 @@ body {
         & > div {
           @extend .mb-3;
 
-          & > label {
-            @extend .form-label;
+          &:has(input[type="checkbox"]) {
+            & > label {
+              @extend .form-check-label;
+            }
+            & > input[type="checkbox"] {
+              @extend .form-check-input;
+            }
           }
-          & > input {
-            @extend .form-control;
+
+          &:not(:has(input[type="checkbox"])) {
+            & > label {
+              @extend .form-label;
+            }
+            & > input {
+              @extend .form-control;
+            }
           }
+
           & > div {
             @extend .form-text;
           }
+
           & > select {
             @extend .form-select;
           }

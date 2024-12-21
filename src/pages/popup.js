@@ -9,6 +9,7 @@ import {
   refreshEntries,
   openSettings,
   refreshAlarms,
+  DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
 } from "./common.js";
 
 /**
@@ -20,13 +21,12 @@ import {
  * @typedef {import('./common.js').Icon} Icon
  */
 
-async function toggleBookmark(entryId) {
-  return request(`/v1/entries/${entryId}/bookmark`, {
-    method: "PUT",
-  });
-}
-
-async function markEntriesAsRead() {
+/**
+ * Marks all showed entries as read in the Miniflux instance.
+ *
+ * @returns
+ */
+async function markMinifluxEntriesAsRead() {
   const entryIds = [];
   const domEntries = document.querySelector(".entries");
   const entries = domEntries.getElementsByClassName("entry");
@@ -47,14 +47,9 @@ async function markEntriesAsRead() {
   });
 }
 
-async function markEntryAsRead(entryId) {
-  return request(`/v1/entries`, {
-    method: "PUT",
-    body: JSON.stringify({ entry_ids: [entryId], status: "read" }),
-  });
-}
-
 /**
+ * Open the `url` in a new tab and close the popup extension window.
+ *
  * @param {string} url
  * @returns
  */
@@ -78,6 +73,8 @@ async function openLink(url) {
 }
 
 /**
+ * Add multiples entries to the DOM list of entries.
+ *
  * @param {Entry[]} entries
  */
 async function addEntries(entries) {
@@ -112,9 +109,63 @@ function cleanupOldEntries(newEntries) {
 }
 
 /**
+ * Adds a new entry to the DOM list of entries.
+ *
  * @param {Entry} entry
  */
 async function addEntry(entry) {
+  /**
+   * Toggle the bookmark of an entry in the Miniflux instance.
+   *
+   * @param {Entry.id} entryId
+   * @returns
+   */
+  async function toggleBookmark(entryId) {
+    return request(`/v1/entries/${entryId}/bookmark`, {
+      method: "PUT",
+    });
+  }
+
+  /**
+   * Mark an entry as read in the Miniflux instance.
+   *
+   * @param {Entry.id} entryId
+   * @returns
+   */
+  async function markMinifluxEntryAsRead(entryId) {
+    return request(`/v1/entries`, {
+      method: "PUT",
+      body: JSON.stringify({ entry_ids: [entryId], status: "read" }),
+    });
+  }
+
+  /**
+   * Mark an entry as read. Remove it from the view and the local storage,
+   * and mark it as read in the Miniflux instance.
+   *
+   * @param {Entry.id} entryId
+   * @returns
+   */
+  function markEntryIdAsRead(entryId) {
+    return Promise.all([
+      markMinifluxEntryAsRead(entryId), // Mark as read to the Miniflux API
+      document.getElementById(`entry-${entryId}`)?.remove(), // Remove from the view
+      browser.storage.local
+        .get("entries")
+        .then((data) => data.entries)
+        .then((entries) => entries.filter((e) => e.id != entryId))
+        .then(async (entries) => {
+          // Remove from the local cache
+          await browser.storage.local.set({ entries: entries });
+          await updateBadge(entries.length);
+          return entries;
+        }),
+    ]);
+  }
+
+  /**
+   * Sort the entries in the view by the published date in descending order.
+   */
   function sortEntries() {
     const domEntries = document.querySelector(".entries");
     const entries = domEntries.getElementsByClassName("entry");
@@ -153,7 +204,20 @@ async function addEntry(entry) {
     const domEntryTitleRowColumn = document.createElement("div");
     domEntryTitleRowColumn.className = "col";
     domEntryTitleRowColumn.append(domEntryTitleRowColumnEntryTitleText);
-    domEntryTitleRowColumn.addEventListener("click", () => {
+    domEntryTitleRowColumn.addEventListener("click", async () => {
+      // Mark the entry as read when opened in a new tab if the option is enabled.
+      const markEntryAsReadWhenOpenedAsTab = await browser.storage.local
+        .get("markEntryAsReadWhenOpenedAsTab")
+        .then((r) =>
+          Boolean(
+            r.markEntryAsReadWhenOpenedAsTab ||
+              DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB
+          )
+        );
+      if (markEntryAsReadWhenOpenedAsTab) {
+        await markEntryIdAsRead(entry.id);
+      }
+
       return openLink(entry.url);
     });
 
@@ -274,20 +338,7 @@ async function addEntry(entry) {
     domBtnMarkAsRead.className = "entryButton";
     domBtnMarkAsRead.append(iconMarkAsRead);
     domBtnMarkAsRead.addEventListener("click", () => {
-      return Promise.all([
-        markEntryAsRead(entry.id), // Mark as read to the Miniflux API
-        document.getElementById(`entry-${entry.id}`)?.remove(), // Remove from the view
-        browser.storage.local
-          .get("entries")
-          .then((data) => data.entries)
-          .then((entries) => entries.filter((e) => e.id != entry.id))
-          .then(async (entries) => {
-            // Remove from the local cache
-            await browser.storage.local.set({ entries: entries });
-            await updateBadge(entries.length);
-            return entries;
-          }),
-      ]);
+      return markEntryIdAsRead(entry.id);
     });
 
     const iconUncollapse = document.createElement("span");
@@ -368,7 +419,7 @@ async function addEntry(entry) {
     domEntries.append(domEntry);
   }
 
-  // Sort entries
+  // Sort entries in the DOM.
   sortEntries();
 }
 
@@ -438,10 +489,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       const [tab] = await chrome.tabs.query({
         active: true,
-        lastFocusedWindow: true
+        lastFocusedWindow: true,
       });
       chrome.sidePanel.open({
-        windowId: tab.windowId
+        windowId: tab.windowId,
       });
     }
     window.close();
@@ -464,7 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnMarkEntriesAsRead.disabled = true;
         domIcon.classList.remove("icon-are-you-sure");
         domIcon.classList.add("icon-loading");
-        await markEntriesAsRead();
+        await markMinifluxEntriesAsRead();
 
         // Remove entries from cache
         await browser.storage.local.set({ entries: [] });

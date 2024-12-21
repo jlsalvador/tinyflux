@@ -127,6 +127,7 @@ export const DEFAULT_URL = "";
 export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
+export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 
 /**
  * @typedef {Error}
