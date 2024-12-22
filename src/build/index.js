@@ -276,8 +276,8 @@ async function buildPack(label, pkg, resdir, outdir) {
       console.time(label);
 
       const zip = new AdmZip();
-      await zip.addLocalFolderPromise(directory);
-      await zip.writeZipPromise(filename);
+      zip.addLocalFolder(directory);
+      zip.writeZip(filename);
 
       console.timeEnd(label);
     };
