@@ -201,7 +201,9 @@ export async function request(
 export async function updateBadge() {
   const entries = await browser.storage.local
     .get("entries")
-    .then((data) => data.entries || []);
+    .then((data) => data.entries || [])
+    .then((entries) => entries.filter((entry) => !entry.feed.hide_globally))
+    .then((entries) => entries.filter((entry) => !entry.feed.category.hide_globally));
   const counter = entries.length;
   browser.action.setBadgeText({
     text: counter > 0 ? `${counter}` : "0",
@@ -225,7 +227,7 @@ export async function refreshEntries() {
     .then((data) => data.entries)
     .then(async (entries) => {
       await browser.storage.local.set({ entries: entries });
-      await updateBadge(entries.length);
+      await updateBadge();
       return entries;
     })
     .catch((error) => {

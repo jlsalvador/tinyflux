@@ -82,7 +82,12 @@ async function addEntries(entries) {
     return Promise.resolve();
   }
 
-  return Promise.all(entries.map((entry) => addEntry(entry)));
+  return Promise.all(
+    entries
+      .filter((entry) => !entry.feed.hide_globally)
+      .filter((entry) => !entry.feed.category.hide_globally)
+      .map((entry) => addEntry(entry))
+  );
 }
 
 /**

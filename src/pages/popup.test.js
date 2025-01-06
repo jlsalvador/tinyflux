@@ -129,7 +129,7 @@ export function testEntries() {
     const entry = structuredClone(testEntry);
     entry.id = i;
     entry.title += ` #${i}`;
-    entry.starred = Math.random() < 0.5 ? true : false;
+    entry.starred = Math.random() < 0.5;
     entry.reading_time = Math.floor(Math.random() * (10 - 1 + 1) + 1);
     entry.published_at = (function () {
       const today = new Date();
@@ -147,6 +147,8 @@ export function testEntries() {
         start.getTime() + Math.random() * (end.getTime() - start.getTime())
       );
     })();
+    entry.feed.hide_globally = Math.random() < 0.5
+    entry.feed.category.hide_globally = Math.random() < 0.5
     entries.push(entry);
   }
   shuffle(entries);
