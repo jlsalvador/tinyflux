@@ -1,11 +1,11 @@
-# TinyFlux - A Browser Extension for Miniflux
+# Tinyflux - A Browser Extension for Miniflux
 
-[![Download TinyFlux from Firefox Add-ons](assets/vendor/get-the-addon-178x60px.dad84b42.png)](https://addons.mozilla.org/es/firefox/addon/tinyflux)
-[![Download TinyFlux from Chrome Web Store](assets/vendor/206x58-chrome-web-bcb82d15b2486.png)](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
+[![Download Tinyflux from Firefox Add-ons](assets/vendor/get-the-addon-178x60px.dad84b42.png)](https://addons.mozilla.org/es/firefox/addon/tinyflux)
+[![Download Tinyflux from Chrome Web Store](assets/vendor/206x58-chrome-web-bcb82d15b2486.png)](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
 
-TinyFlux is a lightweight browser extension for Miniflux that lets you read your subscriptions seamlessly, with a clean and minimalistic interface.
+Tinyflux is a lightweight browser extension for Miniflux that lets you read your subscriptions seamlessly, with a clean and minimalistic interface.
 
-![TinyFlux Screenshot](assets/snapshots/tinyflux.gif)
+![Tinyflux Screenshot](assets/snapshots/tinyflux.gif)
 
 ## Features
 
@@ -19,7 +19,7 @@ TinyFlux is a lightweight browser extension for Miniflux that lets you read your
 
 ## Requirements
 
-To use TinyFlux, you need a Miniflux instance. You can either:
+To use Tinyflux, you need a Miniflux instance. You can either:
 
 - Set up your own instance using the [official Miniflux Docker image](https://hub.docker.com/r/miniflux/miniflux). Follow the [installation guide](https://miniflux.app/docs/docker.html).
 - Use a public instance, such as [Miniflux Cloud](https://reader.miniflux.app/).
@@ -57,7 +57,7 @@ $ docker run -d \
 
 ### Generating an API Token
 
-To use TinyFlux, you'll need a Miniflux API token. Follow the instructions below to generate one:
+To use Tinyflux, you'll need a Miniflux API token. Follow the instructions below to generate one:
 
 ![How to create an API token](assets/snapshots/minyflux-how-to-create-api-token.gif)
 
@@ -68,16 +68,16 @@ To use TinyFlux, you'll need a Miniflux API token. Follow the instructions below
    - [Tinyflux for Firefox](https://addons.mozilla.org/es/firefox/addon/tinyflux)
    - [Tinyflux for Chrome](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
 
-2. **Configure TinyFlux**:
+2. **Configure Tinyflux**:
 
    - Enter your Miniflux API endpoint URL and token when prompted. Remember to save your changes. To can test your configuration clicking the button "Test Connection".
 
 3. **Start Reading**:
-   - Access your feeds and enjoy reading directly from TinyFlux.
+   - Access your feeds and enjoy reading directly from Tinyflux.
 
 ## Installation from Source
 
-For developers or advanced users, you can build and install TinyFlux from source:
+For developers or advanced users, you can build and install Tinyflux from source:
 
 1. Clone this repository:
 
@@ -112,7 +112,7 @@ For developers or advanced users, you can build and install TinyFlux from source
 
 ## Contributing
 
-Contributions are welcome! Feel free to open issues, submit pull requests, or suggest new features to improve TinyFlux.
+Contributions are welcome! Feel free to open issues, submit pull requests, or suggest new features to improve Tinyflux.
 
 ## License
 
