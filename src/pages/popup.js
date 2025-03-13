@@ -9,6 +9,7 @@ import {
   refreshEntries,
   openSettings,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+  refreshAlarm,
 } from "./common.js";
 
 /**
@@ -462,9 +463,11 @@ async function loadCachedEntries() {
 }
 
 async function refreshViewEntries() {
-  return refreshEntries().then((entries) =>
-    Promise.all([cleanupOldEntries(entries), addEntries(entries)])
-  );
+  return refreshEntries()
+    .then((entries) =>
+      Promise.all([cleanupOldEntries(entries), addEntries(entries)])
+    )
+    .then(refreshAlarm);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
