@@ -1,8 +1,4 @@
-import {
-  refreshAlarm,
-  refreshActionBehavior,
-  refreshEntries,
-} from "./common";
+import { refreshAlarm, refreshActionBehavior, refreshEntries } from "./common";
 
 // Create browser alarm to wakeup the background service.
 browser.alarms.onAlarm.addListener(async (alarmInfo) => {

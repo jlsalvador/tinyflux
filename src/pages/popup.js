@@ -1,5 +1,7 @@
 "use strict";
 
+//FIXME: On refresh, stay entry opened.
+
 import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
@@ -10,6 +12,7 @@ import {
   openSettings,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   refreshAlarm,
+  MESSAGE_REFRESH_VIEW_ENTRIES,
 } from "./common.js";
 
 /**
@@ -469,6 +472,20 @@ async function refreshViewEntries() {
     )
     .then(refreshAlarm);
 }
+
+browser.runtime.onMessage.addListener((data) => {
+  console.log(data);
+  if (data.message === MESSAGE_REFRESH_VIEW_ENTRIES) {
+    return browser.storage.local
+      .get("entries")
+      .then((r) => r.entries)
+      .then((entries) =>
+        Promise.all([cleanupOldEntries(entries), addEntries(entries)])
+      );
+  } else {
+    return false;
+  }
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   const style =

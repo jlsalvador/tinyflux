@@ -129,11 +129,20 @@ export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 
+export const MESSAGE_REFRESH_VIEW_ENTRIES = "refresh_view_entries";
+
 /**
  * @typedef {Error}
  */
 export const ErrorInvalidUrlOrToken = new Error(
   "You must configure your Miniflux URL and Token"
+);
+
+/**
+ * @typedef {Error}
+ */
+export const ErrorReceivingEndDoesNotExist = new Error(
+  "Could not establish connection. Receiving end does not exist."
 );
 
 export function openSettings() {
@@ -212,12 +221,30 @@ export async function updateBadge() {
   });
 }
 
+/**
+ * @returns Promise<void>
+ * @throws Error
+ */
 export async function refreshEntries() {
   // import { testEntries } from "./popup.test.js";
   // for (const entry of testEntries()) {
   //   addEntry(entry);
   // }
   // return;
+
+  const notifyRefreshEntries = async () => {
+    try {
+      await browser.runtime.sendMessage({
+        message: MESSAGE_REFRESH_VIEW_ENTRIES,
+      });
+    } catch (err) {
+      console.log(err);
+      if (err.message !== ErrorReceivingEndDoesNotExist.message) {
+        // Ignore error when there is no one listening.
+        throw err;
+      }
+    }
+  };
 
   return request("/v1/entries?status=unread&order=published_at&direction=desc")
     .then(async (response) => {
@@ -229,14 +256,14 @@ export async function refreshEntries() {
     .then((data) => data.entries)
     .then(async (entries) => {
       await browser.storage.local.set({ entries: entries });
-      await updateBadge();
+      await Promise.all([updateBadge(), notifyRefreshEntries()]);
       return entries;
     })
-    .catch((error) => {
-      if (error === ErrorInvalidUrlOrToken) {
+    .catch((err) => {
+      if (err === ErrorInvalidUrlOrToken) {
         openSettings();
       } else {
-        throw error;
+        throw err;
       }
     });
 }
