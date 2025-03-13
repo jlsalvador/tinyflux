@@ -508,15 +508,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const btnMarkEntriesAsRead = document.getElementById("btnMarkEntriesAsRead");
   btnMarkEntriesAsRead?.addEventListener("click", async () => {
-    const domIcon = btnMarkEntriesAsRead.getElementsByTagName("span")[0];
+    /**
+     * @description How many milliseconds should pass before the button is reset to its initial state.
+     * @type {number} The timeout in milliseconds.
+     */
+    const MARK_ENTRIES_AS_READ_TIMEOUT_IN_MS = 5000;
+    /**
+     * @description Sets the button to its initial state after this amount of time.
+     * @type {number} The timeout in milliseconds.
+     */
+    let confirmMarkAllEntriesTimeout;
 
-    if (domIcon.classList.contains("icon-mark-entries-as-read")) {
+    /**
+     * Set the button "Mark all Entries as Read" to request user confirmation.
+     */
+    const setBtnMarkEntriesAsReadConfirmation = (
+      btnMarkEntriesAsRead,
+      domIcon
+    ) => {
       domIcon.classList.remove("icon-mark-entries-as-read");
       domIcon.classList.add("icon-are-you-sure");
       btnMarkEntriesAsRead.classList.add("danger");
       btnMarkEntriesAsRead.title = "Are you sure to mark all entries as read?"; //TODO i18n
+    };
+
+    /**
+     * Reset the button "Mark all Entries as Read" to its initial state.
+     */
+    const setBtnMarkEntriesAsReadInitialState = (
+      btnMarkEntriesAsRead,
+      domIcon
+    ) => {
+      domIcon.classList.remove("icon-loading");
+      domIcon.classList.remove("icon-are-you-sure");
+      domIcon.classList.add("icon-mark-entries-as-read");
+      btnMarkEntriesAsRead.classList.remove("danger");
+      btnMarkEntriesAsRead.title = "Mark all"; //TODO i18n
+      btnMarkEntriesAsRead.disabled = false;
+    };
+
+    const domIcon = btnMarkEntriesAsRead.getElementsByTagName("span")[0];
+
+    if (domIcon.classList.contains("icon-mark-entries-as-read")) {
+      setBtnMarkEntriesAsReadConfirmation(btnMarkEntriesAsRead, domIcon);
+
+      // If user does not confirm, reset the button state after the timeout.
+      confirmMarkAllEntriesTimeout = window.setTimeout(() => {
+        setBtnMarkEntriesAsReadInitialState(btnMarkEntriesAsRead, domIcon);
+      }, MARK_ENTRIES_AS_READ_TIMEOUT_IN_MS);
     } else {
+      clearTimeout(confirmMarkAllEntriesTimeout);
       try {
+        // Disable button while marking entries as read.
         btnMarkEntriesAsRead.disabled = true;
         domIcon.classList.remove("icon-are-you-sure");
         domIcon.classList.add("icon-loading");
@@ -532,12 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
           entries[0].remove();
         }
       } finally {
-        domIcon.classList.remove("icon-loading");
-        domIcon.classList.remove("icon-are-you-sure");
-        domIcon.classList.add("icon-mark-entries-as-read");
-        btnMarkEntriesAsRead.classList.remove("danger");
-        btnMarkEntriesAsRead.title = "Mark all"; //TODO i18n
-        btnMarkEntriesAsRead.disabled = false;
+        setBtnMarkEntriesAsReadInitialState(btnMarkEntriesAsRead, domIcon);
       }
     }
   });
