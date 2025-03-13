@@ -7,6 +7,7 @@ import {
   DEFAULT_URL,
   refreshActionBehavior,
   refreshEntries,
+  refreshAlarm,
   request,
 } from "./common.js";
 
@@ -25,15 +26,15 @@ async function saveOptions(e) {
     "#checkMarkEntryAsReadWhenOpenedAsTab"
   ).checked;
 
-  const res = await browser.storage.local.get([
-    "url",
-    "token",
-    "extensionClickBehavior",
-    "markEntryAsReadWhenOpenedAsTab",
-  ]);
-  const oldUrl = res.url;
-  const oldToken = res.token;
-  const oldExtensionClickBehavior = res.extensionClickBehavior;
+  const [oldUrl, oldToken, oldPeriodInMinutes, oldExtensionClickBehavior] =
+    await browser.storage.local
+      .get(["url", "token", "periodInMinutes", "extensionClickBehavior"])
+      .then((r) => [
+        r.url,
+        r.token,
+        r.periodInMinutes,
+        r.extensionClickBehavior,
+      ]);
 
   await browser.storage.local.set({
     url: url,
@@ -49,6 +50,10 @@ async function saveOptions(e) {
 
   if (extensionClickBehavior != oldExtensionClickBehavior) {
     await refreshActionBehavior();
+  }
+
+  if (periodInMinutes != oldPeriodInMinutes) {
+    await refreshAlarm();
   }
 }
 

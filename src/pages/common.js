@@ -287,3 +287,15 @@ export async function refreshActionBehavior() {
       });
   }
 }
+
+export async function refreshAlarm() {
+  const periodInMinutes = await browser.storage.local
+    .get(["periodInMinutes"])
+    .then((data) => {
+      return Number(data.periodInMinutes || DEFAULT_PERIOD_REFRESH);
+    });
+
+  browser.alarms.create("ALARM_REFRESH", {
+    periodInMinutes: periodInMinutes,
+  });
+}

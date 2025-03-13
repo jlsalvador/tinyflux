@@ -1,6 +1,6 @@
 import {
+  refreshAlarm,
   refreshActionBehavior,
-  DEFAULT_PERIOD_REFRESH,
   refreshEntries,
 } from "./common";
 
@@ -11,16 +11,7 @@ browser.alarms.onAlarm.addListener(async (alarmInfo) => {
     await refreshEntries();
   }
 });
-browser.storage.local
-  .get(["periodInMinutes"])
-  .then((data) => {
-    return Number(data.periodInMinutes || DEFAULT_PERIOD_REFRESH);
-  })
-  .then((periodInMinutes) => {
-    browser.alarms.create("ALARM_REFRESH", {
-      periodInMinutes: periodInMinutes,
-    });
-  });
+refreshAlarm();
 
 // Refresh action behavior on startup.
 refreshActionBehavior();
