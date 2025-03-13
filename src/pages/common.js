@@ -265,8 +265,10 @@ export async function refreshActionBehavior() {
   }
 
   // Set desired behavior
-  const res = await browser.storage.local.get("extensionClickBehavior");
-  switch (res.extensionClickBehavior) {
+  const extensionClickBehavior = await browser.storage.local
+    .get("extensionClickBehavior")
+    .then((r) => r.extensionClickBehavior);
+  switch (extensionClickBehavior) {
     case "window":
       browser.action.onClicked.addListener(actionWindow);
       break;
@@ -291,8 +293,8 @@ export async function refreshActionBehavior() {
 export async function refreshAlarm() {
   const periodInMinutes = await browser.storage.local
     .get(["periodInMinutes"])
-    .then((data) => {
-      return Number(data.periodInMinutes || DEFAULT_PERIOD_REFRESH);
+    .then((r) => {
+      return Number(r.periodInMinutes || DEFAULT_PERIOD_REFRESH);
     });
 
   browser.alarms.create("ALARM_REFRESH", {
