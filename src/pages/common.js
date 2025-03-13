@@ -203,7 +203,9 @@ export async function updateBadge() {
     .get("entries")
     .then((data) => data.entries || [])
     .then((entries) => entries.filter((entry) => !entry.feed.hide_globally))
-    .then((entries) => entries.filter((entry) => !entry.feed.category.hide_globally));
+    .then((entries) =>
+      entries.filter((entry) => !entry.feed.category.hide_globally)
+    );
   const counter = entries.length;
   browser.action.setBadgeText({
     text: counter > 0 ? `${counter}` : "0",
