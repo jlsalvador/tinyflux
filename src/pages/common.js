@@ -129,6 +129,8 @@ export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 
+export const ALARM_REFRESH = "ALARM_REFRESH";
+
 export const MESSAGE_REFRESH_VIEW_ENTRIES = "refresh_view_entries";
 
 /**
@@ -323,7 +325,7 @@ export async function refreshAlarm() {
       return Number(r.periodInMinutes || DEFAULT_PERIOD_REFRESH);
     });
 
-  browser.alarms.create("ALARM_REFRESH", {
+  browser.alarms.create(ALARM_REFRESH, {
     periodInMinutes: periodInMinutes,
   });
 }

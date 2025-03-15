@@ -1,4 +1,12 @@
-import { refreshAlarm, refreshActionBehavior, refreshEntries } from "./common";
+"use strict";
+
+import browser from "webextension-polyfill";
+import {
+  ALARM_REFRESH,
+  refreshAlarm,
+  refreshActionBehavior,
+  refreshEntries,
+} from "./common";
 
 // Create browser alarm to wakeup the background service.
 browser.alarms.onAlarm.addListener(async (alarmInfo) => {
