@@ -105,7 +105,7 @@ function cleanupOldEntries(newEntries) {
 
   // Check if the current entries are still in the new ones, if not, save it into a list to be deleted.
   const domsToBeDeleted = Array.from(currentEntries).filter(
-    (currentEntry) => newEntriesIds.indexOf(currentEntry.dataset.entryId) === -1
+    (currentEntry) => newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1
   );
 
   // Delete the DOM elements that are not in the new ones.
