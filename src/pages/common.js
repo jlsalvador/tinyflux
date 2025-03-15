@@ -238,7 +238,6 @@ export async function refreshEntries() {
         message: MESSAGE_REFRESH_VIEW_ENTRIES,
       });
     } catch (err) {
-      console.log(err);
       if (err.message !== ErrorReceivingEndDoesNotExist.message) {
         // Ignore error when there is no one listening.
         throw err;
