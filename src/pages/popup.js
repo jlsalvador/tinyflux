@@ -1,7 +1,5 @@
 "use strict";
 
-//FIXME: On refresh, stay entry opened.
-
 import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
@@ -105,7 +103,8 @@ function cleanupOldEntries(newEntries) {
 
   // Check if the current entries are still in the new ones, if not, save it into a list to be deleted.
   const domsToBeDeleted = Array.from(currentEntries).filter(
-    (currentEntry) => newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1
+    (currentEntry) =>
+      newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1
   );
 
   // Delete the DOM elements that are not in the new ones.
@@ -128,11 +127,11 @@ async function addEntry(entry) {
    * @param {Entry.id} entryId
    * @returns
    */
-  async function toggleBookmark(entryId) {
+  const toggleBookmark = async function (entryId) {
     return request(`/v1/entries/${entryId}/bookmark`, {
       method: "PUT",
     });
-  }
+  };
 
   /**
    * Mark an entry as read in the Miniflux instance.
@@ -140,12 +139,12 @@ async function addEntry(entry) {
    * @param {Entry.id} entryId
    * @returns
    */
-  async function markMinifluxEntryAsRead(entryId) {
+  const markMinifluxEntryAsRead = async function (entryId) {
     return request(`/v1/entries`, {
       method: "PUT",
       body: JSON.stringify({ entry_ids: [entryId], status: "read" }),
     });
-  }
+  };
 
   /**
    * Mark an entry as read. Remove it from the view and the local storage,
@@ -154,7 +153,7 @@ async function addEntry(entry) {
    * @param {Entry.id} entryId
    * @returns
    */
-  function markEntryIdAsRead(entryId) {
+  const markEntryIdAsRead = function (entryId) {
     return Promise.all([
       markMinifluxEntryAsRead(entryId), // Mark as read to the Miniflux API
       document.getElementById(`entry-${entryId}`)?.remove(), // Remove from the view
@@ -169,12 +168,12 @@ async function addEntry(entry) {
           return entries;
         }),
     ]);
-  }
+  };
 
   /**
    * Sort the entries in the view by the published date in descending order.
    */
-  function sortEntries() {
+  const sortEntries = function () {
     const domEntries = document.querySelector(".entries");
     const entries = domEntries.getElementsByClassName("entry");
     [...entries]
@@ -184,20 +183,20 @@ async function addEntry(entry) {
           new Date(b.dataset.entryPublishedAt)
       )
       .forEach((entry) => domEntries.appendChild(entry));
-  }
+  };
 
   /**
    * @param {Entry} entry
    * @returns
    */
-  function createEntryContent(entry) {
+  const createEntryContent = function (entry) {
     const domEntryContent = document.createElement("div");
     domEntryContent.id = `entryContent-${entry.id}`;
     domEntryContent.className = "entryContent";
     domEntryContent.innerHTML = DOMPurify.sanitize(entry.content);
 
     return domEntryContent;
-  }
+  };
 
   /**
    * @param {Entry} entry
@@ -406,29 +405,37 @@ async function addEntry(entry) {
     return domEntryTitle;
   };
 
+  /**
+   * @param {string} domId Example: "entry-1234".
+   * @param {Entry} entry
+   * @returns ${HTMLDivElement}
+   */
+  const createDomEntry = async function (domId, entry) {
+    const domEntry = document.createElement("div");
+    domEntry.id = domId;
+    domEntry.dataset.entryId = entry.id;
+    domEntry.dataset.entryPublishedAt = entry.published_at;
+    domEntry.className = "entry";
+    const entryTitle = await createDomEntryTitle(entry);
+    domEntry.append(entryTitle);
+    return domEntry;
+  };
+
   const domId = `entry-${entry.id}`;
-
-  // Construct DOM Entry
-  const domEntry = document.createElement("div");
-  domEntry.id = domId;
-  domEntry.dataset.entryId = entry.id;
-  domEntry.dataset.entryPublishedAt = entry.published_at;
-  domEntry.className = "entry";
-  const entryTitle = await createDomEntryTitle(entry);
-  domEntry.append(entryTitle);
-
-  // Don't re-add the same entry. Replace the old one.
   const oldSameEntry = document.getElementById(domId);
-  if (oldSameEntry) {
-    oldSameEntry.replaceWith(domEntry);
-    return;
-  } else {
+  // Don't re-add the same entry. Replace the old one.
+  //TODO: Update DOM entry if it's updated.
+  if (!oldSameEntry) {
+    // Construct DOM Entry.
+    const domEntry = await createDomEntry(domId, entry);
+
+    // Add the new entry to the DOM.
     const domEntries = document.querySelector(".entries");
     domEntries.append(domEntry);
-  }
 
-  // Sort entries in the DOM.
-  sortEntries();
+    // Sort new entry to the DOM.
+    sortEntries();
+  }
 }
 
 /**
@@ -474,7 +481,6 @@ async function refreshViewEntries() {
 }
 
 browser.runtime.onMessage.addListener((data) => {
-  console.log(data);
   if (data.message === MESSAGE_REFRESH_VIEW_ENTRIES) {
     return browser.storage.local
       .get("entries")
