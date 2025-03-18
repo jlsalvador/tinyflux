@@ -267,7 +267,15 @@ export function refreshEntries() {
     .then((data) => data.entries)
     .then(async (entries) => {
       await browser.storage.local.set({ entries: entries });
-      await Promise.all([updateBadge(), notifyRefreshEntries()]);
+      await Promise.all([
+        updateBadge(),
+        notifyRefreshEntries(),
+        refreshAlarm(),
+      ]);
+      return entries;
+    })
+    .then((entries) => {
+      console.log(`${entries.length} entries fetched.`);
       return entries;
     })
     .catch((err) => {
