@@ -388,7 +388,7 @@ function showHelp() {
 
 Commands:
 \tbuild\tCreate browser extension packs.
-\twatch\tContinously build on each detected changes.
+\twatch\tContinuously build on each detected changes.
 
 Flags:
 \t--dev\t-d\tGenerate sourceMaps and disable minification.`);
