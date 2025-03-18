@@ -164,7 +164,7 @@ async function addEntry(entry) {
         .then(async (entries) => {
           // Remove from the local cache
           await browser.storage.local.set({ entries: entries });
-          await updateBadge(entries.length);
+          await updateBadge();
           return entries;
         }),
     ]);
@@ -467,7 +467,7 @@ async function loadCachedEntries() {
   browser.storage.local.get("entries").then(async (data) => {
     const entries = data.entries;
     await addEntries(entries);
-    await updateBadge(entries.length);
+    await updateBadge();
     return entries;
   });
 }

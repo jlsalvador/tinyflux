@@ -209,42 +209,52 @@ export async function request(
   );
 }
 
-export async function updateBadge() {
-  const entries = await browser.storage.local
+/**
+ * Refresh browser extension badge with number of unread entries.
+ *
+ * @returns {Promise<void>}
+ */
+export function updateBadge() {
+  return browser.storage.local
     .get("entries")
     .then((data) => data.entries || [])
     .then((entries) => entries.filter((entry) => !entry.feed.hide_globally))
     .then((entries) =>
       entries.filter((entry) => !entry.feed.category.hide_globally)
-    );
-  const counter = entries.length;
-  browser.action.setBadgeText({
-    text: counter > 0 ? `${counter}` : "0",
-  });
+    )
+    .then((entries) => {
+      return browser.action.setBadgeText({
+        text: String(entries.length),
+      });
+    });
 }
 
 /**
- * @returns Promise<void>
- * @throws Error
+ * Fetches entries from the Miniflux instance, saves them into browser storage,
+ * resets the alarm to wake up the background, and sends a message to the popup
+ * to refresh its view.
+ *
+ * @returns {Promise<Entry[]>}
+ * @throws {Error}
  */
-export async function refreshEntries() {
-  // import { testEntries } from "./popup.test.js";
-  // for (const entry of testEntries()) {
-  //   addEntry(entry);
-  // }
-  // return;
-
-  const notifyRefreshEntries = async () => {
-    try {
-      await browser.runtime.sendMessage({
+export function refreshEntries() {
+  /**
+   * Notify popup to refresh the entries view.
+   *
+   * @returns {Promise<void>}
+   * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
+   */
+  const notifyRefreshEntries = () => {
+    return browser.runtime
+      .sendMessage({
         message: MESSAGE_REFRESH_VIEW_ENTRIES,
+      })
+      .catch((err) => {
+        if (err.message !== ErrorReceivingEndDoesNotExist.message) {
+          // Ignore error when there is no one listening.
+          throw err;
+        }
       });
-    } catch (err) {
-      if (err.message !== ErrorReceivingEndDoesNotExist.message) {
-        // Ignore error when there is no one listening.
-        throw err;
-      }
-    }
   };
 
   return request("/v1/entries?status=unread&order=published_at&direction=desc")
@@ -282,17 +292,20 @@ export async function actionSidePanel() {
   return browser.sidebarAction.toggle();
 }
 
+/**
+ * Sets the browser extension action by the user preference.
+ */
 export async function refreshActionBehavior() {
-  // Disable current behaviour
+  // Disable the current behaviour.
   await browser.action.setPopup({ popup: "" });
   browser.action.onClicked.removeListener(actionWindow);
   browser.action.onClicked.removeListener(actionSidePanel);
-  // Work-around for Chromium
+  // Work-around for Chromium.
   if (!browser.sidebarAction) {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
   }
 
-  // Set desired behavior
+  // Set the desired behavior.
   const extensionClickBehavior = await browser.storage.local
     .get("extensionClickBehavior")
     .then((r) => r.extensionClickBehavior);
@@ -302,7 +315,7 @@ export async function refreshActionBehavior() {
       break;
 
     case "sidepanel":
-      // Work-around for Chromium
+      // Work-around for Chromium.
       if (!browser.sidebarAction) {
         chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
       } else {
