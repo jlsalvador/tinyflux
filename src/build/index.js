@@ -369,15 +369,13 @@ async function watchExtensions(dev) {
   console.time(label);
 
   const srcdir = resolve(import.meta.dirname, "..");
-  const outdir = resolve(import.meta.dirname, "../../dist");
-  const resources = resolve(outdir, "resources");
 
-  const pkg = await fs
+  await fs
     .readFile(resolve(import.meta.dirname, "../../package.json"))
     .then((content) => JSON.parse(content));
 
   await buildExtensions(dev);
-  watch(srcdir, { recursive: true }, async (evt, name) => {
+  watch(srcdir, { recursive: true }, async () => {
     await buildExtensions(dev);
   });
 

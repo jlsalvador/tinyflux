@@ -6,13 +6,12 @@ import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
 import {
-  request,
-  updateBadge,
-  refreshEntries,
-  openSettings,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
-  refreshAlarm,
+  MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_REFRESH_VIEW_ENTRIES,
+  refreshEntries,
+  request,
+  openSettings,
 } from "./common.js";
 
 /**
@@ -25,157 +24,44 @@ import {
  */
 
 /**
- * Marks all showed entries as read in the Miniflux instance.
- *
- * @returns
- */
-async function markMinifluxEntriesAsRead() {
-  const entryIds = [];
-  const domEntries = document.querySelector(".entries");
-  const entries = domEntries.getElementsByClassName("entry");
-  for (const entry of entries) {
-    entryIds.push(Number(entry.dataset.entryId));
-  }
-
-  if (entryIds.length === 0) {
-    return;
-  }
-
-  return request(`/v1/entries`, {
-    method: "PUT",
-    body: JSON.stringify({
-      entry_ids: entryIds,
-      status: "read",
-    }),
-  });
-}
-
-/**
- * Open the `url` in a new tab and close the popup extension window.
- *
- * @param {string} url
- * @returns
- */
-async function openLink(url) {
-  const active = true;
-  const result = browser.tabs.create({
-    active: active,
-    url: url,
-  });
-
-  const style =
-    new URLSearchParams(window.location.search).get("style") || "popup";
-  if (style === "popup") {
-    window.close();
-  }
-
-  if (!active) {
-    return result.then((tab) => browser.tabs.discard(tab.id));
-  }
-  return result;
-}
-
-/**
  * Add multiples entries to the DOM list of entries.
  *
  * @param {Entry[]} entries
+ * @returns {Promise<void>}
  */
-async function addEntries(entries) {
-  if (!entries || !entries.length === 0) {
+const addDOMEntries = (entries) => {
+  if (!entries || !entries?.length === 0) {
     return Promise.resolve();
   }
-
-  return Promise.all(
-    entries
-      .filter((entry) => !entry.feed.hide_globally)
-      .filter((entry) => !entry.feed.category.hide_globally)
-      .map((entry) => addEntry(entry))
-  );
-}
-
-/**
- * @param {Entry[]} newEntries
- */
-function cleanupOldEntries(newEntries) {
-  const domEntries = document.querySelector(".entries");
-  const currentEntries = domEntries.getElementsByClassName("entry");
-
-  // We only need the new entries IDs to compare with the current ones.
-  const newEntriesIds = newEntries.map((newEntry) => newEntry.id);
-
-  // Check if the current entries are still in the new ones, if not, save it into a list to be deleted.
-  const domsToBeDeleted = Array.from(currentEntries).filter(
-    (currentEntry) =>
-      newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1
-  );
-
-  // Delete the DOM elements that are not in the new ones.
-  domsToBeDeleted.forEach((domToBeDeleted) => {
-    domToBeDeleted.remove();
-  });
-
-  return Promise.resolve();
-}
+  return entries
+    .filter((entry) => !entry.feed.hide_globally)
+    .filter((entry) => !entry.feed.category.hide_globally)
+    .map((entry) => addDOMEntry(entry));
+};
 
 /**
  * Adds a new entry to the DOM list of entries.
  *
  * @param {Entry} entry
+ * @returns {Promise<void>}
  */
-async function addEntry(entry) {
+const addDOMEntry = async (entry) => {
   /**
    * Toggle the bookmark of an entry in the Miniflux instance.
    *
    * @param {Entry.id} entryId
    * @returns
    */
-  const toggleBookmark = async function (entryId) {
+  const toggleBookmark = async (entryId) => {
     return request(`/v1/entries/${entryId}/bookmark`, {
       method: "PUT",
     });
   };
 
   /**
-   * Mark an entry as read in the Miniflux instance.
-   *
-   * @param {Entry.id} entryId
-   * @returns
-   */
-  const markMinifluxEntryAsRead = async function (entryId) {
-    return request(`/v1/entries`, {
-      method: "PUT",
-      body: JSON.stringify({ entry_ids: [entryId], status: "read" }),
-    });
-  };
-
-  /**
-   * Mark an entry as read. Remove it from the view and the local storage,
-   * and mark it as read in the Miniflux instance.
-   *
-   * @param {Entry.id} entryId
-   * @returns
-   */
-  const markEntryIdAsRead = function (entryId) {
-    return Promise.all([
-      markMinifluxEntryAsRead(entryId), // Mark as read to the Miniflux API
-      document.getElementById(`entry-${entryId}`)?.remove(), // Remove from the view
-      browser.storage.local
-        .get("entries")
-        .then((data) => data.entries)
-        .then((entries) => entries.filter((e) => e.id != entryId))
-        .then(async (entries) => {
-          // Remove from the local cache
-          await browser.storage.local.set({ entries: entries });
-          await updateBadge();
-          return entries;
-        }),
-    ]);
-  };
-
-  /**
    * Sort the entries in the view by the published date in descending order.
    */
-  const sortEntries = function () {
+  const sortDOMEntries = () => {
     const domEntries = document.querySelector(".entries");
     const entries = domEntries.getElementsByClassName("entry");
     [...entries]
@@ -191,7 +77,7 @@ async function addEntry(entry) {
    * @param {Entry} entry
    * @returns
    */
-  const createEntryContent = function (entry) {
+  const createDOMEntryContent = (entry) => {
     const domEntryContent = document.createElement("div");
     domEntryContent.id = `entryContent-${entry.id}`;
     domEntryContent.className = "entryContent";
@@ -204,7 +90,32 @@ async function addEntry(entry) {
    * @param {Entry} entry
    * @returns
    */
-  const createDomEntryTitle = async function (entry) {
+  const createDOMEntryTitle = async (entry) => {
+    /**
+     * Open the `url` in a new tab and close the popup extension window.
+     *
+     * @param {string} url
+     * @returns
+     */
+    async function openLink(url) {
+      const active = true;
+      const result = browser.tabs.create({
+        active: active,
+        url: url,
+      });
+
+      const style =
+        new URLSearchParams(window.location.search).get("style") || "popup";
+      if (style === "popup") {
+        window.close();
+      }
+
+      if (!active) {
+        return result.then((tab) => browser.tabs.discard(tab.id));
+      }
+      return result;
+    }
+
     const domEntryTitleRowColumnEntryTitleText = document.createElement("div");
     domEntryTitleRowColumnEntryTitleText.className = "entryTitleText";
     domEntryTitleRowColumnEntryTitleText.title = "Open in new tab"; //TODO i18n
@@ -224,7 +135,10 @@ async function addEntry(entry) {
           )
         );
       if (markEntryAsReadWhenOpenedAsTab) {
-        await markEntryIdAsRead(entry.id);
+        await browser.runtime.sendMessage({
+          action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+          entryIds: [entry.id],
+        });
       }
 
       return openLink(entry.url);
@@ -347,7 +261,10 @@ async function addEntry(entry) {
     domBtnMarkAsRead.className = "entryButton";
     domBtnMarkAsRead.append(iconMarkAsRead);
     domBtnMarkAsRead.addEventListener("click", () => {
-      return markEntryIdAsRead(entry.id);
+      return browser.runtime.sendMessage({
+        action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+        entryIds: [entry.id],
+      });
     });
 
     const iconUncollapse = document.createElement("span");
@@ -376,7 +293,7 @@ async function addEntry(entry) {
         if (domEntry === null) {
           return;
         }
-        domEntry.append(createEntryContent(entry));
+        domEntry.append(createDOMEntryContent(entry));
       } else {
         domEntryTitle.classList.remove("uncollapsed");
         domBtnToggleContent.append(iconUncollapse);
@@ -412,13 +329,13 @@ async function addEntry(entry) {
    * @param {Entry} entry
    * @returns ${HTMLDivElement}
    */
-  const createDomEntry = async function (domId, entry) {
+  const createDOMEntry = async (domId, entry) => {
     const domEntry = document.createElement("div");
     domEntry.id = domId;
     domEntry.dataset.entryId = entry.id;
     domEntry.dataset.entryPublishedAt = entry.published_at;
     domEntry.className = "entry";
-    const entryTitle = await createDomEntryTitle(entry);
+    const entryTitle = await createDOMEntryTitle(entry);
     domEntry.append(entryTitle);
     return domEntry;
   };
@@ -429,30 +346,31 @@ async function addEntry(entry) {
   //TODO: Update DOM entry if it's updated.
   if (!oldSameEntry) {
     // Construct DOM Entry.
-    const domEntry = await createDomEntry(domId, entry);
+    const domEntry = await createDOMEntry(domId, entry);
 
     // Add the new entry to the DOM.
     const domEntries = document.querySelector(".entries");
     domEntries.append(domEntry);
 
     // Sort new entry to the DOM.
-    sortEntries();
+    sortDOMEntries();
   }
-}
+};
 
 /**
  * Fetch `Icon` from `browser.storage.local` or from the Miniflux API.
  *
  * @param {number} iconID
+ * @returns {Promise<Icon>}
  */
-async function getIcon(iconID) {
+const getIcon = async (iconID) => {
   const id = `icon${iconID}`;
   const icon = await browser.storage.local.get(id).then((data) => data[id]);
   if (icon) {
     return icon;
   }
 
-  return await request(`/v1/icons/${iconID}`).then(async (response) => {
+  return request(`/v1/icons/${iconID}`).then(async (response) => {
     if (response.status !== 200) {
       console.error(response);
       return {};
@@ -463,39 +381,60 @@ async function getIcon(iconID) {
     await browser.storage.local.set(obj);
     return result;
   });
-}
+};
 
-async function loadCachedEntries() {
-  browser.storage.local.get("entries").then(async (data) => {
-    const entries = data.entries;
-    await addEntries(entries);
-    await updateBadge();
-    return entries;
-  });
-}
+/**
+ * Load entries from cache, cleanup old entries from the DOM, and create the new
+ * ones into the DOM.
+ *
+ * @returns {Promise<void>}
+ */
+const handleRefreshViewEntries = () => {
+  /**
+   * Remove all the entries from the DOM that they are not in `newEntries`.
+   *
+   * @param {Entry[]} newEntries
+   * @returns {Promise<void>}
+   */
+  const cleanupOldDOMEntries = (newEntries) => {
+    const domEntries = document.querySelector(".entries");
+    const currentEntries = domEntries.getElementsByClassName("entry");
 
-async function refreshViewEntries() {
-  return refreshEntries()
+    // We only need the new entries IDs to compare with the current ones.
+    const newEntriesIds = newEntries.map((newEntry) => newEntry.id);
+
+    // Check if the current entries are still in the new ones, if not, save it into a list to be deleted.
+    const domsToBeDeleted = Array.from(currentEntries).filter(
+      (currentEntry) =>
+        newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1
+    );
+
+    // Delete the DOM elements that are not in the new ones.
+    domsToBeDeleted.forEach((domToBeDeleted) => {
+      domToBeDeleted.remove();
+    });
+
+    return Promise.resolve();
+  };
+
+  return browser.storage.local
+    .get("entries")
+    .then((r) => r.entries)
     .then((entries) =>
-      Promise.all([cleanupOldEntries(entries), addEntries(entries)])
-    )
-    .then(refreshAlarm);
-}
+      Promise.all([cleanupOldDOMEntries(entries), addDOMEntries(entries)])
+    );
+};
 
-browser.runtime.onMessage.addListener((data) => {
-  if (data.message === MESSAGE_REFRESH_VIEW_ENTRIES) {
-    return browser.storage.local
-      .get("entries")
-      .then((r) => r.entries)
-      .then((entries) =>
-        Promise.all([cleanupOldEntries(entries), addEntries(entries)])
-      );
+browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.action === MESSAGE_REFRESH_VIEW_ENTRIES) {
+    handleRefreshViewEntries().finally(sendResponse);
+    return true;
   } else {
     return false;
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const style =
     new URLSearchParams(window.location.search).get("style") || "popup";
   document.body.classList.add(style);
@@ -534,10 +473,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnMarkEntriesAsRead = document.getElementById("btnMarkEntriesAsRead");
   btnMarkEntriesAsRead?.addEventListener("click", async () => {
     /**
+     * Marks all showed entries as read in the Miniflux instance.
+     *
+     * @returns {Promise<void>}
+     */
+    const markMinifluxEntriesAsRead = () => {
+      const entryIds = [];
+
+      // Fetch all entry IDs from DOM entries.
+      const domEntries = document.querySelector(".entries");
+      const entries = domEntries.getElementsByClassName("entry");
+      for (const entry of entries) {
+        entryIds.push(Number(entry.dataset.entryId));
+      }
+
+      if (entryIds.length === 0) {
+        return Promise.resolve();
+      }
+      return browser.runtime.sendMessage({
+        action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+        entryIds: entryIds,
+      });
+    };
+
+    /**
      * @description How many milliseconds should pass before the button is reset to its initial state.
      * @type {number} The timeout in milliseconds.
      */
     const MARK_ENTRIES_AS_READ_TIMEOUT_IN_MS = 5000;
+
     /**
      * @description Sets the button to its initial state after this amount of time.
      * @type {number} The timeout in milliseconds.
@@ -589,16 +553,6 @@ document.addEventListener("DOMContentLoaded", () => {
         domIcon.classList.remove("icon-are-you-sure");
         domIcon.classList.add("icon-loading");
         await markMinifluxEntriesAsRead();
-
-        // Remove entries from cache
-        await browser.storage.local.set({ entries: [] });
-
-        // Remove entries from view
-        const domEntries = document.querySelector(".entries");
-        const entries = domEntries.getElementsByClassName("entry");
-        while (entries.length > 0) {
-          entries[0].remove();
-        }
       } finally {
         setBtnMarkEntriesAsReadInitialState(btnMarkEntriesAsRead, domIcon);
       }
@@ -613,7 +567,9 @@ document.addEventListener("DOMContentLoaded", () => {
       domIcon?.classList.remove("icon-refresh");
       domIcon?.classList.add("icon-loading");
 
-      return await refreshViewEntries();
+      await refreshEntries();
+      await handleRefreshViewEntries();
+      return;
     } finally {
       btnRefresh.disabled = false;
       domIcon?.classList.remove("icon-loading");
@@ -621,6 +577,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Load cached entries on load
-  loadCachedEntries();
+  // Create entries in the DOM from cached entries.
+  await handleRefreshViewEntries();
 });

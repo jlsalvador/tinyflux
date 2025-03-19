@@ -134,6 +134,7 @@ export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 export const ALARM_REFRESH = "ALARM_REFRESH";
 
 export const MESSAGE_REFRESH_VIEW_ENTRIES = "refresh_view_entries";
+export const MESSAGE_MARK_ENTRY_IDS_AS_READ = "mark_entry_ids_as_read";
 
 /**
  * @typedef {Error}
@@ -152,13 +153,11 @@ export const ErrorReceivingEndDoesNotExist = new Error(
 export function openSettings() {
   browser.runtime.openOptionsPage();
 
-  try {
-    const style =
-      new URLSearchParams(window.location.search).get("style") || "popup";
-    if (style === "popup") {
-      window.close();
-    }
-  } catch {}
+  const style =
+    new URLSearchParams(window.location.search).get("style") || "popup";
+  if (style === "popup") {
+    window.close();
+  }
 }
 
 /**
@@ -170,7 +169,7 @@ export function openSettings() {
  * @param {string} path Example: "/v1/me/"
  * @param {{ url: string; token: string; method: "GET"|"HEAD"|"POST"|"PUT"|"DELETE"|"CONNECT"|"OPTIONS"|"TRACE"|"PATCH"; body: undefined; contentType: string; }} [options]
  * @returns
- * @throws {ErrorInvalidUrlOrToken}
+ * @throws {ErrorInvalidUrlOrToken|AbortError|TypeError}
  */
 export async function request(
   path,
@@ -232,6 +231,25 @@ export function updateBadge() {
 }
 
 /**
+ * Notify the popup that it should refresh its entries list.
+ *
+ * @returns {Promise<void>}
+ * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
+ */
+export const notifyRefreshEntries = () => {
+  return browser.runtime
+    .sendMessage({
+      action: MESSAGE_REFRESH_VIEW_ENTRIES,
+    })
+    .catch((err) => {
+      if (err.message !== ErrorReceivingEndDoesNotExist.message) {
+        // Ignore error when there is no one listening.
+        throw err;
+      }
+    });
+};
+
+/**
  * Fetches entries from the Miniflux instance, saves them into browser storage,
  * resets the alarm to wake up the background, and sends a message to the popup
  * to refresh its view.
@@ -246,18 +264,6 @@ export function refreshEntries() {
    * @returns {Promise<void>}
    * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
    */
-  const notifyRefreshEntries = () => {
-    return browser.runtime
-      .sendMessage({
-        message: MESSAGE_REFRESH_VIEW_ENTRIES,
-      })
-      .catch((err) => {
-        if (err.message !== ErrorReceivingEndDoesNotExist.message) {
-          // Ignore error when there is no one listening.
-          throw err;
-        }
-      });
-  };
 
   return request("/v1/entries?status=unread&order=published_at&direction=desc")
     .then(async (response) => {
