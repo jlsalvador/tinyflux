@@ -1,3 +1,5 @@
+/* global test, expect */
+
 import { TimeAgo, Style } from "./timeago.js";
 
 test('', () => {

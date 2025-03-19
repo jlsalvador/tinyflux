@@ -1,3 +1,5 @@
+/* global structuredClone */
+
 /**
  * @typedef {import('./popup.js').Entry} Entry
  * @typedef {import('./popup.js').Icon} Icon

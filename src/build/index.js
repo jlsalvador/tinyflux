@@ -1,3 +1,5 @@
+/* global console, process */
+
 import fs from "node:fs/promises";
 import { basename, dirname, resolve, relative, join } from "node:path";
 import AdmZip from "adm-zip";

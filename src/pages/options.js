@@ -1,3 +1,5 @@
+/* global document */
+
 import browser from "webextension-polyfill";
 import {
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,

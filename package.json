@@ -26,16 +26,19 @@
   "type": "module",
   "scripts": {
     "build": "node src/build build",
-    "watch": "node src/build watch --dev"
+    "watch": "node src/build watch --dev",
+    "lint": "npx eslint --fix eslint.config.js src/**/*.js"
   },
   "devDependencies": {
     "@chialab/esbuild-plugin-html": "https://gitpkg.vercel.app/jlsalvador/rna/packages/esbuild-plugin-html?publish",
+    "@eslint/js": "^9.22.0",
     "adm-zip": "^0.5.16",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "dompurify": "^3.2.4",
     "esbuild": "^0.25.1",
     "esbuild-sass-plugin": "^3.3.1",
+    "eslint": "^9.22.0",
     "globals": "^16.0.0",
     "htmlnano": "^2.1.1",
     "node-watch": "^0.7.4",

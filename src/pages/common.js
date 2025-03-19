@@ -1,3 +1,5 @@
+/* global window, URLSearchParams, fetch, Request, URL, Headers, console, chrome */
+
 "use strict";
 
 import browser from "webextension-polyfill";

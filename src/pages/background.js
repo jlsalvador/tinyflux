@@ -1,3 +1,5 @@
+/* global console */
+
 "use strict";
 
 import browser from "webextension-polyfill";

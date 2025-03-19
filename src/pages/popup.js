@@ -1,3 +1,5 @@
+/* global document, URLSearchParams, window, console, chrome, clearTimeout */
+
 "use strict";
 
 import browser from "webextension-polyfill";
