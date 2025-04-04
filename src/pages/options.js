@@ -2,14 +2,17 @@
 
 import browser from "webextension-polyfill";
 import {
-  DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
+  DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_PERIOD_REFRESH,
+  DEFAULT_THEME,
   DEFAULT_TOKEN,
   DEFAULT_URL,
+  notifyRefreshTheme,
   refreshActionBehavior,
-  refreshEntries,
   refreshAlarm,
+  refreshEntries,
+  refreshTheme,
   request,
 } from "./common.js";
 
@@ -27,16 +30,23 @@ async function saveOptions(e) {
   const markEntryAsReadWhenOpenedAsTab = document.querySelector(
     "#checkMarkEntryAsReadWhenOpenedAsTab"
   ).checked;
+  const theme = document.querySelector("#selectTheme").value;
 
-  const [oldUrl, oldToken, oldPeriodInMinutes, oldExtensionClickBehavior] =
-    await browser.storage.local
-      .get(["url", "token", "periodInMinutes", "extensionClickBehavior"])
-      .then((r) => [
-        r.url,
-        r.token,
-        r.periodInMinutes,
-        r.extensionClickBehavior,
-      ]);
+  const [
+    oldUrl,
+    oldToken,
+    oldPeriodInMinutes,
+    oldExtensionClickBehavior,
+    oldTheme,
+  ] = await browser.storage.local
+    .get(["url", "token", "periodInMinutes", "extensionClickBehavior", "theme"])
+    .then((r) => [
+      r.url,
+      r.token,
+      r.periodInMinutes,
+      r.extensionClickBehavior,
+      r.theme,
+    ]);
 
   await browser.storage.local.set({
     url: url,
@@ -44,6 +54,7 @@ async function saveOptions(e) {
     periodInMinutes: periodInMinutes,
     extensionClickBehavior: extensionClickBehavior,
     markEntryAsReadWhenOpenedAsTab: markEntryAsReadWhenOpenedAsTab,
+    theme: theme,
   });
 
   if (url != oldUrl || token != oldToken) {
@@ -57,6 +68,11 @@ async function saveOptions(e) {
   if (periodInMinutes != oldPeriodInMinutes) {
     await refreshAlarm();
   }
+
+  if (theme != oldTheme) {
+    await refreshTheme();
+    await notifyRefreshTheme();
+  }
 }
 
 async function restoreOptions() {
@@ -66,6 +82,7 @@ async function restoreOptions() {
     "periodInMinutes",
     "extensionClickBehavior",
     "markEntryAsReadWhenOpenedAsTab",
+    "theme",
   ]);
 
   document.querySelector("#inputMinifluxUrl").value = res.url || DEFAULT_URL;
@@ -82,6 +99,8 @@ async function restoreOptions() {
   document.querySelector("#checkMarkEntryAsReadWhenOpenedAsTab").checked =
     res.markEntryAsReadWhenOpenedAsTab ||
     DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
+
+  document.querySelector("#selectTheme").value = res.theme || DEFAULT_THEME;
 }
 
 async function testMinifluxApi() {
@@ -122,15 +141,15 @@ async function clearIconsCache() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  restoreOptions();
+document.addEventListener("DOMContentLoaded", async () => {
+  await Promise.all([refreshTheme(), restoreOptions()]);
 
   const domForm = document.querySelector("form");
-  domForm.addEventListener("submit", saveOptions);
+  domForm?.addEventListener("submit", saveOptions);
 
   const btnTest = document.getElementById("btnTest");
-  btnTest.addEventListener("click", testMinifluxApi);
+  btnTest?.addEventListener("click", testMinifluxApi);
 
   const btnClearIconsCache = document.getElementById("btnCleanIconsCache");
-  btnClearIconsCache.addEventListener("click", clearIconsCache);
+  btnClearIconsCache?.addEventListener("click", clearIconsCache);
 });

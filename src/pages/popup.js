@@ -2,14 +2,18 @@
 
 "use strict";
 
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
 import {
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
+  MESSAGE_REFRESH_THEME,
   MESSAGE_REFRESH_VIEW_ENTRIES,
+  notifyRefreshTheme,
   refreshEntries,
+  refreshTheme,
   request,
   openSettings,
 } from "./common.js";
@@ -429,6 +433,9 @@ browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === MESSAGE_REFRESH_VIEW_ENTRIES) {
     handleRefreshViewEntries().finally(sendResponse);
     return true;
+  } else if (message.action === MESSAGE_REFRESH_THEME) {
+    refreshTheme().finally(sendResponse);
+    return true;
   } else {
     return false;
   }
@@ -438,6 +445,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   const style =
     new URLSearchParams(window.location.search).get("style") || "popup";
   document.body.classList.add(style);
+
+  await refreshTheme();
+
+  const btnToggleTheme = document.getElementById("btnToggleTheme");
+  btnToggleTheme?.addEventListener("click", async () => {
+    let html = document.documentElement;
+    let currentTheme = html.getAttribute("data-bs-theme");
+    let newTheme = currentTheme === "dark" ? "light" : "dark";
+    html.setAttribute("data-bs-theme", newTheme);
+    await browser.storage.local.set({ theme: newTheme });
+    await notifyRefreshTheme();
+  });
 
   const btnOpenWindow = document.getElementById("btnOpenWindow");
   btnOpenWindow?.addEventListener("click", async () => {

@@ -32,23 +32,44 @@
           <span class="icon-tinyflux"></span> Tinyflux
         </span>
         <div class="navbar-nav">
-          <button
-            id="btnOpenSidePanel"
-            type="button"
-            title="Open in side panel"
-          >
-            <span class="icon-open-sidebar"></span>
-          </button>
-          <button
-            id="btnOpenWindow"
-            type="button"
-            title="Open in window"
-          >
-            <span class="icon-open-window"></span>
-          </button>
-          <button type="button" title="Settings" id="btnSettings">
-            <span class="icon-settings"></span>
-          </button>
+          <div class="dropdown">
+            <button
+              class="dropdown-toggle"
+              type="button"
+              id="dropdownMenuButton"
+              title="Menu"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <span class="icon-menu"></span>
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="dropdownMenuButton"
+            >
+              <li>
+                <a class="dropdown-item" href="#" id="btnOpenSidePanel">
+                  <span class="icon-open-sidebar"></span> Open in side panel
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" id="btnOpenWindow">
+                  <span class="icon-open-window"></span> Open in window
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" id="btnToggleTheme">
+                  <span class="icon-theme-toggle"></span> Toggle light/dark mode
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" id="btnSettings">
+                  <span class="icon-settings"></span> Open Settings
+                </a>
+              </li>
+            </ul>
+          </div>
+
           <button
             type="button"
             title="Mark entries as read"
@@ -62,10 +83,11 @@
         </div>
       </div>
     </nav>
+
     <div class="entries">
       <p id="isEmpty" class="d-none">
         You have read everything!
-        <span class="icon-no-more-entries" />
+        <span class="icon-no-more-entries"></span>
       </p>
     </div>
   </body>

@@ -106,6 +106,16 @@ span {
     @extend .bi;
     @extend .bi-list-check;
   }
+
+  &.icon-theme-toggle {
+    @extend .bi;
+    @extend .bi-circle-half;
+  }
+
+  &.icon-menu {
+    @extend .bi;
+    @extend .bi-list;
+  }
 }
 
 body > nav {

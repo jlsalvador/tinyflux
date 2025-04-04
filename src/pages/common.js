@@ -1,4 +1,4 @@
-/* global window, URLSearchParams, fetch, Request, URL, Headers, console, chrome */
+/* global document, window, URLSearchParams, fetch, Request, URL, Headers, console, chrome */
 
 "use strict";
 
@@ -130,9 +130,11 @@ export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
+export const DEFAULT_THEME = "light";
 
 export const ALARM_REFRESH = "ALARM_REFRESH";
 
+export const MESSAGE_REFRESH_THEME = "refresh_theme";
 export const MESSAGE_REFRESH_VIEW_ENTRIES = "refresh_view_entries";
 export const MESSAGE_MARK_ENTRY_IDS_AS_READ = "mark_entry_ids_as_read";
 
@@ -358,3 +360,29 @@ export async function refreshAlarm() {
     periodInMinutes: periodInMinutes,
   });
 }
+
+export async function refreshTheme() {
+  const savedTheme =
+    (await browser.storage.local.get("theme").then((data) => data.theme)) ||
+    "light";
+  document.documentElement.setAttribute("data-bs-theme", savedTheme);
+}
+
+/**
+ * Notify the popup that it should refresh its theme mode.
+ *
+ * @returns {Promise<void>}
+ * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
+ */
+export async function notifyRefreshTheme() {
+  return browser.runtime
+    .sendMessage({
+      action: MESSAGE_REFRESH_THEME,
+    })
+    .catch((err) => {
+      if (err.message !== ErrorReceivingEndDoesNotExist.message) {
+        // Ignore error when there is no one listening.
+        throw err;
+      }
+    });
+};
