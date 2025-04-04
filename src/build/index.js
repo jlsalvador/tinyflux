@@ -198,7 +198,12 @@ async function buildPages(label, dev, srcdir, resdir) {
       chunkNames: "[ext]/[name]-[hash]",
       entryNames: "[name]",
       treeShaking: true,
-      plugins: [htmlPlugin({ generateIcons: false }), sassPlugin()],
+      plugins: [
+        htmlPlugin({ generateIcons: false }),
+        sassPlugin({
+          silenceDeprecations: ["color-functions", "global-builtin", "import"],
+        }),
+      ],
     }),
   ]);
 
