@@ -113,9 +113,10 @@ body > nav {
   @extend .shadow-sm;
   @extend .navbar;
   @extend .navbar-expand;
-  @extend .navbar-light;
-  @extend .bg-light;
   @extend .sticky-top;
+
+  background-color: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
 
   & .navbar-nav {
     @extend .justify-content-end;
@@ -185,7 +186,9 @@ body > nav {
         @extend .shadow-sm;
 
         z-index: 1040; // Fix sticky over Card.Body
-        @extend .bg-light; // By default, transparent. Fix sticky over Card.Body
+        background-color: var(
+          --bs-body-bg
+        ); // By default, transparent. Fix sticky over Card.Body
       }
 
       .entryTitleText {
