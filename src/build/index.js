@@ -20,7 +20,7 @@ async function buildAssets(label, srcdir, resdir) {
     for (const size of [16, 32, 48, 196]) {
       const output = resolve(
         resdir,
-        `pages/assets/icon-${variant}-${size}x${size}.png`
+        `pages/assets/icon-${variant}-${size}x${size}.png`,
       );
       await sharp(src).resize(size, size).toFile(output);
     }
@@ -94,7 +94,7 @@ async function buildManifests(label, pkg, srcdir, resdir) {
   const toTitleCase = function (str) {
     return str.replace(
       /\w\S*/g,
-      (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
+      (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase(),
     );
   };
 
@@ -147,11 +147,11 @@ async function buildManifests(label, pkg, srcdir, resdir) {
   await Promise.all([
     fs.writeFile(
       outChromium,
-      JSON.stringify({ ...jsonCommon, ...jsonChromium }, null, 2)
+      JSON.stringify({ ...jsonCommon, ...jsonChromium }, null, 2),
     ),
     fs.writeFile(
       outFirefox,
-      JSON.stringify({ ...jsonCommon, ...jsonFirefox }, null, 2)
+      JSON.stringify({ ...jsonCommon, ...jsonFirefox }, null, 2),
     ),
   ]);
 
@@ -170,7 +170,7 @@ async function buildPages(label, dev, srcdir, resdir) {
 
   const outdir = resolve(resdir, "pages/");
   const entryPoints = ["pages/options.html", "pages/popup.html"].map((e) =>
-    resolve(srcdir, e)
+    resolve(srcdir, e),
   );
 
   const result = await Promise.all([
@@ -265,7 +265,7 @@ async function buildPack(label, pkg, resdir, outdir) {
     const copyResourcesIntoTemporalDirectory = async function (
       label,
       tdir,
-      files
+      files,
     ) {
       console.time(label);
 
@@ -296,12 +296,12 @@ async function buildPack(label, pkg, resdir, outdir) {
     await copyResourcesIntoTemporalDirectory(
       `${label}[cp_resources]`,
       decompressDir,
-      files
+      files,
     );
     await compressDirectory(
       `${label}[compress]{${decompressDir}}`,
       output,
-      decompressDir
+      decompressDir,
     );
 
     console.timeEnd(label);
@@ -315,7 +315,7 @@ async function buildPack(label, pkg, resdir, outdir) {
       [
         ...filesCommon.files,
         { src: "manifests/chromium.json", dst: "manifest.json" },
-      ]
+      ],
     ),
     packFor(
       label,
@@ -324,7 +324,7 @@ async function buildPack(label, pkg, resdir, outdir) {
       [
         ...filesCommon.files,
         { src: "manifests/firefox.json", dst: "manifest.json" },
-      ]
+      ],
     ),
   ]);
 

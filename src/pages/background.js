@@ -48,10 +48,7 @@ const markEntryIdAsRead = async (entryIds) => {
     .then((entries) => entries.filter((e) => entryIds.indexOf(e.id) === -1))
     .then(async (entries) => {
       await browser.storage.local.set({ entries: entries }); // Remove entries from the local cache.
-      await Promise.all([
-        notifyRefreshEntries(),
-        updateBadge(),
-      ]);
+      await Promise.all([notifyRefreshEntries(), updateBadge()]);
       return entries;
     });
 };

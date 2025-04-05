@@ -22,13 +22,13 @@ async function saveOptions(e) {
   const url = document.querySelector("#inputMinifluxUrl").value;
   const token = document.querySelector("#inputMinifluxToken").value;
   const periodInMinutes = document.querySelector(
-    "#inputMinifluxPeriodInMinutes"
+    "#inputMinifluxPeriodInMinutes",
   ).valueAsNumber;
   const extensionClickBehavior = document.querySelector(
-    "#selectExtensionClickBehavior"
+    "#selectExtensionClickBehavior",
   ).value;
   const markEntryAsReadWhenOpenedAsTab = document.querySelector(
-    "#checkMarkEntryAsReadWhenOpenedAsTab"
+    "#checkMarkEntryAsReadWhenOpenedAsTab",
   ).checked;
   const theme = document.querySelector("#selectTheme").value;
 

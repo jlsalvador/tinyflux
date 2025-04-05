@@ -72,7 +72,7 @@ const addDOMEntry = async (entry) => {
       .sort(
         (a, b) =>
           new Date(a.dataset.entryPublishedAt) <
-          new Date(b.dataset.entryPublishedAt)
+          new Date(b.dataset.entryPublishedAt),
       )
       .forEach((entry) => domEntries.appendChild(entry));
   };
@@ -135,8 +135,8 @@ const addDOMEntry = async (entry) => {
         .then((r) =>
           Boolean(
             r.markEntryAsReadWhenOpenedAsTab ||
-              DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB
-          )
+              DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+          ),
         );
       if (markEntryAsReadWhenOpenedAsTab) {
         await browser.runtime.sendMessage({
@@ -169,10 +169,10 @@ const addDOMEntry = async (entry) => {
     domEntryTitleFeedRowColSpanFeedInfo.className = "entryTitleFeedInfo";
     domEntryTitleFeedRowColSpanFeedInfo.title = entry.feed.title;
     domEntryTitleFeedRowColSpanFeedInfo.append(
-      domEntryTitleFeedRowColSpanFeedInfoFavIcon
+      domEntryTitleFeedRowColSpanFeedInfoFavIcon,
     );
     domEntryTitleFeedRowColSpanFeedInfo.append(
-      domEntryTitleFeedRowColSpanFeedInfoTitle
+      domEntryTitleFeedRowColSpanFeedInfoTitle,
     );
     domEntryTitleFeedRowColSpanFeedInfo.addEventListener("click", () => {
       return openLink(entry.feed.site_url);
@@ -188,14 +188,14 @@ const addDOMEntry = async (entry) => {
       document.createElement("span");
     domEntryTitleFeedRowColSpanFeedPublished.className = "entryTitleFeedInfo";
     domEntryTitleFeedRowColSpanFeedPublished.title = `Published ${new Date(
-      entry.published_at
+      entry.published_at,
     ).toLocaleString(undefined, {
       dateStyle: "full",
       timeStyle: "long",
     })}`; //TODO i18n
     domEntryTitleFeedRowColSpanFeedPublished.append(iconCalendar);
     domEntryTitleFeedRowColSpanFeedPublished.append(
-      ` ${TimeAgo(entry.published_at, Style.ExtremeNarrow)}`
+      ` ${TimeAgo(entry.published_at, Style.ExtremeNarrow)}`,
     );
 
     const iconClock = document.createElement("span");
@@ -209,13 +209,13 @@ const addDOMEntry = async (entry) => {
     } to read`; //TODO i18n
     domEntryTitleFeedRowColSpanFeedReadingTime.append(iconClock);
     domEntryTitleFeedRowColSpanFeedReadingTime.append(
-      ` ${entry.reading_time}m`
+      ` ${entry.reading_time}m`,
     ); //TODO i18n
 
     const domEntryTitleFeedRowStats = document.createElement("div");
     domEntryTitleFeedRowStats.append(domEntryTitleFeedRowColSpanFeedPublished);
     domEntryTitleFeedRowStats.append(
-      domEntryTitleFeedRowColSpanFeedReadingTime
+      domEntryTitleFeedRowColSpanFeedReadingTime,
     );
 
     const iconBookmark = document.createElement("span");
@@ -241,7 +241,7 @@ const addDOMEntry = async (entry) => {
                 e.starred = !isBookmarked;
               }
               return e;
-            })
+            }),
           )
           .then((entries) => {
             return browser.storage.local.set({ entries: entries });
@@ -283,7 +283,7 @@ const addDOMEntry = async (entry) => {
     domBtnToggleContent.className = "entryButton";
     domBtnToggleContent.addEventListener("click", () => {
       const domEntryContent = document.getElementById(
-        `entryContent-${entry.id}`
+        `entryContent-${entry.id}`,
       );
       const domEntryTitle = document.getElementById(`entryTitle-${entry.id}`);
 
@@ -410,7 +410,7 @@ const handleRefreshViewEntries = () => {
     // Check if the current entries are still in the new ones, if not, save it into a list to be deleted.
     const domsToBeDeleted = Array.from(currentEntries).filter(
       (currentEntry) =>
-        newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1
+        newEntriesIds.indexOf(Number(currentEntry.dataset.entryId)) === -1,
     );
 
     // Delete the DOM elements that are not in the new ones.
@@ -425,7 +425,7 @@ const handleRefreshViewEntries = () => {
     .get("entries")
     .then((r) => r.entries)
     .then((entries) =>
-      Promise.all([cleanupOldDOMEntries(entries), addDOMEntries(entries)])
+      Promise.all([cleanupOldDOMEntries(entries), addDOMEntries(entries)]),
     );
 };
 
@@ -532,7 +532,7 @@ document.addEventListener("DOMContentLoaded", async () => {
      */
     const setBtnMarkEntriesAsReadConfirmation = (
       btnMarkEntriesAsRead,
-      domIcon
+      domIcon,
     ) => {
       domIcon.classList.remove("icon-mark-entries-as-read");
       domIcon.classList.add("icon-are-you-sure");
@@ -545,7 +545,7 @@ document.addEventListener("DOMContentLoaded", async () => {
      */
     const setBtnMarkEntriesAsReadInitialState = (
       btnMarkEntriesAsRead,
-      domIcon
+      domIcon,
     ) => {
       domIcon.classList.remove("icon-loading");
       domIcon.classList.remove("icon-are-you-sure");

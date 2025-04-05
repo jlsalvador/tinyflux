@@ -138,19 +138,19 @@ export function testEntries() {
       const start = new Date(
         today.getFullYear(),
         today.getMonth(),
-        today.getDate() - today.getDay() - 8
+        today.getDate() - today.getDay() - 8,
       );
       const end = new Date(
         today.getFullYear(),
         today.getMonth(),
-        today.getDate() + today.getDay() + 8
+        today.getDate() + today.getDay() + 8,
       );
       return new Date(
-        start.getTime() + Math.random() * (end.getTime() - start.getTime())
+        start.getTime() + Math.random() * (end.getTime() - start.getTime()),
       );
     })();
-    entry.feed.hide_globally = Math.random() < 0.5
-    entry.feed.category.hide_globally = Math.random() < 0.5
+    entry.feed.hide_globally = Math.random() < 0.5;
+    entry.feed.category.hide_globally = Math.random() < 0.5;
     entries.push(entry);
   }
   shuffle(entries);

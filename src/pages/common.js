@@ -142,14 +142,14 @@ export const MESSAGE_MARK_ENTRY_IDS_AS_READ = "mark_entry_ids_as_read";
  * @typedef {Error}
  */
 export const ErrorInvalidUrlOrToken = new Error(
-  "You must configure your Miniflux URL and Token"
+  "You must configure your Miniflux URL and Token",
 );
 
 /**
  * @typedef {Error}
  */
 export const ErrorReceivingEndDoesNotExist = new Error(
-  "Could not establish connection. Receiving end does not exist."
+  "Could not establish connection. Receiving end does not exist.",
 );
 
 export function openSettings() {
@@ -181,7 +181,7 @@ export async function request(
     method: "GET",
     body: undefined,
     contentType: "application/json",
-  }
+  },
 ) {
   let url = options?.url || "",
     token = options?.token || "",
@@ -208,7 +208,7 @@ export async function request(
         "Content-Type": contentType,
       }),
       body: body,
-    })
+    }),
   );
 }
 
@@ -223,7 +223,7 @@ export function updateBadge() {
     .then((data) => data.entries || [])
     .then((entries) => entries.filter((entry) => !entry.feed.hide_globally))
     .then((entries) =>
-      entries.filter((entry) => !entry.feed.category.hide_globally)
+      entries.filter((entry) => !entry.feed.category.hide_globally),
     )
     .then((entries) => {
       return browser.action.setBadgeText({
@@ -385,4 +385,4 @@ export async function notifyRefreshTheme() {
         throw err;
       }
     });
-};
+}
