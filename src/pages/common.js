@@ -227,7 +227,7 @@ export function updateBadge() {
     )
     .then((entries) => {
       return browser.action.setBadgeText({
-        text: String(entries.length),
+        text: entries.length == 0 ? "" : String(entries.length),
       });
     });
 }
