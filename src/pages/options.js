@@ -2,6 +2,8 @@
 
 import browser from "webextension-polyfill";
 import {
+  DEFAULT_BADGE_BACKGROUND_COLOR,
+  DEFAULT_BADGE_TEXT_COLOR,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_PERIOD_REFRESH,
@@ -14,6 +16,7 @@ import {
   refreshEntries,
   refreshTheme,
   request,
+  updateBadgeColor,
 } from "./common.js";
 
 async function saveOptions(e) {
@@ -31,6 +34,10 @@ async function saveOptions(e) {
     "#checkMarkEntryAsReadWhenOpenedAsTab",
   ).checked;
   const theme = document.querySelector("#selectTheme").value;
+  const badgeBackgroundColor = document.querySelector(
+    "#inputBadgeBackgroundColor",
+  ).value;
+  const badgeTextColor = document.querySelector("#inputBadgeTextColor").value;
 
   const [
     oldUrl,
@@ -38,14 +45,26 @@ async function saveOptions(e) {
     oldPeriodInMinutes,
     oldExtensionClickBehavior,
     oldTheme,
+    oldBackgroundColor,
+    oldBadgeTextColor,
   ] = await browser.storage.local
-    .get(["url", "token", "periodInMinutes", "extensionClickBehavior", "theme"])
+    .get([
+      "url",
+      "token",
+      "periodInMinutes",
+      "extensionClickBehavior",
+      "theme",
+      "badgeBackgroundColor",
+      "badgeTextColor",
+    ])
     .then((r) => [
       r.url,
       r.token,
       r.periodInMinutes,
       r.extensionClickBehavior,
       r.theme,
+      r.badgeBackgroundColor,
+      r.badgeTextColor,
     ]);
 
   await browser.storage.local.set({
@@ -55,6 +74,8 @@ async function saveOptions(e) {
     extensionClickBehavior: extensionClickBehavior,
     markEntryAsReadWhenOpenedAsTab: markEntryAsReadWhenOpenedAsTab,
     theme: theme,
+    badgeBackgroundColor: badgeBackgroundColor,
+    badgeTextColor: badgeTextColor,
   });
 
   if (url != oldUrl || token != oldToken) {
@@ -73,6 +94,13 @@ async function saveOptions(e) {
     await refreshTheme();
     await notifyRefreshTheme();
   }
+
+  if (
+    badgeBackgroundColor != oldBackgroundColor ||
+    badgeTextColor != oldBadgeTextColor
+  ) {
+    await updateBadgeColor();
+  }
 }
 
 async function restoreOptions() {
@@ -83,6 +111,8 @@ async function restoreOptions() {
     "extensionClickBehavior",
     "markEntryAsReadWhenOpenedAsTab",
     "theme",
+    "badgeBackgroundColor",
+    "badgeTextColor",
   ]);
 
   document.querySelector("#inputMinifluxUrl").value = res.url || DEFAULT_URL;
@@ -101,6 +131,12 @@ async function restoreOptions() {
     DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
 
   document.querySelector("#selectTheme").value = res.theme || DEFAULT_THEME;
+
+  document.querySelector("#inputBadgeBackgroundColor").value =
+    res.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
+
+  document.querySelector("#inputBadgeTextColor").value =
+    res.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
 }
 
 async function testMinifluxApi() {

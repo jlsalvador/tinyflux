@@ -43,6 +43,9 @@ body {
             & > input {
               @extend .form-control;
             }
+            & > input[type="color"] {
+              @extend .form-control-color;
+            }
           }
 
           & > div {

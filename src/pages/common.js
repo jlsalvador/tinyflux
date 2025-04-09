@@ -131,6 +131,8 @@ export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 export const DEFAULT_THEME = "light";
+export const DEFAULT_BADGE_BACKGROUND_COLOR = "#000000";
+export const DEFAULT_BADGE_TEXT_COLOR = "#ffffff";
 
 export const ALARM_REFRESH = "ALARM_REFRESH";
 
@@ -212,6 +214,23 @@ export async function request(
   );
 }
 
+export async function updateBadgeColor() {
+  const [badgeBackgroundColor, badgeTextColor] = await browser.storage.local
+    .get(["badgeBackgroundColor", "badgeTextColor"])
+    .then((r) => [
+      r.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR,
+      r.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR,
+    ]);
+  return Promise.all([
+    browser.action.setBadgeBackgroundColor({
+      color: badgeBackgroundColor,
+    }),
+    browser.action.setBadgeTextColor({
+      color: badgeTextColor,
+    }),
+  ]);
+}
+
 /**
  * Refresh browser extension badge with number of unread entries.
  *
@@ -233,12 +252,7 @@ export function updateBadge() {
         browser.action.setBadgeText({
           text: entries.length == 0 ? "" : String(entries.length),
         }),
-        browser.action.setBadgeTextColor({
-          color: "white",
-        }),
-        browser.action.setBadgeBackgroundColor({
-          color: "red",
-        }),
+        updateBadgeColor(),
       ]);
     });
 }
