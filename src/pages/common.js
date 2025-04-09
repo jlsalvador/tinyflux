@@ -226,10 +226,38 @@ export function updateBadge() {
       entries.filter((entry) => !entry.feed.category.hide_globally),
     )
     .then((entries) => {
-      return browser.action.setBadgeText({
-        text: entries.length == 0 ? "" : String(entries.length),
-      });
+      return Promise.all([
+        browser.action.setTitle({
+          title: "Tinyflux",
+        }),
+        browser.action.setBadgeText({
+          text: entries.length == 0 ? "" : String(entries.length),
+        }),
+        browser.action.setBadgeTextColor({
+          color: "white",
+        }),
+        browser.action.setBadgeBackgroundColor({
+          color: "red",
+        }),
+      ]);
     });
+}
+
+export function updateBadgeConnectionError() {
+  return Promise.all([
+    browser.action.setTitle({
+      title: "Can not connect to the Miniflux instance",
+    }),
+    browser.action.setBadgeText({
+      text: "⚡",
+    }),
+    browser.action.setBadgeTextColor({
+      color: "white",
+    }),
+    browser.action.setBadgeBackgroundColor({
+      color: "transparent",
+    }),
+  ]);
 }
 
 /**
@@ -292,6 +320,7 @@ export function refreshEntries() {
       if (err === ErrorInvalidUrlOrToken) {
         openSettings();
       } else {
+        updateBadgeConnectionError();
         throw err;
       }
     });
