@@ -264,11 +264,24 @@ const addDOMEntry = async (entry) => {
     domBtnMarkAsRead.title = "Mark as read"; //TODO i18n
     domBtnMarkAsRead.className = "entryButton";
     domBtnMarkAsRead.append(iconMarkAsRead);
-    domBtnMarkAsRead.addEventListener("click", () => {
-      return browser.runtime.sendMessage({
-        action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
-        entryIds: [entry.id],
-      });
+    domBtnMarkAsRead.addEventListener("click", async () => {
+      let result;
+      try {
+        // Disable button while marking entry as read.
+        domBtnMarkAsRead.disabled = true;
+        iconMarkAsRead.classList.remove("icon-mark-as-read");
+        iconMarkAsRead.classList.add("icon-loading");
+        result = await browser.runtime.sendMessage({
+          action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+          entryIds: [entry.id],
+        });
+      } finally {
+        // Reset button state after marking entry as read.
+        domBtnMarkAsRead.disabled = false;
+        iconMarkAsRead.classList.remove("icon-loading");
+        iconMarkAsRead.classList.add("icon-mark-as-read");
+      }
+      return result;
     });
 
     const iconUncollapse = document.createElement("span");
