@@ -400,6 +400,22 @@ const getIcon = async (iconID) => {
   });
 };
 
+const openMiniflux = async () => {
+  const url = await browser.storage.local.get("url").then((data) => data.url);
+  if (!url) return openSettings();
+
+  await browser.tabs.create({
+    active: true,
+    url: url,
+  });
+
+  const style =
+    new URLSearchParams(window.location.search).get("style") || "popup";
+  if (style === "popup") {
+    window.close();
+  }
+};
+
 /**
  * Load entries from cache, cleanup old entries from the DOM, and create the new
  * ones into the DOM.
@@ -460,6 +476,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.body.classList.add(style);
 
   await refreshTheme();
+
+  const btnOpenMiniflux = document.getElementById("btnOpenMiniflux");
+  btnOpenMiniflux?.addEventListener("click", async () => {
+    await openMiniflux();
+  });
 
   const btnToggleTheme = document.getElementById("btnToggleTheme");
   btnToggleTheme?.addEventListener("click", async () => {

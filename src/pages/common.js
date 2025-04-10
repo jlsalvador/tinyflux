@@ -154,8 +154,8 @@ export const ErrorReceivingEndDoesNotExist = new Error(
   "Could not establish connection. Receiving end does not exist.",
 );
 
-export function openSettings() {
-  browser.runtime.openOptionsPage();
+export async function openSettings() {
+  await browser.runtime.openOptionsPage();
 
   const style =
     new URLSearchParams(window.location.search).get("style") || "popup";
