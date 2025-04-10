@@ -257,10 +257,11 @@ export function updateBadge() {
     });
 }
 
-export function updateBadgeConnectionError() {
+export async function updateBadgeConnectionError() {
+  const url = await browser.storage.local.get("url").then((data) => data.url);
   return Promise.all([
     browser.action.setTitle({
-      title: "Can not connect to the Miniflux instance",
+      title: browser.i18n.getMessage("connectionMinifluxError", url),
     }),
     browser.action.setBadgeText({
       text: "⚡",
@@ -330,11 +331,11 @@ export function refreshEntries() {
       console.log(`${entries.length} entries fetched.`);
       return entries;
     })
-    .catch((err) => {
+    .catch(async (err) => {
       if (err === ErrorInvalidUrlOrToken) {
         openSettings();
       } else {
-        updateBadgeConnectionError();
+        await updateBadgeConnectionError();
         throw err;
       }
     });

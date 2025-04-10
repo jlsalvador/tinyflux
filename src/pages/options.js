@@ -1,5 +1,6 @@
 /* global document */
 
+import "./localize.js";
 import browser from "webextension-polyfill";
 import {
   DEFAULT_BADGE_BACKGROUND_COLOR,
@@ -144,7 +145,7 @@ async function testMinifluxApi() {
   const token = document.querySelector("#inputMinifluxToken").value;
 
   const btnTest = document.getElementById("btnTest");
-  btnTest.innerText = "Testing …";
+  btnTest.innerText = browser.i18n.getMessage("pageSettingsTesting");
   btnTest.disabled = "disabled";
   btnTest.classList.remove("btn-success", "btn-danger");
 
@@ -152,12 +153,12 @@ async function testMinifluxApi() {
     .then(async (response) => {
       if (!response.ok) {
         btnTest.classList.add("btn-danger");
-        btnTest.innerText = "Error, try again?";
+        btnTest.innerText = browser.i18n.getMessage("pageSettingsTestError");
         throw new Error(await response.text());
       }
 
       btnTest.classList.add("btn-success");
-      btnTest.innerText = "Test OK";
+      btnTest.innerText = browser.i18n.getMessage("pageSettingsTestOK");
     })
     .finally(() => {
       btnTest.disabled = false;

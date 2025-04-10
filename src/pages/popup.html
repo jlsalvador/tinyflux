@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Tinyflux</title>
+    <title data-localize="__MSG_pagePopupTitle__">Tinyflux</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link rel="icon" sizes="32x32" href="assets/icon-dark-32x32.png" />
@@ -34,6 +34,7 @@
         <div class="navbar-nav">
           <div class="dropdown">
             <button
+              data-title-localize="__MSG_msgMenu__"
               class="dropdown-toggle"
               type="button"
               id="dropdownMenuButton"
@@ -49,40 +50,61 @@
             >
               <li>
                 <a class="dropdown-item" href="#" id="btnOpenSidePanel">
-                  <span class="icon-open-sidebar"></span> Open in side panel
+                  <span class="icon-open-sidebar"></span>
+                  <span data-localize="__MSG_pagePopupOpenInSidePanel__"
+                    >Open in side panel</span
+                  >
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="#" id="btnOpenWindow">
-                  <span class="icon-open-window"></span> Open in window
+                  <span class="icon-open-window"></span>
+                  <span data-localize="__MSG_pagePopupOpenInWindow__"
+                    >Open in window</span
+                  >
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="#" id="btnToggleTheme">
-                  <span class="icon-theme-toggle"></span> Toggle light/dark mode
+                  <span class="icon-theme-toggle"></span>
+                  <span data-localize="__MSG_pagePopupToggleTheme__"
+                    >Toggle light/dark mode</span
+                  >
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="#" id="btnOpenMiniflux">
-                  <span class="icon-tinyflux"></span> Open Miniflux
+                  <span class="icon-tinyflux"></span>
+                  <span data-localize="__MSG_pagePopupOpenMiniflux__"
+                    >Open Miniflux</span
+                  >
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="#" id="btnSettings">
-                  <span class="icon-settings"></span> Open Settings
+                  <span class="icon-settings"></span>
+                  <span data-localize="__MSG_pagePopupOpenSettings__"
+                    >Open Settings</span
+                  >
                 </a>
               </li>
             </ul>
           </div>
 
           <button
+            data-title-localize="__MSG_pagePopupMarkEntriesAsRead__"
             type="button"
             title="Mark entries as read"
             id="btnMarkEntriesAsRead"
           >
             <span class="icon-mark-entries-as-read"></span>
           </button>
-          <button type="button" title="Refresh" id="btnRefresh">
+          <button
+            data-title-localize="__MSG_msgRefresh__"
+            type="button"
+            title="Refresh"
+            id="btnRefresh"
+          >
             <span class="icon-refresh"></span>
           </button>
         </div>
@@ -91,7 +113,9 @@
 
     <div class="entries">
       <p id="isEmpty" class="d-none">
-        You have read everything!
+        <span data-localize="__MSG_pagePopupEmpty__"
+          >You have read everything!</span
+        >
         <span class="icon-no-more-entries"></span>
       </p>
     </div>

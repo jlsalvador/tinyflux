@@ -1,7 +1,7 @@
 /* global console, process */
 
 import fs from "node:fs/promises";
-import { basename, dirname, resolve, relative, join } from "node:path";
+import { basename, dirname, resolve, relative, join, parse } from "node:path";
 import AdmZip from "adm-zip";
 import { build } from "esbuild";
 import htmlPlugin from "@chialab/esbuild-plugin-html";
@@ -159,6 +159,39 @@ async function buildManifests(label, pkg, srcdir, resdir) {
 }
 
 /**
+ * Creates the files `_locales/en/messages.json` and others.
+ *
+ * @param {string} label
+ * @param {object} pkg
+ * @param {string} srcdir
+ * @param {string} resdir
+ */
+async function buildLocales(label, pkg, srcdir, resdir) {
+  label = `${label}[locales]`;
+  console.time(label);
+
+  const locales = await fs
+    .readdir(resolve(srcdir, "locales"), {
+      recursive: true,
+      withFileTypes: true,
+    })
+    .then((entries) =>
+      entries
+        .filter((entry) => entry.isFile())
+        .map((entry) => parse(entry.name).name),
+    );
+  locales.forEach(async (locale) => {
+    await fs.mkdir(resolve(resdir, "_locales", locale), { recursive: true });
+    await fs.copyFile(
+      resolve(srcdir, "locales", locale + ".json"),
+      resolve(resdir, "_locales", locale, "messages.json"),
+    );
+  });
+
+  console.timeEnd(label);
+}
+
+/**
  * @param {string} label
  * @param {boolean} dev
  * @param {string} srcdir
@@ -226,6 +259,7 @@ async function buildResources(label, pkg, dev, srcdir, resdir) {
   await Promise.all([
     buildAssets(label, srcdir, resdir),
     buildManifests(label, pkg, srcdir, resdir),
+    buildLocales(label, pkg, srcdir, resdir),
     buildPages(label, dev, srcdir, resdir),
   ]);
 
@@ -242,20 +276,24 @@ async function buildPack(label, pkg, resdir, outdir) {
   label = `${label}[pack]`;
   console.time(label);
 
+  const readAndMapFiles = async (dir) => {
+    const entries = await fs.readdir(resolve(resdir, dir), {
+      recursive: true,
+      withFileTypes: true,
+    });
+
+    return entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => {
+        const f = relative(resdir, join(entry.parentPath, entry.name));
+        return { src: f, dst: f };
+      });
+  };
+
   const filesCommon = {
-    files: await fs
-      .readdir(resolve(resdir, "pages"), {
-        recursive: true,
-        withFileTypes: true,
-      })
-      .then((entries) => {
-        return entries
-          .filter((entry) => entry.isFile())
-          .map((entry) => {
-            const f = relative(resdir, join(entry.parentPath, entry.name));
-            return { src: f, dst: f };
-          });
-      }),
+    files: (
+      await Promise.all([readAndMapFiles("pages"), readAndMapFiles("_locales")])
+    ).flat(),
   };
 
   const packFor = async function (label, name, output, files) {

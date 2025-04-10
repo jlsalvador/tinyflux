@@ -1,9 +1,11 @@
 {
   "manifest_version": 3,
 
-  "name": "#name#",
-  "description": "#description#",
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
   "version": "#version#",
+  "homepage_url": "https://github.com/jlsalvador/tinyflux",
+  "default_locale": "en",
 
   "icons": {
     "16": "pages/assets/icon-light-16x16.png",

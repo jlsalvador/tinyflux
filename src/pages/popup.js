@@ -2,6 +2,7 @@
 
 "use strict";
 
+import "./localize.js";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
@@ -122,7 +123,8 @@ const addDOMEntry = async (entry) => {
 
     const domEntryTitleRowColumnEntryTitleText = document.createElement("div");
     domEntryTitleRowColumnEntryTitleText.className = "entryTitleText";
-    domEntryTitleRowColumnEntryTitleText.title = "Open in new tab"; //TODO i18n
+    domEntryTitleRowColumnEntryTitleText.title =
+      browser.i18n.getMessage("pagePopupOpenLink");
     domEntryTitleRowColumnEntryTitleText.innerText = entry.title;
 
     const domEntryTitleRowColumn = document.createElement("div");
@@ -187,12 +189,13 @@ const addDOMEntry = async (entry) => {
     const domEntryTitleFeedRowColSpanFeedPublished =
       document.createElement("span");
     domEntryTitleFeedRowColSpanFeedPublished.className = "entryTitleFeedInfo";
-    domEntryTitleFeedRowColSpanFeedPublished.title = `Published ${new Date(
-      entry.published_at,
-    ).toLocaleString(undefined, {
-      dateStyle: "full",
-      timeStyle: "long",
-    })}`; //TODO i18n
+    domEntryTitleFeedRowColSpanFeedPublished.title = browser.i18n.getMessage(
+      "pagePopupPublished",
+      new Date(entry.published_at).toLocaleString(undefined, {
+        dateStyle: "full",
+        timeStyle: "long",
+      }),
+    );
     domEntryTitleFeedRowColSpanFeedPublished.append(iconCalendar);
     domEntryTitleFeedRowColSpanFeedPublished.append(
       ` ${TimeAgo(entry.published_at, Style.ExtremeNarrow)}`,
@@ -204,9 +207,16 @@ const addDOMEntry = async (entry) => {
     const domEntryTitleFeedRowColSpanFeedReadingTime =
       document.createElement("span");
     domEntryTitleFeedRowColSpanFeedReadingTime.className = "entryTitleFeedInfo";
-    domEntryTitleFeedRowColSpanFeedReadingTime.title = `${entry.reading_time} ${
-      entry.reading_time === 1 ? "minute" : "minutes"
-    } to read`; //TODO i18n
+    domEntryTitleFeedRowColSpanFeedReadingTime.title =
+      entry.reading_time === 1
+        ? browser.i18n.getMessage(
+            "pagePopupReadingTimeSingular",
+            entry.reading_time,
+          )
+        : browser.i18n.getMessage(
+            "pagePopupReadingTimePlural",
+            entry.reading_time,
+          );
     domEntryTitleFeedRowColSpanFeedReadingTime.append(iconClock);
     domEntryTitleFeedRowColSpanFeedReadingTime.append(
       ` ${entry.reading_time}m`,
@@ -225,7 +235,9 @@ const addDOMEntry = async (entry) => {
 
     const domBtnToggleBookmark = document.createElement("button");
     domBtnToggleBookmark.type = "button";
-    domBtnToggleBookmark.title = "Toggle bookmark"; //TODO i18n
+    domBtnToggleBookmark.title = browser.i18n.getMessage(
+      "pagePopupToggleBookmark",
+    );
     domBtnToggleBookmark.className = "entryButton";
     domBtnToggleBookmark.append(iconBookmark);
     domBtnToggleBookmark.addEventListener("click", async (event) => {
@@ -261,7 +273,7 @@ const addDOMEntry = async (entry) => {
 
     const domBtnMarkAsRead = document.createElement("button");
     domBtnMarkAsRead.type = "button";
-    domBtnMarkAsRead.title = "Mark as read"; //TODO i18n
+    domBtnMarkAsRead.title = browser.i18n.getMessage("pagePopupMarkAsRead");
     domBtnMarkAsRead.className = "entryButton";
     domBtnMarkAsRead.append(iconMarkAsRead);
     domBtnMarkAsRead.addEventListener("click", async () => {
@@ -292,7 +304,7 @@ const addDOMEntry = async (entry) => {
 
     const domBtnToggleContent = document.createElement("button");
     domBtnToggleContent.type = "button";
-    domBtnToggleContent.title = "Show content"; //TODO i18n
+    domBtnToggleContent.title = browser.i18n.getMessage("pagePopupShowContent");
     domBtnToggleContent.className = "entryButton";
     domBtnToggleContent.addEventListener("click", () => {
       const domEntryContent = document.getElementById(
@@ -304,7 +316,9 @@ const addDOMEntry = async (entry) => {
       if (domEntryContent === null) {
         domEntryTitle.classList.add("uncollapsed");
         domBtnToggleContent.append(iconCollapse);
-        domBtnToggleContent.title = "Collapse content"; //TODO i18n
+        domBtnToggleContent.title = browser.i18n.getMessage(
+          "pagePopupHideContent",
+        );
 
         const domEntry = document.getElementById(`entry-${entry.id}`);
         if (domEntry === null) {
@@ -314,7 +328,9 @@ const addDOMEntry = async (entry) => {
       } else {
         domEntryTitle.classList.remove("uncollapsed");
         domBtnToggleContent.append(iconUncollapse);
-        domBtnToggleContent.title = "Show content"; //TODO i18n
+        domBtnToggleContent.title = browser.i18n.getMessage(
+          "pagePopupShowContent",
+        );
 
         domEntryContent.remove();
       }
@@ -571,7 +587,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       domIcon.classList.remove("icon-mark-entries-as-read");
       domIcon.classList.add("icon-are-you-sure");
       btnMarkEntriesAsRead.classList.add("danger");
-      btnMarkEntriesAsRead.title = "Are you sure to mark all entries as read?"; //TODO i18n
+      btnMarkEntriesAsRead.title = browser.i18n.getMessage(
+        "pagePopupAreYouSureToMarkAllEntriesAsRead",
+      );
     };
 
     /**
@@ -585,7 +603,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       domIcon.classList.remove("icon-are-you-sure");
       domIcon.classList.add("icon-mark-entries-as-read");
       btnMarkEntriesAsRead.classList.remove("danger");
-      btnMarkEntriesAsRead.title = "Mark all"; //TODO i18n
+      btnMarkEntriesAsRead.title = browser.i18n.getMessage("pagePopupMarkAll");
       btnMarkEntriesAsRead.disabled = false;
     };
 
