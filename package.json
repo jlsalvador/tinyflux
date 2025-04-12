@@ -1,7 +1,7 @@
 {
   "name": "tinyflux",
   "description": "Tinyflux is a notifier browser extension for Miniflux.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jlsalvador/tinyflux.git"
