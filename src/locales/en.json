@@ -5,12 +5,12 @@
   },
 
   "extensionDescription": {
-    "message": "Tinyflux is a notifier browser extension for Miniflux.",
+    "message": "Tinyflux is a browser extension for Miniflux v2.",
     "description": "Description of the extension."
   },
 
   "connectionMinifluxError": {
-    "message": "Can not connect to the Miniflux instance: $URL$",
+    "message": "Can not connect to Miniflux: $URL$",
     "description": "Error message when the extension can not connect to Miniflux.",
     "placeholders": {
       "url": {
@@ -41,7 +41,7 @@
   },
 
   "pageSettingsMinifluxInstancePeriodToRefresh": {
-    "message": "Period to Refresh (in minutes)",
+    "message": "Period to refresh (in minutes)",
     "description": "Label for the period to refresh input field."
   },
 
@@ -72,7 +72,7 @@
 
   "pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel": {
     "message": "Open side panel",
-    "description": "Option to open a new side panel when clicking on the extension icon."
+    "description": "Option to open a side panel when clicking on the extension icon."
   },
 
   "pageSettingsBrowserBehaviorClickBehaviorHelp": {
@@ -260,6 +260,17 @@
   "pagePopupReadingTimePlural": {
     "message": "$MINUTES$ minutes to read",
     "description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+
+  "pagePopupReadingTimeShort": {
+    "message": "$MINUTES$m",
+    "description": "Short tooltip for showing how long it takes to read an entry in Tinyflux.",
     "placeholders": {
       "minutes": {
         "content": "$1",

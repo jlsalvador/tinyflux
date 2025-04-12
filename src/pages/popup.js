@@ -219,8 +219,8 @@ const addDOMEntry = async (entry) => {
           );
     domEntryTitleFeedRowColSpanFeedReadingTime.append(iconClock);
     domEntryTitleFeedRowColSpanFeedReadingTime.append(
-      ` ${entry.reading_time}m`,
-    ); //TODO i18n
+      browser.i18n.getMessage("pagePopupReadingTimeShort", entry.reading_time),
+    );
 
     const domEntryTitleFeedRowStats = document.createElement("div");
     domEntryTitleFeedRowStats.append(domEntryTitleFeedRowColSpanFeedPublished);

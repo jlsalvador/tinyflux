@@ -5,12 +5,12 @@
   },
 
   "extensionDescription": {
-    "message": "Tinyflux es un notificador extensión para Miniflux.",
+    "message": "Tinyflux es una extensión de navegador para Miniflux v2.",
     "description": "Descripción de la extensión."
   },
 
   "connectionMinifluxError": {
-    "message": "No se puede conectar a la instancia de Miniflux: $URL$",
+    "message": "No se puede conectar a Miniflux: $URL$",
     "description": "Mensaje de error cuando la extensión no puede conectarse a Miniflux.",
     "placeholders": {
       "url": {
@@ -41,12 +41,12 @@
   },
 
   "pageSettingsMinifluxInstancePeriodToRefresh": {
-    "message": "Periodo para Refrescar (en minutos)",
+    "message": "Periodo de refresco (en minutos)",
     "description": "Etiqueta para el campo de entrada del periodo para refrescar."
   },
 
   "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux refrescará todas las entradas del usuario a este período de tiempo, ej: 15",
+    "message": "Tinyflux refrescará todas las entradas del usuario en este período de tiempo, ej: 15",
     "description": "Ayuda para el campo de entrada del periodo para refrescar."
   },
 
@@ -72,7 +72,7 @@
 
   "pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel": {
     "message": "Abrir panel lateral",
-    "description": "Opción para abrir un nuevo panel lateral al hacer clic en el icono de la extensión."
+    "description": "Opción para abrir un panel lateral al hacer clic en el icono de la extensión."
   },
 
   "pageSettingsBrowserBehaviorClickBehaviorHelp": {
@@ -260,6 +260,17 @@
   "pagePopupReadingTimePlural": {
     "message": "$MINUTES$ minutos de lectura",
     "description": "Tooltip para mostrar cuánto tiempo se tarda en leer una entrada en Tinyflux.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+
+  "pagePopupReadingTimeShort": {
+    "message": "$MINUTES$m",
+    "description": "Tooltip corto para mostrar cuánto tiempo se tarda en leer una entrada en Tinyflux.",
     "placeholders": {
       "minutes": {
         "content": "$1",
