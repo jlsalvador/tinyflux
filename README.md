@@ -1,35 +1,37 @@
-# Tinyflux - A Browser Extension for Miniflux
+# Tinyflux – A browser extension for Miniflux
 
 [![Download Tinyflux from Firefox Add-ons](assets/vendor/get-the-addon-178x60px.dad84b42.png)](https://addons.mozilla.org/es/firefox/addon/tinyflux)
 [![Download Tinyflux from Chrome Web Store](assets/vendor/206x58-chrome-web-bcb82d15b2486.png)](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
 
-Tinyflux is a lightweight browser extension for Miniflux that lets you read your subscriptions seamlessly, with a clean and minimalistic interface.
+Tinyflux is a lightweight browser extension for [Miniflux](https://miniflux.app/), offering a clean reading experience directly in your browser.
 
 ![Tinyflux Screenshot](assets/snapshots/tinyflux.gif)
 
-## Features
+## ✨ Features
 
-- **Intuitive Interface**: Simple and easy to navigate.
-- **Unread Item Indicator**: The extension badge displays the count of unread items.
-- **Cross-Browser Compatibility**: Works with Chrome, Firefox, Edge, and other modern browsers.
-- **In-Browser Reading**: Read full articles without opening new tabs or windows.
-- **Optional Sidebar Support**: Enhanced usability with a sidebar.
-- **Bookmarking**: Save articles to read later.
-- **Quick Actions**: Mark items as read with a single click.
+- **Intuitive Interface:** Simple and easy to navigate.
+- **Unread Count Badge:** View unread items directly from the extension icon.
+- **Cross-Browser Support:** Compatible with Chrome, Firefox, Edge, and other modern browsers.
+- **In-Browser Reading:** Read full articles without opening new tabs or windows.
+- **Sidebar Integration (Optional):** Access your feeds in a dedicated sidebar for better multitasking.
+- **Multi-Language Support:** Currently available in English and Spanish.
+- **Dark and Light Modes:** Toggle between themes based on your preference.
+- **Bookmarks:** Save articles to read later.
+- **Quick Actions:** Mark items as read with one click.
 
-## Requirements
+## 🧩 Requirements
 
 To use Tinyflux, you need a Miniflux instance. You can either:
 
-- Set up your own instance using the [official Miniflux Docker image](https://hub.docker.com/r/miniflux/miniflux). Follow the [installation guide](https://miniflux.app/docs/docker.html).
-- Use a public instance, such as [Miniflux Cloud](https://reader.miniflux.app/).
+- **Self-host** using the [official Miniflux Docker image](https://hub.docker.com/r/miniflux/miniflux). See the [installation guide](https://miniflux.app/docs/docker.html).
+- **Use a public instance**, like [Miniflux Cloud](https://reader.miniflux.app/).
 
-### Launching a Local Miniflux Instance
+### 🚀 Running a Local Miniflux Instance (with Docker)
 
 Run the following commands to start a Miniflux instance locally:
 
 ```bash
-# Start the PostgreSQL database
+# Start PostgreSQL
 $ docker run -d \
     --restart=unless-stopped \
     --name miniflux-db \
@@ -39,7 +41,7 @@ $ docker run -d \
     -v miniflux-db:/var/lib/postgresql/data \
     postgres
 
-# Start the Miniflux service
+# Start Miniflux
 $ docker run -d \
     --restart=unless-stopped \
     --name miniflux \
@@ -53,67 +55,72 @@ $ docker run -d \
     miniflux/miniflux
 ```
 
-**Note**: Replace the `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure values.
+> **Note:** Replace `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure credentials.
 
-### Generating an API Token
+### 🔑 Generating an API Token
 
-To use Tinyflux, you'll need a Miniflux API token. Follow the instructions below to generate one:
+Tinyflux requires a Miniflux API token. You can generate one in your Miniflux account settings:
 
 ![How to create an API token](assets/snapshots/minyflux-how-to-create-api-token.gif)
 
-## Getting Started
+## 🚀 Getting Started
 
 1. **Install the extension**:
 
-   - [Tinyflux for Firefox](https://addons.mozilla.org/es/firefox/addon/tinyflux)
-   - [Tinyflux for Chrome](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
+   - [Firefox Add-on](https://addons.mozilla.org/es/firefox/addon/tinyflux)
+   - [Chrome Web Store](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
 
 2. **Configure Tinyflux**:
 
-   - Enter your Miniflux API endpoint URL and token when prompted. Remember to save your changes. To can test your configuration clicking the button "Test Connection".
+   - Enter your Miniflux API endpoint and token.
+   - Click **"Test Connection"** to verify your setup.
+   - Save your configuration.
 
 3. **Start Reading**:
-   - Access your feeds and enjoy reading directly from Tinyflux.
+   - Browse and read your feeds directly within the extension.
 
-## Installation from Source
+## 🛠️ Installing from Source
 
-For developers or advanced users, you can build and install Tinyflux from source:
+Ideal for developers or advanced users:
 
-1. Clone this repository:
+1. **Clone the Repository**:
 
    ```bash
    git clone https://github.com/jlsalvador/tinyflux.git
    cd tinyflux
    ```
 
-2. Install dependencies:
+2. **Install Dependencies**:
 
    ```bash
    npm ci
    ```
 
-3. Build the project:
+3. **Build the Project**:
 
    ```bash
    npm run build
    ```
 
-4. Install the browser extension:
+4. **Load the extension in your browser**:
+
    - **Firefox**:
-     1. Navigate to `about:debugging`.
-     2. Select "This Firefox".
-     3. Click "Load Temporary Add-on...".
+
+     1. Visit `about:debugging`.
+     2. Click **"This Firefox"**.
+     3. Select **"Load Temporary Add-on…"**.
      4. Choose the `dist/tinyflux.version.xpi` file.
-   - **Chromium-Based Browsers**:
-     1. Go to `chrome://extensions`.
-     2. Enable "Developer mode".
-     3. Click "Load unpacked".
+
+   - **Chromium-based browsers (Chrome, Edge, etc.)**:
+     1. Open `chrome://extensions`.
+     2. Enable **Developer mode**.
+     3. Click **"Load unpacked"**.
      4. Select the `dist/chromium` directory.
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome! Feel free to open issues, submit pull requests, or suggest new features to improve Tinyflux.
+Contributions are welcome! Open issues, submit pull requests, or suggest features to help improve Tinyflux.
 
-## License
+## 📄 License
 
 This project is licensed under the [Apache 2.0 License](LICENSE).
