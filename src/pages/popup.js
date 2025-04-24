@@ -86,7 +86,10 @@ const addDOMEntry = async (entry) => {
     const domEntryContent = document.createElement("div");
     domEntryContent.id = `entryContent-${entry.id}`;
     domEntryContent.className = "entryContent";
-    domEntryContent.innerHTML = DOMPurify.sanitize(entry.content);
+    domEntryContent.innerHTML = DOMPurify.sanitize(entry.content, {
+      ADD_TAGS: ["iframe"],
+      ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling"],
+    });
 
     return domEntryContent;
   };
@@ -487,6 +490,33 @@ browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  DOMPurify.addHook("uponSanitizeElement", (node, data) => {
+    const src =
+      typeof node.getAttribute === "function" ? node.getAttribute("src") : "";
+    switch (data.tagName) {
+      case "iframe": {
+        // Removes non-Youtube embeds.
+        const isYoutubeEmbed =
+          src.startsWith("https://www.youtube.com/embed/") ||
+          src.startsWith("https://www.youtube-nocookie.com/embed/");
+        if (!isYoutubeEmbed) {
+          return node.parentNode.removeChild(node);
+        }
+        break;
+      }
+      case "img": {
+        // Removes Youtube placeholder images, because they will not be replaced by the actual video.
+        const isYoutubePlaceholder = /youtube_[\w]+_placeholder.[\w]+/.test(
+          src,
+        );
+        if (isYoutubePlaceholder) {
+          return node.parentNode.removeChild(node);
+        }
+        break;
+      }
+    }
+  });
+
   const style =
     new URLSearchParams(window.location.search).get("style") || "popup";
   document.body.classList.add(style);
