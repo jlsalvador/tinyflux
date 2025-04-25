@@ -1,6 +1,6 @@
 {
   "name": "tinyflux",
-  "description": "Tinyflux is a notifier browser extension for Miniflux.",
+  "description": "Tinyflux is a minimal and fast Miniflux reader for your browser. Read articles, and stay focused — all without leaving your tab. Requires a Miniflux instance.",
   "version": "0.7.0",
   "repository": {
     "type": "git",
