@@ -27,7 +27,7 @@
   "scripts": {
     "build": "node src/build build",
     "watch": "node src/build watch --dev",
-    "format": "npx prettier -w src",
+    "format": "npx prettier -w src package.json",
     "lint": "npx eslint --fix eslint.config.js src"
   },
   "devDependencies": {
