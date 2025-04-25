@@ -5,7 +5,7 @@
   },
 
   "extensionDescription": {
-    "message": "Tinyflux is a minimal and fast Miniflux reader for your browser. Read articles, and stay focused — all without leaving your tab. Requires a Miniflux instance.",
+    "message": "Tinyflux is a fast, minimal Miniflux reader. Read and stay focused — all without leaving your tab. Needs a Miniflux instance.",
     "description": "Description of the extension."
   },
 
