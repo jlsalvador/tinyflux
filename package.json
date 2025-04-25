@@ -1,7 +1,7 @@
 {
   "name": "tinyflux",
   "description": "Tinyflux is a minimal and fast Miniflux reader for your browser. Read articles, and stay focused — all without leaving your tab. Requires a Miniflux instance.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jlsalvador/tinyflux.git"
