@@ -157,6 +157,10 @@ export const ErrorReceivingEndDoesNotExist = new Error(
 export async function openSettings() {
   await browser.runtime.openOptionsPage();
 
+  if (typeof window === "undefined") {
+    return;
+  }
+
   const style =
     new URLSearchParams(window.location.search).get("style") || "popup";
   if (style === "popup") {
