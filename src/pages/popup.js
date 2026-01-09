@@ -142,7 +142,7 @@ const addDOMEntry = async (entry) => {
         .then((r) =>
           Boolean(
             r.markEntryAsReadWhenOpenedAsTab ||
-              DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+            DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
           ),
         );
       if (markEntryAsReadWhenOpenedAsTab) {
