@@ -25,62 +25,74 @@
       href="assets/apple-touch-icon.png"
     />
 
-    <link rel="stylesheet" type="text/css" href="./options.scss" />
+    <link rel="stylesheet" type="text/css" href="./options.css" />
   </head>
+
   <body>
     <script src="options.js"></script>
 
-    <div>
+    <main class="settings-container">
+      <header>
+        <h1 data-localize="__MSG_pageSettingsTitle__">Tinyflux Settings</h1>
+      </header>
+
       <form>
-        <fieldset>
-          <legend data-localize="__MSG_pageSettingsMinifluxInstance__">
+        <section class="settings-card">
+          <h2 data-localize="__MSG_pageSettingsMinifluxInstance__">
             Miniflux Instance
-          </legend>
-          <div>
+          </h2>
+
+          <div class="input-group">
             <label data-localize="__MSG_msgURL__" for="inputMinifluxUrl"
               >URL</label
             >
             <input
               type="url"
               id="inputMinifluxUrl"
+              placeholder="https://reader.example.com/"
               aria-describedby="inputMinifluxUrlHelp"
             />
-            <div
+            <p
+              class="help-text"
               data-localize="__MSG_pageSettingsMinifluxInstanceUrlHelp__"
               id="inputMinifluxUrlHelp"
             >
-              Address to your Miniflux instance, ex:
-              https://reader.miniflux.app/
-            </div>
+              Address to your Miniflux instance.
+            </p>
           </div>
-          <div>
+
+          <div class="input-group">
             <label data-localize="__MSG_msgToken__" for="inputMinifluxToken"
               >Token</label
             >
             <input
               type="text"
               id="inputMinifluxToken"
+              class="font-mono"
               aria-describedby="inputMinifluxTokenHelp"
               autocorrect="off"
               spellcheck="false"
               autocomplete="off"
             />
-            <div
+            <p
+              class="help-text"
               data-localize="__MSG_pageSettingsMinifluxInstanceTokenHelp__"
               id="inputMinifluxTokenHelp"
             >
-              Token to access your Miniflux, ex:
-              CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br />
-              <a href="https://miniflux.app/docs/api.html#authentication"
+              Token to access your Miniflux.<br />
+              <a
+                href="https://miniflux.app/docs/api.html#authentication"
+                target="_blank"
                 >Documentation</a
               >.
-            </div>
+            </p>
           </div>
-          <div>
+
+          <div class="input-group">
             <label
               data-localize="__MSG_pageSettingsMinifluxInstancePeriodToRefresh__"
               for="inputMinifluxPeriodInMinutes"
-              >Period to Refresh (in minutes)</label
+              >Period to Refresh (minutes)</label
             >
             <input
               type="number"
@@ -88,162 +100,157 @@
               id="inputMinifluxPeriodInMinutes"
               aria-describedby="inputMinifluxPeriodInMinutesHelp"
             />
-            <div
+            <p
+              class="help-text"
               data-localize="__MSG_pageSettingsMinifluxInstancePeriodToRefreshHelp__"
               id="inputMinifluxPeriodInMinutesHelp"
             >
-              Tinyflux will refresh all the user's entries at this period of
-              time, ex: 15
-            </div>
+              Update interval for user entries.
+            </p>
           </div>
-        </fieldset>
-        <fieldset>
-          <legend data-localize="__MSG_pageSettingsBrowserBehavior__">
+        </section>
+
+        <section class="settings-card">
+          <h2 data-localize="__MSG_pageSettingsBrowserBehavior__">
             Browser behavior
-          </legend>
-          <div>
+          </h2>
+
+          <div class="input-group">
             <label
               data-localize="__MSG_pageSettingsBrowserBehaviorClickBehavior__"
               for="selectExtensionClickBehavior"
             >
               On extension icon click
             </label>
-            <select
-              id="selectExtensionClickBehavior"
-              aria-describedby="selectExtensionClickBehaviorHelp"
-            >
-              <option
-                data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorOpenPopup__"
-                value="popup"
+            <div class="select-wrapper">
+              <select
+                id="selectExtensionClickBehavior"
+                aria-describedby="selectExtensionClickBehaviorHelp"
               >
-                Open popup
-              </option>
-              <option
-                data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorOpenWindow__"
-                value="window"
-              >
-                Open window
-              </option>
-              <option
-                data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel__"
-                value="sidepanel"
-              >
-                Open side panel
-              </option>
-            </select>
-            <div
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorOpenPopup__"
+                  value="popup"
+                >
+                  Open popup
+                </option>
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorOpenWindow__"
+                  value="window"
+                >
+                  Open window
+                </option>
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel__"
+                  value="sidepanel"
+                >
+                  Open side panel
+                </option>
+              </select>
+            </div>
+            <p
+              class="help-text"
               data-localize="__MSG_pageSettingsBrowserBehaviorClickBehaviorHelp__"
               id="selectExtensionClickBehaviorHelp"
             >
-              Defines what happen when you click in the extension icon.
-            </div>
+              Action triggered when clicking the toolbar icon.
+            </p>
           </div>
-          <div>
+
+          <div class="input-group">
             <label
               data-localize="__MSG_pageSettingsBrowserBehaviorTheme__"
               for="selectTheme"
             >
               Select theme
             </label>
-            <select id="selectTheme" aria-describedby="selectThemeHelp">
-              <option
-                data-localize="__MSG_pageSettingsBrowserBehaviorThemeLight__"
-                value="light"
-              >
-                Light theme
-              </option>
-              <option
-                data-localize="__MSG_pageSettingsBrowserBehaviorThemeDark__"
-                value="dark"
-              >
-                Dark theme
-              </option>
-            </select>
-            <div
-              data-localize="__MSG_pageSettingsBrowserBehaviorThemeHelp__"
-              id="selectThemeHelp"
-            >
-              Defines what theme will be used by the extension.
+            <div class="select-wrapper">
+              <select id="selectTheme" aria-describedby="selectThemeHelp">
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorThemeLight__"
+                  value="light"
+                >
+                  Light theme
+                </option>
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorThemeDark__"
+                  value="dark"
+                >
+                  Dark theme
+                </option>
+              </select>
             </div>
           </div>
-          <div>
+
+          <div class="input-group checkbox-row">
             <input
               id="checkMarkEntryAsReadWhenOpenedAsTab"
               aria-describedby="checkMarkEntryAsReadWhenOpenedAsTabHelp"
               type="checkbox"
             />
-            <label
-              data-localize="__MSG_pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTab__"
-              for="checkMarkEntryAsReadWhenOpenedAsTab"
-            >
-              Mark entry as read when opened as tab
-            </label>
-            <div
-              data-localize="__MSG_pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp__"
-              id="checkMarkEntryAsReadWhenOpenedAsTabHelp"
-            >
-              Check this option if you want to mark the entry as read when you
-              open it as a tab.
+            <div class="checkbox-label">
+              <label
+                data-localize="__MSG_pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTab__"
+                for="checkMarkEntryAsReadWhenOpenedAsTab"
+              >
+                Mark entry as read when opened as tab
+              </label>
             </div>
           </div>
-          <div>
-            <label
-              data-localize="__MSG_pageSettingsBrowserBehaviorBadgeBackgroundColor__"
-              for="inputBadgeBackgroundColor"
-            >
-              Badge background color
-            </label>
-            <input
-              id="inputBadgeBackgroundColor"
-              aria-describedby="inputBadgeBackgroundColorHelp"
-              type="color"
-            />
-            <div
-              data-localize="__MSG_pageSettingsBrowserBehaviorBadgeBackgroundColorHelp__"
-              id="inputBadgeBackgroundColorHelp"
-            >
-              Defines the background color of the badge.
+
+          <div class="color-settings-row">
+            <div class="input-group">
+              <label
+                data-localize="__MSG_pageSettingsBrowserBehaviorBadgeBackgroundColor__"
+                for="inputBadgeBackgroundColor"
+                >Badge background</label
+              >
+              <div class="color-picker-wrapper">
+                <input id="inputBadgeBackgroundColor" type="color" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label
+                data-localize="__MSG_pageSettingsBrowserBehaviorBadgeTextColor__"
+                for="inputBadgeTextColor"
+                >Badge text</label
+              >
+              <div class="color-picker-wrapper">
+                <input id="inputBadgeTextColor" type="color" />
+              </div>
             </div>
           </div>
-          <div>
-            <label
-              data-localize="__MSG_pageSettingsBrowserBehaviorBadgeTextColor__"
-              for="inputBadgeTextColor"
+        </section>
+
+        <div class="action-bar">
+          <button
+            data-localize="__MSG_pageSettingsSaveChanges__"
+            type="submit"
+            class="btn btn-primary"
+          >
+            Save Changes
+          </button>
+
+          <div class="secondary-actions">
+            <button
+              data-localize="__MSG_pageSettingsMinifluxInstanceTestConnection__"
+              type="button"
+              id="btnTest"
+              class="btn btn-outline"
             >
-              Badge text color
-            </label>
-            <input
-              id="inputBadgeTextColor"
-              aria-describedby="inputBadgetextColorHelp"
-              type="color"
-            />
-            <div
-              data-localize="__MSG_pageSettingsBrowserBehaviorBadgeTextColorHelp__"
-              id="inputBadgeTextColorHelp"
+              Test Connection
+            </button>
+            <button
+              data-localize="__MSG_pageSettingsMinifluxInstanceClearFaviconsCache__"
+              type="button"
+              id="btnCleanIconsCache"
+              class="btn btn-ghost"
             >
-              Defines the text color of the badge.
-            </div>
+              Clear FavIcons Cache
+            </button>
           </div>
-        </fieldset>
-        <button data-localize="__MSG_pageSettingsSaveChanges__" type="submit">
-          Save Changes
-        </button>
-        <hr />
-        <button
-          data-localize="__MSG_pageSettingsMinifluxInstanceTestConnection__"
-          type="button"
-          id="btnTest"
-        >
-          Test Connection
-        </button>
-        <button
-          data-localize="__MSG_pageSettingsMinifluxInstanceClearFaviconsCache__"
-          type="button"
-          id="btnCleanIconsCache"
-        >
-          Clear FavIcons Cache
-        </button>
+        </div>
       </form>
-    </div>
+    </main>
   </body>
 </html>

@@ -146,18 +146,18 @@ async function testMinifluxApi() {
 
   const btnTest = document.getElementById("btnTest");
   btnTest.innerText = browser.i18n.getMessage("pageSettingsTesting");
-  btnTest.disabled = "disabled";
-  btnTest.classList.remove("btn-success", "btn-danger");
+  btnTest.disabled = true;
+  btnTest.classList.remove("status-success", "status-error");
 
   return request("/v1/me", { url: url, token: token })
     .then(async (response) => {
       if (!response.ok) {
-        btnTest.classList.add("btn-danger");
+        btnTest.classList.add("status-error");
         btnTest.innerText = browser.i18n.getMessage("pageSettingsTestError");
         throw new Error(await response.text());
       }
 
-      btnTest.classList.add("btn-success");
+      btnTest.classList.add("status-success");
       btnTest.innerText = browser.i18n.getMessage("pageSettingsTestOK");
     })
     .finally(() => {

@@ -7,7 +7,6 @@ import { build } from "esbuild";
 import htmlPlugin from "@chialab/esbuild-plugin-html";
 import sharp from "sharp";
 import watch from "node-watch";
-import { sassPlugin } from "esbuild-sass-plugin";
 
 async function buildAssets(label, srcdir, resdir) {
   label = `${label}[assets]`;
@@ -231,12 +230,7 @@ async function buildPages(label, dev, srcdir, resdir) {
       chunkNames: "[ext]/[name]-[hash]",
       entryNames: "[name]",
       treeShaking: true,
-      plugins: [
-        htmlPlugin({ generateIcons: false }),
-        sassPlugin({
-          silenceDeprecations: ["color-functions", "global-builtin", "import"],
-        }),
-      ],
+      plugins: [htmlPlugin({ generateIcons: false })],
     }),
   ]);
 

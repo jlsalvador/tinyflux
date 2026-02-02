@@ -7,9 +7,7 @@
       "id": "{12c2801b-5b88-529c-92bc-3b7a0e3e1ead}",
       "strict_min_version": "142.0",
       "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
+        "required": ["none"]
       }
     }
   },

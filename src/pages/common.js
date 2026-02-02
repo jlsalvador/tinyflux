@@ -125,6 +125,7 @@ import browser from "webextension-polyfill";
  * @property {string} keep_filter_entry_rules
  */
 
+// Default configuration values
 export const DEFAULT_URL = "";
 export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
@@ -134,217 +135,284 @@ export const DEFAULT_THEME = "light";
 export const DEFAULT_BADGE_BACKGROUND_COLOR = "#000000";
 export const DEFAULT_BADGE_TEXT_COLOR = "#ffffff";
 
+// Alarm identifiers
 export const ALARM_REFRESH = "ALARM_REFRESH";
 
+// Message action types
 export const MESSAGE_REFRESH_THEME = "refresh_theme";
 export const MESSAGE_REFRESH_VIEW_ENTRIES = "refresh_view_entries";
 export const MESSAGE_MARK_ENTRY_IDS_AS_READ = "mark_entry_ids_as_read";
 
-/**
- * @typedef {Error}
- */
-export const ErrorInvalidUrlOrToken = new Error(
-  "You must configure your Miniflux URL and Token",
-);
+// Custom error types
+export class InvalidUrlOrTokenError extends Error {
+  constructor(message = "You must configure your Miniflux URL and Token") {
+    super(message);
+    this.name = "InvalidUrlOrTokenError";
+  }
+}
+
+export class ReceivingEndDoesNotExistError extends Error {
+  constructor(
+    message = "Could not establish connection. Receiving end does not exist.",
+  ) {
+    super(message);
+    this.name = "ReceivingEndDoesNotExistError";
+  }
+}
+
+// Legacy error exports for backwards compatibility
+export const ErrorInvalidUrlOrToken = new InvalidUrlOrTokenError();
+export const ErrorReceivingEndDoesNotExist =
+  new ReceivingEndDoesNotExistError();
 
 /**
- * @typedef {Error}
+ * Get popup style from URL parameters
+ * @returns {string} The style ('popup' or 'window')
  */
-export const ErrorReceivingEndDoesNotExist = new Error(
-  "Could not establish connection. Receiving end does not exist.",
-);
+const getPopupStyle = () => {
+  if (typeof window === "undefined") {
+    return "popup";
+  }
+  return new URLSearchParams(window.location.search).get("style") || "popup";
+};
 
-export async function openSettings() {
-  await browser.runtime.openOptionsPage();
-
+/**
+ * Close window if in popup mode
+ */
+const closeIfPopup = () => {
   if (typeof window === "undefined") {
     return;
   }
-
-  const style =
-    new URLSearchParams(window.location.search).get("style") || "popup";
-  if (style === "popup") {
+  if (getPopupStyle() === "popup") {
     window.close();
   }
+};
+
+/**
+ * Open the extension settings page
+ * @returns {Promise<void>}
+ */
+export async function openSettings() {
+  await browser.runtime.openOptionsPage();
+  closeIfPopup();
 }
 
 /**
- * This function does a Miniflux API request.
- *
- * The URL and Token will be fetch from `browser.storage.local` if they are not
- * supplied.
- *
- * @param {string} path Example: "/v1/me/"
- * @param {{ url: string; token: string; method: "GET"|"HEAD"|"POST"|"PUT"|"DELETE"|"CONNECT"|"OPTIONS"|"TRACE"|"PATCH"; body: undefined; contentType: string; }} [options]
- * @returns
- * @throws {ErrorInvalidUrlOrToken|AbortError|TypeError}
+ * Validate URL and Token from storage
+ * @param {string} url - The Miniflux URL
+ * @param {string} token - The API token
+ * @throws {InvalidUrlOrTokenError}
  */
-export async function request(
-  path,
-  options = {
-    url: "",
-    token: "",
-    method: "GET",
-    body: undefined,
-    contentType: "application/json",
-  },
-) {
-  let url = options?.url || "",
-    token = options?.token || "",
-    method = options?.method || "GET",
-    body = options?.body || undefined,
-    contentType = options?.contentType || "application/json";
-  if (url === "" || token === "") {
-    [url, token] = await browser.storage.local
-      .get(["url", "token"])
-      .then((data) => {
-        return [data.url || "", data.token || ""];
-      });
+const validateCredentials = (url, token) => {
+  if (!url || !token) {
+    throw new InvalidUrlOrTokenError();
+  }
+};
+
+/**
+ * Make a Miniflux API request
+ *
+ * The URL and Token will be fetched from browser.storage.local if not supplied.
+ *
+ * @param {string} path - API endpoint path (e.g., "/v1/me/")
+ * @param {Object} [options] - Request options
+ * @param {string} [options.url] - Miniflux URL (fetched from storage if not provided)
+ * @param {string} [options.token] - API token (fetched from storage if not provided)
+ * @param {string} [options.method="GET"] - HTTP method
+ * @param {any} [options.body] - Request body
+ * @param {string} [options.contentType="application/json"] - Content-Type header
+ * @returns {Promise<Response>}
+ * @throws {InvalidUrlOrTokenError|TypeError}
+ */
+export async function request(path, options = {}) {
+  const {
+    url: providedUrl = "",
+    token: providedToken = "",
+    method = "GET",
+    body = undefined,
+    contentType = "application/json",
+  } = options;
+
+  let url = providedUrl;
+  let token = providedToken;
+
+  // Fetch credentials from storage if not provided
+  if (!url || !token) {
+    const stored = await browser.storage.local.get(["url", "token"]);
+    url = url || stored.url || "";
+    token = token || stored.token || "";
   }
 
-  if (url === "" || token === "") {
-    throw ErrorInvalidUrlOrToken;
-  }
+  validateCredentials(url, token);
 
-  return fetch(
-    new Request(new URL(path, url), {
-      method: method,
-      headers: new Headers({
-        "X-Auth-Token": token,
-        "Content-Type": contentType,
-      }),
-      body: body,
-    }),
-  );
+  const headers = new Headers({
+    "X-Auth-Token": token,
+    "Content-Type": contentType,
+  });
+
+  const requestUrl = new URL(path, url);
+  const requestOptions = {
+    method,
+    headers,
+    body,
+  };
+
+  return fetch(new Request(requestUrl, requestOptions));
 }
 
+/**
+ * Update badge colors from storage settings
+ * @returns {Promise<void[]>}
+ */
 export async function updateBadgeColor() {
-  const [badgeBackgroundColor, badgeTextColor] = await browser.storage.local
-    .get(["badgeBackgroundColor", "badgeTextColor"])
-    .then((r) => [
-      r.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR,
-      r.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR,
-    ]);
+  const { badgeBackgroundColor, badgeTextColor } =
+    await browser.storage.local.get(["badgeBackgroundColor", "badgeTextColor"]);
+
+  const backgroundColor =
+    badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
+  const textColor = badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
+
   return Promise.all([
-    browser.action.setBadgeBackgroundColor({
-      color: badgeBackgroundColor,
-    }),
-    browser.action.setBadgeTextColor({
-      color: badgeTextColor,
-    }),
+    browser.action.setBadgeBackgroundColor({ color: backgroundColor }),
+    browser.action.setBadgeTextColor({ color: textColor }),
   ]);
 }
 
 /**
- * Refresh browser extension badge with number of unread entries.
- *
- * @returns {Promise<void>}
+ * Filter visible entries
+ * @param {Entry[]} entries - Array of entries to filter
+ * @returns {Entry[]} Filtered entries
  */
-export function updateBadge() {
-  return browser.storage.local
-    .get("entries")
-    .then((data) => data.entries || [])
-    .then((entries) => entries.filter((entry) => !entry.feed.hide_globally))
-    .then((entries) =>
-      entries.filter((entry) => !entry.feed.category.hide_globally),
-    )
-    .then((entries) => {
-      return Promise.all([
-        browser.action.setTitle({
-          title: "Tinyflux",
-        }),
-        browser.action.setBadgeText({
-          text: entries.length == 0 ? "" : String(entries.length),
-        }),
-        updateBadgeColor(),
-      ]);
-    });
+const filterVisibleEntries = (entries) => {
+  return entries
+    .filter((entry) => entry?.feed && !entry.feed.hide_globally)
+    .filter(
+      (entry) => entry?.feed?.category && !entry.feed.category.hide_globally,
+    );
+};
+
+/**
+ * Update browser extension badge with number of unread entries
+ * @returns {Promise<void[]>}
+ */
+export async function updateBadge() {
+  try {
+    const { entries = [] } = await browser.storage.local.get("entries");
+    const visibleEntries = filterVisibleEntries(entries);
+    const badgeText =
+      visibleEntries.length === 0 ? "" : String(visibleEntries.length);
+
+    return Promise.all([
+      browser.action.setTitle({ title: "Tinyflux" }),
+      browser.action.setBadgeText({ text: badgeText }),
+      updateBadgeColor(),
+    ]);
+  } catch (error) {
+    console.error("Failed to update badge:", error);
+    throw error;
+  }
 }
 
+/**
+ * Update badge for connection error
+ * @returns {Promise<void[]>}
+ */
 export async function updateBadgeConnectionError() {
-  const url = await browser.storage.local.get("url").then((data) => data.url);
+  const { url = "" } = await browser.storage.local.get("url");
+
   return Promise.all([
     browser.action.setTitle({
       title: browser.i18n.getMessage("connectionMinifluxError", url),
     }),
-    browser.action.setBadgeText({
-      text: "⚡",
-    }),
-    browser.action.setBadgeTextColor({
-      color: "white",
-    }),
-    browser.action.setBadgeBackgroundColor({
-      color: "transparent",
-    }),
+    browser.action.setBadgeText({ text: "⚡" }),
+    browser.action.setBadgeTextColor({ color: "white" }),
+    browser.action.setBadgeBackgroundColor({ color: "transparent" }),
   ]);
 }
 
 /**
- * Notify the popup that it should refresh its entries list.
- *
- * @returns {Promise<void>}
- * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
+ * Check if error is ignorable
+ * @param {Error} error - The error to check
+ * @returns {boolean}
  */
-export const notifyRefreshEntries = () => {
-  return browser.runtime
-    .sendMessage({
-      action: MESSAGE_REFRESH_VIEW_ENTRIES,
-    })
-    .catch((err) => {
-      if (err.message !== ErrorReceivingEndDoesNotExist.message) {
-        // Ignore error when there is no one listening.
-        throw err;
-      }
-    });
+const isIgnorableError = (error) => {
+  return error?.message === ErrorReceivingEndDoesNotExist.message;
 };
 
 /**
- * Fetches entries from the Miniflux instance, saves them into browser storage,
- * resets the alarm to wake up the background, and sends a message to the popup
- * to refresh its view.
- *
+ * Notify popup to refresh entries
+ * @returns {Promise<void>}
+ */
+export const notifyRefreshEntries = async () => {
+  try {
+    await browser.runtime.sendMessage({
+      action: MESSAGE_REFRESH_VIEW_ENTRIES,
+    });
+  } catch (error) {
+    if (!isIgnorableError(error)) {
+      throw error;
+    }
+  }
+};
+
+/**
+ * Notify popup to refresh theme
+ * @returns {Promise<void>}
+ */
+export async function notifyRefreshTheme() {
+  try {
+    await browser.runtime.sendMessage({
+      action: MESSAGE_REFRESH_THEME,
+    });
+  } catch (error) {
+    if (!isIgnorableError(error)) {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Fetch entries from Miniflux, save to storage, and update UI
  * @returns {Promise<Entry[]>}
  * @throws {Error}
  */
-export function refreshEntries() {
-  /**
-   * Notify popup to refresh the entries view.
-   *
-   * @returns {Promise<void>}
-   * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
-   */
+export async function refreshEntries() {
+  try {
+    const response = await request(
+      "/v1/entries?status=unread&order=published_at&direction=desc",
+    );
 
-  return request("/v1/entries?status=unread&order=published_at&direction=desc")
-    .then(async (response) => {
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      return response.json();
-    })
-    .then((data) => data.entries)
-    .then(async (entries) => {
-      await browser.storage.local.set({ entries: entries });
-      await Promise.all([
-        updateBadge(),
-        notifyRefreshEntries(),
-        refreshAlarm(),
-      ]);
-      return entries;
-    })
-    .then((entries) => {
-      console.log(`${entries.length} entries fetched.`);
-      return entries;
-    })
-    .catch(async (err) => {
-      if (err === ErrorInvalidUrlOrToken) {
-        openSettings();
-      } else {
-        await updateBadgeConnectionError();
-        throw err;
-      }
-    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch entries: ${errorText}`);
+    }
+
+    const data = await response.json();
+    const entries = data.entries || [];
+
+    await browser.storage.local.set({ entries });
+
+    await Promise.all([updateBadge(), notifyRefreshEntries(), refreshAlarm()]);
+
+    console.log(`${entries.length} entries fetched.`);
+    return entries;
+  } catch (error) {
+    if (
+      error instanceof InvalidUrlOrTokenError ||
+      error === ErrorInvalidUrlOrToken
+    ) {
+      await openSettings();
+    } else {
+      await updateBadgeConnectionError();
+    }
+    throw error;
+  }
 }
 
+/**
+ * Open extension in window
+ * @returns {Promise<browser.windows.Window>}
+ */
 export async function actionWindow() {
   return browser.windows.create({
     url: "/pages/popup.html?style=window",
@@ -354,37 +422,50 @@ export async function actionWindow() {
   });
 }
 
+/**
+ * Toggle side panel
+ * @returns {Promise<void>}
+ */
 export async function actionSidePanel() {
   return browser.sidebarAction.toggle();
 }
 
 /**
- * Sets the browser extension action by the user preference.
+ * Remove action listeners
+ */
+const removeActionListeners = () => {
+  if (browser.action.onClicked.hasListener(actionWindow)) {
+    browser.action.onClicked.removeListener(actionWindow);
+  }
+  if (browser.action.onClicked.hasListener(actionSidePanel)) {
+    browser.action.onClicked.removeListener(actionSidePanel);
+  }
+};
+
+/**
+ * Refresh action behavior
+ * @returns {Promise<void>}
  */
 export async function refreshActionBehavior() {
-  // Disable the current behaviour.
   await browser.action.setPopup({ popup: "" });
-  browser.action.onClicked.removeListener(actionWindow);
-  browser.action.onClicked.removeListener(actionSidePanel);
-  // Work-around for Chromium.
-  if (!browser.sidebarAction) {
+  removeActionListeners();
+
+  if (!browser.sidebarAction && chrome?.sidePanel) {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
   }
 
-  // Set the desired behavior.
-  const extensionClickBehavior = await browser.storage.local
-    .get("extensionClickBehavior")
-    .then((r) => r.extensionClickBehavior);
+  const { extensionClickBehavior = DEFAULT_EXTENSION_CLICK_BEHAVIOR } =
+    await browser.storage.local.get("extensionClickBehavior");
+
   switch (extensionClickBehavior) {
     case "window":
       browser.action.onClicked.addListener(actionWindow);
       break;
 
     case "sidepanel":
-      // Work-around for Chromium.
-      if (!browser.sidebarAction) {
+      if (!browser.sidebarAction && chrome?.sidePanel) {
         chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-      } else {
+      } else if (browser.sidebarAction) {
         browser.action.onClicked.addListener(actionSidePanel);
       }
       break;
@@ -394,43 +475,34 @@ export async function refreshActionBehavior() {
       await browser.action.setPopup({
         popup: "/pages/popup.html?style=popup",
       });
+      break;
   }
 }
 
+/**
+ * Refresh alarm
+ * @returns {Promise<void>}
+ */
 export async function refreshAlarm() {
-  const periodInMinutes = await browser.storage.local
-    .get(["periodInMinutes"])
-    .then((r) => {
-      return Number(r.periodInMinutes || DEFAULT_PERIOD_REFRESH);
-    });
+  const { periodInMinutes = DEFAULT_PERIOD_REFRESH } =
+    await browser.storage.local.get("periodInMinutes");
 
-  browser.alarms.create(ALARM_REFRESH, {
-    periodInMinutes: periodInMinutes,
+  const period = Number(periodInMinutes) || DEFAULT_PERIOD_REFRESH;
+
+  await browser.alarms.create(ALARM_REFRESH, {
+    periodInMinutes: period,
   });
 }
 
-export async function refreshTheme() {
-  const savedTheme =
-    (await browser.storage.local.get("theme").then((data) => data.theme)) ||
-    "light";
-  document.documentElement.setAttribute("data-bs-theme", savedTheme);
-}
-
 /**
- * Notify the popup that it should refresh its theme mode.
- *
+ * Apply theme to document
  * @returns {Promise<void>}
- * @throws {Error} The error ErrorReceivingEndDoesNotExist will be ignored.
  */
-export async function notifyRefreshTheme() {
-  return browser.runtime
-    .sendMessage({
-      action: MESSAGE_REFRESH_THEME,
-    })
-    .catch((err) => {
-      if (err.message !== ErrorReceivingEndDoesNotExist.message) {
-        // Ignore error when there is no one listening.
-        throw err;
-      }
-    });
+export async function refreshTheme() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const { theme = DEFAULT_THEME } = await browser.storage.local.get("theme");
+  document.documentElement.setAttribute("data-theme", theme);
 }
