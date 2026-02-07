@@ -54,6 +54,11 @@
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
 
+  /* Z-index layers */
+  --z-navbar: 100;
+  --z-entry-expanded: 200;
+  --z-dropdown: 9999;
+
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -143,7 +148,7 @@ body.window #btnOpenSidePanel {
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-navbar);
   background-color: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
@@ -157,6 +162,7 @@ body.window #btnOpenSidePanel {
   height: var(--navbar-height);
   padding: 0 var(--spacing-md);
   gap: var(--spacing-md);
+  margin-left: var(--spacing-sm);
 }
 
 .navbar-brand {
@@ -275,9 +281,9 @@ body.window #btnOpenSidePanel {
 }
 
 .dropdown-menu {
-  position: absolute;
-  top: calc(100% + var(--spacing-xs));
-  right: 0;
+  position: fixed;
+  top: calc(var(--navbar-height) - (var(--spacing-md) / 2));
+  right: calc(var(--spacing-md) / 2);
   min-width: 220px;
   max-height: 320px;
   overflow-y: auto;
@@ -290,7 +296,7 @@ body.window #btnOpenSidePanel {
   visibility: hidden;
   transform: translateY(-8px);
   transition: all var(--transition-base);
-  z-index: 1000;
+  z-index: var(--z-dropdown);
 }
 
 .dropdown-menu.show {
@@ -333,15 +339,6 @@ body.window #btnOpenSidePanel {
 }
 
 /* ============================================================================
-   Main Content
-   ============================================================================ */
-
-main {
-  min-height: calc(100vh - var(--navbar-height));
-  min-height: 400px; /* Ensure minimum height even with few entries */
-}
-
-/* ============================================================================
    Empty State
    ============================================================================ */
 
@@ -353,7 +350,6 @@ main {
   padding: var(--spacing-xl);
   text-align: center;
   color: var(--color-text-secondary);
-  min-height: 300px;
 }
 
 .empty-icon {
@@ -407,8 +403,8 @@ main {
 
 .entry-title.expanded {
   position: sticky;
-  top: var(--navbar-height);
-  z-index: 50;
+  top: 0;
+  z-index: var(--z-entry-expanded);
   background-color: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
@@ -416,10 +412,10 @@ main {
 
 .entry-title-text {
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  /* font-weight: var(--font-weight-semibold); */
   line-height: var(--line-height-tight);
   color: var(--color-text);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 0;
   transition: color var(--transition-fast);
 }
 
@@ -433,7 +429,7 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
+  margin-top: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
@@ -530,7 +526,7 @@ main {
     --spacing-md
   ); /* Less padding at top since title already has bottom padding */
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 
@@ -540,14 +536,13 @@ main {
   max-width: 100%;
   height: auto;
   border-radius: var(--border-radius-sm);
-  margin: var(--spacing-md) 0;
 }
 
 .entry-content figcaption {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   text-align: center;
-  margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
 .entry-content blockquote {
@@ -558,7 +553,15 @@ main {
   color: var(--color-text-secondary);
 }
 
-.entry-content p {
+.entry-content ul,
+.entry-content ol {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  margin-left: var(--spacing-lg);
+  margin-right: var(--spacing-lg);
+}
+
+.entry-content p:not(:last-child) {
   margin-bottom: var(--spacing-md);
 }
 
