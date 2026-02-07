@@ -5,12 +5,10 @@
  * @author José Luis Salvador Rufo <salvador.joseluis@gmail.com>
  */
 
-import browser from "webextension-polyfill";
-
 document.addEventListener("DOMContentLoaded", async () => {
   function replace_i18n(obj, tag, dst = "innerHTML") {
     var msg = tag.replace(/__MSG_(\w+)__/g, function (_match, v1) {
-      return v1 ? browser.i18n.getMessage(v1) : "";
+      return v1 ? chrome.i18n.getMessage(v1) : "";
     });
 
     if (msg != tag) obj[dst] = msg;

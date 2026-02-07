@@ -322,7 +322,7 @@ export async function updateBadgeConnectionError() {
 
   return Promise.all([
     browser.action.setTitle({
-      title: browser.i18n.getMessage("connectionMinifluxError", url),
+      title: chrome.i18n.getMessage("connectionMinifluxError", url),
     }),
     browser.action.setBadgeText({ text: "⚡" }),
     browser.action.setBadgeTextColor({ color: "white" }),

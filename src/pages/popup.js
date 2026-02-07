@@ -279,17 +279,17 @@ const createEntryTitle = async (entry) => {
   readingTimeStat.className = "entry-stat";
   readingTimeStat.title =
     entry.reading_time === 1
-      ? browser.i18n.getMessage(
+      ? chrome.i18n.getMessage(
           "pagePopupReadingTimeSingular",
-          entry.reading_time,
+          String(entry.reading_time),
         )
-      : browser.i18n.getMessage(
+      : chrome.i18n.getMessage(
           "pagePopupReadingTimePlural",
-          entry.reading_time,
+          String(entry.reading_time),
         );
   readingTimeStat.innerHTML = `
     ${createIcon("M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-1 0A7 7 0 1 0 1 8a7 7 0 0 0 14 0z").outerHTML}
-    <span>${browser.i18n.getMessage("pagePopupReadingTimeShort", entry.reading_time)}</span>
+    <span>${chrome.i18n.getMessage("pagePopupReadingTimeShort", String(entry.reading_time))}</span>
   `;
   stats.appendChild(readingTimeStat);
 
@@ -301,7 +301,7 @@ const createEntryTitle = async (entry) => {
   const bookmarkBtn = document.createElement("button");
   bookmarkBtn.className = `entry-action-btn ${entry.starred ? "starred" : ""}`;
   bookmarkBtn.type = "button";
-  bookmarkBtn.title = browser.i18n.getMessage("pagePopupToggleBookmark");
+  bookmarkBtn.title = chrome.i18n.getMessage("pagePopupToggleBookmark");
   bookmarkBtn.innerHTML = entry.starred
     ? createIcon(
         "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z",
@@ -348,7 +348,7 @@ const createEntryTitle = async (entry) => {
   const markReadBtn = document.createElement("button");
   markReadBtn.className = "entry-action-btn";
   markReadBtn.type = "button";
-  markReadBtn.title = browser.i18n.getMessage("pagePopupMarkAsRead");
+  markReadBtn.title = chrome.i18n.getMessage("pagePopupMarkAsRead");
   markReadBtn.innerHTML = createIcon(
     "M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z",
   ).outerHTML;
@@ -377,7 +377,7 @@ const createEntryTitle = async (entry) => {
   const toggleBtn = document.createElement("button");
   toggleBtn.className = "entry-action-btn";
   toggleBtn.type = "button";
-  toggleBtn.title = browser.i18n.getMessage("pagePopupShowContent");
+  toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
   toggleBtn.innerHTML = createIcon(
     "M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z",
   ).outerHTML;
@@ -396,7 +396,7 @@ const createEntryTitle = async (entry) => {
       toggleBtn.innerHTML = createIcon(
         "M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z",
       ).outerHTML;
-      toggleBtn.title = browser.i18n.getMessage("pagePopupShowContent");
+      toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
       entryContent.remove();
     } else {
       // Expand
@@ -404,7 +404,7 @@ const createEntryTitle = async (entry) => {
       toggleBtn.innerHTML = createIcon(
         "M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z",
       ).outerHTML;
-      toggleBtn.title = browser.i18n.getMessage("pagePopupHideContent");
+      toggleBtn.title = chrome.i18n.getMessage("pagePopupHideContent");
       entryContainer.appendChild(createEntryContent(entry));
     }
   });
@@ -594,7 +594,7 @@ const setupMarkAllAsReadButton = () => {
       // First click: show confirmation
       button.classList.add("danger");
       pathElement.setAttribute("d", questionIconPath); // Change to question mark
-      button.title = browser.i18n.getMessage(
+      button.title = chrome.i18n.getMessage(
         "pagePopupAreYouSureToMarkAllEntriesAsRead",
       );
 
@@ -605,7 +605,7 @@ const setupMarkAllAsReadButton = () => {
       state.confirmMarkAllEntriesTimeout = setTimeout(() => {
         button.classList.remove("danger");
         pathElement.setAttribute("d", originalIconPath); // Restore original icon
-        button.title = browser.i18n.getMessage("pagePopupMarkEntriesAsRead");
+        button.title = chrome.i18n.getMessage("pagePopupMarkEntriesAsRead");
       }, MARK_ENTRIES_AS_READ_TIMEOUT_MS);
     } else {
       // Second click: execute
@@ -634,7 +634,7 @@ const setupMarkAllAsReadButton = () => {
         icon.classList.remove("loading");
         pathElement.setAttribute("d", originalIconPath); // Restore original icon
         button.classList.remove("danger");
-        button.title = browser.i18n.getMessage("pagePopupMarkEntriesAsRead");
+        button.title = chrome.i18n.getMessage("pagePopupMarkEntriesAsRead");
       }
     }
   });
