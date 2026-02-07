@@ -1,4 +1,4 @@
-/* global document */
+/* global document, chrome */
 
 import "./localize.js";
 import browser from "webextension-polyfill";

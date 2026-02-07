@@ -1,4 +1,4 @@
-/* global document */
+/* global document, chrome */
 
 /**
  * @author PlasmaDan <https://stackoverflow.com/a/39810769>
