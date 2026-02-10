@@ -115,6 +115,9 @@ body {
 body.popup {
   max-width: var(--popup-width);
   width: 100%;
+}
+
+body.popup:has(#dropdownMenu.show) {
   min-height: 320px;
 }
 
