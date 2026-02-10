@@ -115,6 +115,7 @@ body {
 body.popup {
   max-width: var(--popup-width);
   width: 100%;
+  min-height: 320px;
 }
 
 /* Hide elements in specific modes */
@@ -285,7 +286,7 @@ body.window #btnOpenSidePanel {
   top: calc(var(--navbar-height) - (var(--spacing-md) / 2));
   right: calc(var(--spacing-md) / 2);
   min-width: 220px;
-  max-height: 320px;
+  max-height: calc(100vh - var(--navbar-height) - 20px);
   overflow-y: auto;
   background-color: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -347,7 +348,7 @@ body.window #btnOpenSidePanel {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xl);
+  padding-top: calc(var(--spacing-xl) * 2);
   text-align: center;
   color: var(--color-text-secondary);
 }
