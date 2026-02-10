@@ -351,7 +351,7 @@ body.window #btnOpenSidePanel {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-top: calc(var(--spacing-xl) * 2);
+  padding: var(--spacing-xl);
   text-align: center;
   color: var(--color-text-secondary);
 }
