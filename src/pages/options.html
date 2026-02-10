@@ -183,6 +183,30 @@
 
           <div class="input-group checkbox-row">
             <input
+              id="checkShowNotifications"
+              aria-describedby="checkShowNotificationsHelp"
+              type="checkbox"
+            />
+            <div class="checkbox-label">
+              <label
+                data-localize="__MSG_pageSettingsBrowserBehaviourShowNotifications__"
+                for="checkShowNotifications"
+              >
+                Show notifications on new entries
+              </label>
+              <p
+                data-localize="__MSG_pageSettingsBrowserBehaviourShowNotificationsHelp__"
+                class="help-text"
+                id="checkShowNotificationsHelp"
+              >
+                Requires browser permission. We will summarize if many entries
+                arrive at once.
+              </p>
+            </div>
+          </div>
+
+          <div class="input-group checkbox-row">
+            <input
               id="checkMarkEntryAsReadWhenOpenedAsTab"
               aria-describedby="checkMarkEntryAsReadWhenOpenedAsTabHelp"
               type="checkbox"

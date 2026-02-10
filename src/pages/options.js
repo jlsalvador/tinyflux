@@ -11,6 +11,7 @@ import {
   DEFAULT_THEME,
   DEFAULT_TOKEN,
   DEFAULT_URL,
+  DEFAULT_SHOW_NOTIFICATIONS,
   notifyRefreshTheme,
   refreshActionBehavior,
   refreshAlarm,
@@ -39,6 +40,9 @@ async function saveOptions(e) {
     "#inputBadgeBackgroundColor",
   ).value;
   const badgeTextColor = document.querySelector("#inputBadgeTextColor").value;
+  const showNotifications = document.querySelector(
+    "#checkShowNotifications",
+  ).checked;
 
   const [
     oldUrl,
@@ -77,6 +81,7 @@ async function saveOptions(e) {
     theme: theme,
     badgeBackgroundColor: badgeBackgroundColor,
     badgeTextColor: badgeTextColor,
+    showNotifications: showNotifications,
   });
 
   if (url != oldUrl || token != oldToken) {
@@ -114,6 +119,7 @@ async function restoreOptions() {
     "theme",
     "badgeBackgroundColor",
     "badgeTextColor",
+    "showNotifications",
   ]);
 
   document.querySelector("#inputMinifluxUrl").value = res.url || DEFAULT_URL;
@@ -138,6 +144,34 @@ async function restoreOptions() {
 
   document.querySelector("#inputBadgeTextColor").value =
     res.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
+
+  const hasPermission = await browser.permissions.contains({
+    permissions: ["notifications"],
+  });
+  const storedSetting = res.showNotifications || DEFAULT_SHOW_NOTIFICATIONS;
+  document.querySelector("#checkShowNotifications").checked =
+    storedSetting && hasPermission;
+}
+
+async function handleNotificationToggle(e) {
+  const checkbox = e.target;
+
+  if (checkbox.checked) {
+    // Ask browser for permission to show notifications
+    const granted = await browser.permissions.request({
+      permissions: ["notifications"],
+    });
+
+    if (!granted) {
+      // User does not grant permission
+      checkbox.checked = false;
+    }
+  } else {
+    // Remove permission to show notifications
+    await browser.permissions.remove({
+      permissions: ["notifications"],
+    });
+  }
 }
 
 async function testMinifluxApi() {
@@ -189,4 +223,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const btnClearIconsCache = document.getElementById("btnCleanIconsCache");
   btnClearIconsCache?.addEventListener("click", clearIconsCache);
+
+  const notifCheckbox = document.getElementById("checkShowNotifications");
+  notifCheckbox?.addEventListener("change", handleNotificationToggle);
 });

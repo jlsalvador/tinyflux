@@ -130,6 +130,16 @@
     "description": "Help text for the Badge text color input field."
   },
 
+  "pageSettingsBrowserBehaviourShowNotifications": {
+    "message": "Show notifications on new entries",
+    "description": "Option to enable or disable notifications in the extension."
+  },
+
+  "pageSettingsBrowserBehaviourShowNotificationsHelp": {
+    "message": "Requires browser permission. We will summarize if many entries arrive at once.",
+    "description": "Help text for the Show Notifications checkbox."
+  },
+
   "pageSettingsSaveChanges": {
     "message": "Save Changes",
     "description": "Button to save changes made in the options page."
@@ -297,5 +307,16 @@
   "msgRefresh": {
     "message": "Refresh",
     "description": "Button to refresh Tinyflux."
+  },
+
+  "notificationNewEntriesAvailable": {
+    "message": "$COUNTER$ new entries available.",
+    "description": "Notification message when new entries are available in Tinyflux.",
+    "placeholders": {
+      "counter": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
   }
 }

@@ -46,5 +46,6 @@
     "default_title": "#name#",
     "default_popup": "pages/popup.html?style=popup"
   },
-  "options_page": "pages/options.html"
+  "options_page": "pages/options.html",
+  "optional_permissions": ["notifications"]
 }

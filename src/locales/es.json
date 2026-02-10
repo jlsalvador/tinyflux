@@ -130,6 +130,16 @@
     "description": "Ayuda para el campo de entrada de Color del texto de la insignia."
   },
 
+  "pageSettingsBrowserBehaviourShowNotifications": {
+    "message": "Mostrar notificaciones al actualizar entradas",
+    "description": "Opción para mostrar notificaciones cuando se actualicen las entradas."
+  },
+
+  "pageSettingsBrowserBehaviourShowNotificationsHelp": {
+    "message": "Requiere el permiso del navegador. Resumiremos si llegan al mismo tiempo muchas entradas.",
+    "description": "Ayuda para el campo de entrada de Mostrar notificaciones."
+  },
+
   "pageSettingsSaveChanges": {
     "message": "Guardar Cambios",
     "description": "Botón para guardar los cambios realizados en la página de opciones."
@@ -297,5 +307,16 @@
   "msgRefresh": {
     "message": "Actualizar",
     "description": "Botón para actualizar Tinyflux."
+  },
+
+  "notificationNewEntriesAvailable": {
+    "message": "$COUNTER$ nuevas entradas disponibles.",
+    "description": "Notificación de que hay nuevas entradas disponibles en Tinyflux.",
+    "placeholders": {
+      "counter": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
   }
 }

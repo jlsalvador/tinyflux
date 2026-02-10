@@ -134,6 +134,7 @@ export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 export const DEFAULT_THEME = "light";
 export const DEFAULT_BADGE_BACKGROUND_COLOR = "#000000";
 export const DEFAULT_BADGE_TEXT_COLOR = "#ffffff";
+export const DEFAULT_SHOW_NOTIFICATIONS = false;
 
 // Alarm identifiers
 export const ALARM_REFRESH = "ALARM_REFRESH";
@@ -303,7 +304,9 @@ export async function updateBadge() {
       visibleEntries.length === 0 ? "" : String(visibleEntries.length);
 
     return Promise.all([
-      browser.action.setTitle({ title: "Tinyflux" }),
+      browser.action.setTitle({
+        title: chrome.i18n.getMessage("extensionName"),
+      }),
       browser.action.setBadgeText({ text: badgeText }),
       updateBadgeColor(),
     ]);
@@ -372,6 +375,81 @@ export async function notifyRefreshTheme() {
 }
 
 /**
+ * Group entries by feed title
+ * @param {Array<Entry>} entries - Array of entry objects
+ * @returns {Object} - Object with feed title as key and array of entry titles as value
+ */
+function groupEntriesByFeed(entries) {
+  return entries.reduce((groups, entry) => {
+    const feedTitle =
+      entry.feed.title || chrome.i18n.getMessage("extensionName");
+
+    if (!groups[feedTitle]) {
+      groups[feedTitle] = [];
+    }
+
+    groups[feedTitle].push(entry.title);
+    return groups;
+  }, {});
+}
+
+/**
+ * Sends a browser notification if permission is granted
+ * @param {Entry[]} newEntries
+ */
+async function sendNotification(newEntries) {
+  // Check if notifications is enabled
+  const { showNotifications = DEFAULT_SHOW_NOTIFICATIONS } =
+    await browser.storage.local.get("showNotifications");
+
+  if (!showNotifications || newEntries.length === 0) {
+    return;
+  }
+
+  // Check browser permissions for notifications
+  const hasPermission = await browser.permissions.contains({
+    permissions: ["notifications"],
+  });
+
+  if (!hasPermission) {
+    console.warn("Notification option is on, but permission is missing.");
+    return;
+  }
+
+  // Build notification
+  let extensionName = chrome.i18n.getMessage("extensionName");
+  let options = {
+    iconUrl: "assets/icon-dark-196x196.png",
+    title: extensionName,
+    message: "",
+  };
+
+  if (newEntries.length === 1) {
+    const entry = newEntries[0];
+    options.type = "basic";
+    options.title = entry.feed.title || extensionName;
+    options.message = entry.title;
+  } else {
+    options.type = "list";
+    options.message = chrome.i18n.getMessage(
+      "notificationNewEntriesAvailable",
+      String(newEntries.length),
+    );
+
+    const groupedEntries = groupEntriesByFeed(newEntries);
+    options.items = Object.entries(groupedEntries).map(
+      ([feedTitle, titles]) => ({
+        title: feedTitle,
+        message: titles.join("\n"),
+      }),
+    );
+  }
+
+  // Send notification
+  await chrome.notifications.create("tinyflux-update", options);
+}
+
+/**
  * Fetch entries from Miniflux, save to storage, and update UI
  * @returns {Promise<Entry[]>}
  * @throws {Error}
@@ -388,14 +466,29 @@ export async function refreshEntries() {
     }
 
     const data = await response.json();
-    const entries = data.entries || [];
+    const fetchedEntries = data.entries || [];
+    const { entries: cachedEntries = [] } =
+      await browser.storage.local.get("entries");
 
-    await browser.storage.local.set({ entries });
+    if (fetchedEntries.length > 0) {
+      const cachedIds = new Set(cachedEntries.map((e) => e.id));
+      // Filter out already cached entries to avoid duplicates
+      const newArrivals = fetchedEntries.filter((e) => !cachedIds.has(e.id));
+
+      if (newArrivals.length > 0) {
+        // Do not await here to not block the saving process
+        sendNotification(newArrivals).catch((err) =>
+          console.error("Notif error:", err),
+        );
+      }
+    }
+
+    await browser.storage.local.set({ entries: fetchedEntries });
 
     await Promise.all([updateBadge(), notifyRefreshEntries(), refreshAlarm()]);
 
-    console.log(`${entries.length} entries fetched.`);
-    return entries;
+    console.log(`${fetchedEntries.length} entries fetched.`);
+    return fetchedEntries;
   } catch (error) {
     if (
       error instanceof InvalidUrlOrTokenError ||
