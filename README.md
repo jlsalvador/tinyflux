@@ -39,7 +39,7 @@ $ docker run -d \
     -e POSTGRES_PASSWORD=miniflux \
     -e POSTGRES_DB=miniflux \
     -v miniflux-db:/var/lib/postgresql/data \
-    postgres
+    postgres:17
 
 # Start Miniflux
 $ docker run -d \
