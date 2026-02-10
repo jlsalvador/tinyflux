@@ -1,65 +1,96 @@
 # Tinyflux – A browser extension for Miniflux
 
-[![Download Tinyflux from Firefox Add-ons](assets/vendor/get-the-addon-178x60px.dad84b42.png)](https://addons.mozilla.org/es/firefox/addon/tinyflux)
-[![Download Tinyflux from Chrome Web Store](assets/vendor/206x58-chrome-web-bcb82d15b2486.png)](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
+Tinyflux is a lightweight browser extension for [Miniflux](https://miniflux.app/),
+offering a clean reading experience directly in your browser.
 
-Tinyflux is a lightweight browser extension for [Miniflux](https://miniflux.app/), offering a clean reading experience directly in your browser.
+[![Download from Chrome Web Store](https://img.shields.io/chrome-web-store/v/ffhphofcfffnehjhcmmgnfolidhdfenl?logo=google-chrome&logoColor=white&style=for-the-badge)](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
+[![Download from Mozilla Add-on](https://img.shields.io/amo/v/tinyflux?logo=firefox-browser&logoColor=white&style=for-the-badge)](https://addons.mozilla.org/es/firefox/addon/tinyflux)
+[![License](https://img.shields.io/github/license/jlsalvador/tinyflux?style=for-the-badge)](LICENSE)
 
 ![Tinyflux Screenshot](assets/snapshots/tinyflux.gif)
 
 ## ✨ Features
 
-- **Intuitive Interface:** Simple and easy to navigate.
-- **Unread Count Badge:** View unread items directly from the extension icon.
-- **Cross-Browser Support:** Compatible with Chrome, Firefox, Edge, and other modern browsers.
-- **In-Browser Reading:** Read full articles without opening new tabs or windows.
-- **Sidebar Integration (Optional):** Access your feeds in a dedicated sidebar for better multitasking.
-- **Multi-Language Support:** Currently available in English and Spanish.
-- **Dark and Light Modes:** Toggle between themes based on your preference.
-- **Bookmarks:** Save articles to read later.
-- **Quick Actions:** Mark items as read with one click.
+- **Intuitive Interface:**
+  Simple and easy to navigate.
+- **Unread Count Badge:**
+  View unread items directly from the extension icon.
+- **Cross-Browser Support:**
+  Compatible with Chrome, Firefox, Edge, and other modern browsers.
+- **In-Browser Reading:**
+  Read full articles without opening new tabs or windows.
+- **Optional Notifications:**
+  Stay updated with notifications for new items.
+- **Optional Sidebar Integration:**
+  Access your feeds in a dedicated sidebar for better multitasking.
+- **Multi-Language Support:**
+  Currently available in English and Spanish.
+- **Dark and Light Modes:**
+  Toggle between themes based on your preference.
+- **Bookmarks:**
+  Save articles to read later.
+- **Quick Actions:**
+  Mark items as read with one click.
 
 ## 🧩 Requirements
 
-To use Tinyflux, you need a Miniflux instance. You can either:
+To use Tinyflux, you need a running Miniflux instance. You can either:
 
-- **Self-host** using the [official Miniflux Docker image](https://hub.docker.com/r/miniflux/miniflux). See the [installation guide](https://miniflux.app/docs/docker.html).
 - **Use a public instance**, like [Miniflux Cloud](https://reader.miniflux.app/).
+- **Self-host** using the [official Miniflux Docker image](https://hub.docker.com/r/miniflux/miniflux).
 
-### 🚀 Running a Local Miniflux Instance (with Docker)
+<details>
+<summary><strong>Click here to see how to run Miniflux with 🐳 Docker Compose</strong></summary>
 
-Run the following commands to start a Miniflux instance locally:
+Create a `compose.yaml` file:
 
-```bash
-# Start PostgreSQL
-$ docker run -d \
-    --restart=unless-stopped \
-    --name miniflux-db \
-    -e POSTGRES_USER=miniflux \
-    -e POSTGRES_PASSWORD=miniflux \
-    -e POSTGRES_DB=miniflux \
-    -v miniflux-db:/var/lib/postgresql/data \
-    postgres:17
+```yaml
+services:
+  db:
+    restart: unless-stopped
+    image: postgres:17
+    environment:
+      - POSTGRES_USER=miniflux
+      - POSTGRES_PASSWORD=miniflux
+      - POSTGRES_DB=miniflux
+    volumes:
+      - db:/var/lib/postgresql/data
 
-# Start Miniflux
-$ docker run -d \
-    --restart=unless-stopped \
-    --name miniflux \
-    --link miniflux-db:postgres \
-    -p 8080:8080 \
-    -e "DATABASE_URL=postgres://miniflux:miniflux@postgres/miniflux?sslmode=disable" \
-    -e "RUN_MIGRATIONS=1" \
-    -e "CREATE_ADMIN=1" \
-    -e "ADMIN_USERNAME=admin" \
-    -e "ADMIN_PASSWORD=password" \
-    miniflux/miniflux
+  miniflux:
+    restart: unless-stopped
+    image: miniflux/miniflux:latest
+    environment:
+      - DATABASE_URL=postgres://miniflux:miniflux@db/miniflux?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=password
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  db:
 ```
 
-> **Note:** Replace `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure credentials.
+> **ℹ️ Note:** Replace `ADMIN_USERNAME` and `ADMIN_PASSWORD` with secure credentials.
+
+Run the following command to start a Miniflux instance locally
+
+```bash
+docker compose up -d
+```
+
+See the [Miniflux installation guide](https://miniflux.app/docs/docker.html) for
+more details.
+
+</details>
 
 ### 🔑 Generating an API Token
 
-Tinyflux requires a Miniflux API token. You can generate one in your Miniflux account settings:
+Tinyflux requires a Miniflux API token. You can generate one in your Miniflux
+account settings:
 
 ![How to create an API token](assets/snapshots/minyflux-how-to-create-api-token.gif)
 
@@ -119,7 +150,8 @@ Ideal for developers or advanced users:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Open issues, submit pull requests, or suggest features to help improve Tinyflux.
+Contributions are welcome! Open issues, submit pull requests, or suggest
+features to help improve Tinyflux.
 
 ## 📄 License
 
