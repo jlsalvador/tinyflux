@@ -1,4 +1,4 @@
-# Tinyflux – A browser extension for Miniflux
+# ![Logo](./assets/icon-light-32x32.png) Tinyflux – A browser extension for Miniflux
 
 Tinyflux is a lightweight browser extension for [Miniflux](https://miniflux.app/),
 offering a clean reading experience directly in your browser.
