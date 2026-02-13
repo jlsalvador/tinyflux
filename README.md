@@ -5,7 +5,6 @@ offering a clean reading experience directly in your browser.
 
 [![Download from Chrome Web Store](https://img.shields.io/chrome-web-store/v/ffhphofcfffnehjhcmmgnfolidhdfenl?logo=google-chrome&logoColor=white&style=for-the-badge)](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
 [![Download from Mozilla Add-on](https://img.shields.io/amo/v/tinyflux?logo=firefox-browser&logoColor=white&style=for-the-badge)](https://addons.mozilla.org/es/firefox/addon/tinyflux)
-[![License](https://img.shields.io/github/license/jlsalvador/tinyflux?style=for-the-badge)](LICENSE)
 
 ![Tinyflux Screenshot](assets/snapshots/tinyflux.gif)
 
@@ -97,12 +96,10 @@ account settings:
 ## 🚀 Getting Started
 
 1. **Install the extension**:
-
    - [Firefox Add-on](https://addons.mozilla.org/es/firefox/addon/tinyflux)
    - [Chrome Web Store](https://chromewebstore.google.com/detail/tinyflux/ffhphofcfffnehjhcmmgnfolidhdfenl)
 
 2. **Configure Tinyflux**:
-
    - Enter your Miniflux API endpoint and token.
    - Click **"Test Connection"** to verify your setup.
    - Save your configuration.
@@ -134,9 +131,7 @@ Ideal for developers or advanced users:
    ```
 
 4. **Load the extension in your browser**:
-
    - **Firefox**:
-
      1. Visit `about:debugging`.
      2. Click **"This Firefox"**.
      3. Select **"Load Temporary Add-on…"**.
