@@ -161,6 +161,40 @@ const toggleBookmark = async (entryId) => {
   return request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
 };
 
+const getBookmarkIconHTML = (isStarred) =>
+  isStarred
+    ? createIcon(
+        "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z",
+      ).outerHTML
+    : createIcon(
+        "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z",
+      ).outerHTML;
+
+const setBookmarkButtonState = (button, isStarred) => {
+  button.classList.toggle("starred", isStarred);
+  button.innerHTML = getBookmarkIconHTML(isStarred);
+};
+
+const updateEntryCache = async (entryId, callback) => {
+  const entries = await browser.storage.local
+    .get("entries")
+    .then((data) => data.entries || []);
+
+  const updatedEntries = entries.map((entry) =>
+    entry.id === entryId ? callback(entry) : entry,
+  );
+
+  await browser.storage.local.set({ entries: updatedEntries });
+  return updatedEntries;
+};
+
+const updateEmptyState = () => {
+  const isEmpty = document.getElementById("isEmpty");
+  if (!isEmpty) return;
+  const hasEntries = document.querySelectorAll(".entry").length > 0;
+  isEmpty.classList.toggle("hidden", hasEntries);
+};
+
 /**
  * Sort DOM entries by published date (descending)
  */
@@ -313,33 +347,20 @@ const createEntryTitle = async (entry) => {
   bookmarkBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
     const isStarred = bookmarkBtn.classList.contains("starred");
+    const nextStarredState = !isStarred;
+
+    // Optimistic UI update
+    setBookmarkButtonState(bookmarkBtn, nextStarredState);
 
     try {
       await toggleBookmark(entry.id);
-
-      // Update cache
-      const entries = await browser.storage.local
-        .get("entries")
-        .then((data) => data.entries || []);
-      const updatedEntries = entries.map((e) => {
-        if (e.id === entry.id) {
-          return { ...e, starred: !isStarred };
-        }
-        return e;
-      });
-      await browser.storage.local.set({ entries: updatedEntries });
-
-      // Update UI
-      bookmarkBtn.classList.toggle("starred");
-      bookmarkBtn.innerHTML = !isStarred
-        ? createIcon(
-            "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z",
-          ).outerHTML
-        : createIcon(
-            "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z",
-          ).outerHTML;
+      await updateEntryCache(entry.id, (e) => ({
+        ...e,
+        starred: nextStarredState,
+      }));
     } catch (error) {
       console.error("Failed to toggle bookmark:", error);
+      setBookmarkButtonState(bookmarkBtn, isStarred);
     }
   });
   actions.appendChild(bookmarkBtn);
@@ -356,7 +377,20 @@ const createEntryTitle = async (entry) => {
   markReadBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
 
+    const entryElement = document.getElementById(`entry-${entry.id}`);
+    const previousEntries = await browser.storage.local
+      .get("entries")
+      .then((data) => data.entries || []);
+    const updatedEntries = previousEntries.filter((e) => e.id !== entry.id);
+
     try {
+      // Optimistic UI update: remove the entry immediately.
+      if (entryElement) {
+        entryElement.remove();
+      }
+      await browser.storage.local.set({ entries: updatedEntries });
+      updateEmptyState();
+
       markReadBtn.disabled = true;
       markReadBtn.querySelector(".icon").classList.add("loading");
 
@@ -366,6 +400,11 @@ const createEntryTitle = async (entry) => {
       });
     } catch (error) {
       console.error("Failed to mark as read:", error);
+      await browser.storage.local.set({ entries: previousEntries });
+      if (entryElement) {
+        await addDOMEntry(entry);
+      }
+      updateEmptyState();
     } finally {
       markReadBtn.disabled = false;
       markReadBtn.querySelector(".icon").classList.remove("loading");
@@ -613,13 +652,22 @@ const setupMarkAllAsReadButton = () => {
         clearTimeout(state.confirmMarkAllEntriesTimeout);
       }
 
-      try {
-        button.disabled = true;
-        icon.classList.add("loading");
+      const previousEntries = await browser.storage.local
+        .get("entries")
+        .then((data) => data.entries || []);
 
+      try {
         const entryIds = Array.from(document.querySelectorAll(".entry"))
           .map((entry) => Number(entry.dataset.entryId))
           .filter((id) => !isNaN(id));
+
+        // Optimistic UI update: remove the entries immediately.
+        document.querySelectorAll(".entry").forEach((entry) => entry.remove());
+        await browser.storage.local.set({ entries: [] });
+        updateEmptyState();
+
+        button.disabled = true;
+        icon.classList.add("loading");
 
         if (entryIds.length > 0) {
           await browser.runtime.sendMessage({
@@ -629,6 +677,9 @@ const setupMarkAllAsReadButton = () => {
         }
       } catch (error) {
         console.error("Failed to mark all as read:", error);
+        await browser.storage.local.set({ entries: previousEntries });
+        await addDOMEntries(previousEntries);
+        updateEmptyState();
       } finally {
         button.disabled = false;
         icon.classList.remove("loading");
