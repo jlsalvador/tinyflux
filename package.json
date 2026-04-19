@@ -31,7 +31,6 @@
     "lint": "npx eslint --fix eslint.config.js src"
   },
   "devDependencies": {
-    "@chialab/esbuild-plugin-html": "https://gitpkg.vercel.app/jlsalvador/rna/packages/esbuild-plugin-html?publish",
     "@eslint/js": "^10.0.1",
     "adm-zip": "^0.5.17",
     "dompurify": "^3.4.0",

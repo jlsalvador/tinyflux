@@ -4,7 +4,6 @@ import fs from "node:fs/promises";
 import { basename, dirname, resolve, relative, join, parse } from "node:path";
 import AdmZip from "adm-zip";
 import { build } from "esbuild";
-import htmlPlugin from "@chialab/esbuild-plugin-html";
 import sharp from "sharp";
 import watch from "node-watch";
 
@@ -201,41 +200,53 @@ async function buildPages(label, dev, srcdir, resdir) {
   console.time(label);
 
   const outdir = resolve(resdir, "pages/");
-  const entryPoints = ["pages/options.html", "pages/popup.html"].map((e) =>
-    resolve(srcdir, e),
-  );
 
-  const result = await Promise.all([
-    build({
-      entryPoints: [resolve(srcdir, "pages/background.js")],
-      bundle: true,
-      sourcemap: dev ? "inline" : false,
-      outdir: outdir,
-      minify: dev ? false : true,
-      assetNames: "assets/[name]-[hash]",
-      chunkNames: "[ext]/[name]-[hash]",
-      entryNames: "[name]",
-      treeShaking: true,
-    }),
-    build({
-      entryPoints: entryPoints,
-      bundle: true,
-      sourcemap: dev ? "inline" : false,
-      splitting: true,
-      format: "esm",
-      loader: { ".png": "file", ".woff": "file", ".woff2": "file" },
-      outdir: outdir,
-      minify: dev ? false : true,
-      assetNames: "assets/[name]-[hash]",
-      chunkNames: "[ext]/[name]-[hash]",
-      entryNames: "[name]",
-      treeShaking: true,
-      plugins: [htmlPlugin({ generateIcons: false })],
-    }),
+  // Build background.js (service worker)
+  await build({
+    entryPoints: [resolve(srcdir, "pages/background.js")],
+    bundle: true,
+    sourcemap: dev ? "inline" : false,
+    outdir: outdir,
+    minify: dev ? false : true,
+    assetNames: "assets/[name]-[hash]",
+    chunkNames: "[ext]/[name]-[hash]",
+    entryNames: "[name]",
+    treeShaking: true,
+  });
+
+  // Build page scripts (options.js, popup.js) with splitting
+  await build({
+    entryPoints: [
+      resolve(srcdir, "pages/options.js"),
+      resolve(srcdir, "pages/popup.js"),
+    ],
+    bundle: true,
+    sourcemap: dev ? "inline" : false,
+    splitting: true,
+    format: "esm",
+    loader: { ".png": "file", ".woff": "file", ".woff2": "file" },
+    outdir: outdir,
+    minify: dev ? false : true,
+    assetNames: "assets/[name]-[hash]",
+    chunkNames: "[ext]/[name]-[hash]",
+    entryNames: "[name]",
+    treeShaking: true,
+  });
+
+  // Copy HTML and CSS files
+  const htmlFiles = ["pages/options.html", "pages/popup.html"];
+  const cssFiles = ["pages/options.css", "pages/popup.css"];
+
+  await Promise.all([
+    ...htmlFiles.map((file) =>
+      fs.copyFile(resolve(srcdir, file), resolve(outdir, basename(file))),
+    ),
+    ...cssFiles.map((file) =>
+      fs.copyFile(resolve(srcdir, file), resolve(outdir, basename(file))),
+    ),
   ]);
 
   console.timeEnd(label);
-  return result;
 }
 
 /**
