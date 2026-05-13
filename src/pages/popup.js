@@ -221,7 +221,7 @@ const createEntryContent = (entry) => {
   content.id = `entryContent-${entry.id}`;
   content.className = "entry-content";
   const cleanFragment = DOMPurify.sanitize(entry.content, {
-    RETURN_DOM: true,
+    RETURN_DOM_FRAGMENT: true,
     ADD_TAGS: ["iframe"],
     ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling"],
     ALLOWED_URI_REGEXP:
