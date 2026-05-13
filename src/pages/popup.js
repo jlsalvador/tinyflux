@@ -161,18 +161,16 @@ const toggleBookmark = async (entryId) => {
   return request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
 };
 
-const getBookmarkIconHTML = (isStarred) =>
-  isStarred
-    ? createIcon(
-        "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z",
-      ).outerHTML
-    : createIcon(
-        "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z",
-      ).outerHTML;
+const svg_star_filled = "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z";
+const svg_star_empty = "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z";
+const svg_toggle_open = "M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z";
+const svg_toggle_close = "M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z";
+const svg_calendar = "M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z";
+const svg_clock = "M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-1 0A7 7 0 1 0 1 8a7 7 0 0 0 14 0z";
 
 const setBookmarkButtonState = (button, isStarred) => {
   button.classList.toggle("starred", isStarred);
-  button.innerHTML = getBookmarkIconHTML(isStarred);
+  button.replaceChildren(createIcon(isStarred ? svg_star_filled : svg_star_empty));
 };
 
 const updateEntryCache = async (entryId, callback) => {
@@ -222,12 +220,14 @@ const createEntryContent = (entry) => {
   const content = document.createElement("div");
   content.id = `entryContent-${entry.id}`;
   content.className = "entry-content";
-  content.innerHTML = DOMPurify.sanitize(entry.content, {
+  const cleanFragment = DOMPurify.sanitize(entry.content, {
+    RETURN_DOM: true,
     ADD_TAGS: ["iframe"],
     ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling"],
     ALLOWED_URI_REGEXP:
       /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|magnet):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
   });
+  content.appendChild(cleanFragment);
 
   return content;
 };
@@ -302,10 +302,12 @@ const createEntryTitle = async (entry) => {
     dateStyle: "full",
     timeStyle: "long",
   });
-  publishedStat.innerHTML = `
-    ${createIcon("M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z").outerHTML}
-    <span>${TimeAgo(entry.published_at, Style.ExtremeNarrow)}</span>
-  `;
+  const publishedTime = document.createElement("span");
+  publishedTime.textContent = TimeAgo(entry.published_at, Style.ExtremeNarrow);
+  publishedStat.replaceChildren(
+    createIcon(svg_calendar),
+    publishedTime,
+  );
   stats.appendChild(publishedStat);
 
   // Reading time
@@ -321,10 +323,12 @@ const createEntryTitle = async (entry) => {
           "pagePopupReadingTimePlural",
           String(entry.reading_time),
         );
-  readingTimeStat.innerHTML = `
-    ${createIcon("M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-1 0A7 7 0 1 0 1 8a7 7 0 0 0 14 0z").outerHTML}
-    <span>${chrome.i18n.getMessage("pagePopupReadingTimeShort", String(entry.reading_time))}</span>
-  `;
+  const readingText = document.createElement("span");
+  readingText.textContent = chrome.i18n.getMessage("pagePopupReadingTimeShort", String(entry.reading_time));
+  readingTimeStat.replaceChildren(
+    createIcon(svg_clock),
+    readingText,
+  );
   stats.appendChild(readingTimeStat);
 
   // Actions
@@ -336,13 +340,10 @@ const createEntryTitle = async (entry) => {
   bookmarkBtn.className = `entry-action-btn ${entry.starred ? "starred" : ""}`;
   bookmarkBtn.type = "button";
   bookmarkBtn.title = chrome.i18n.getMessage("pagePopupToggleBookmark");
-  bookmarkBtn.innerHTML = entry.starred
-    ? createIcon(
-        "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z",
-      ).outerHTML
-    : createIcon(
-        "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z",
-      ).outerHTML;
+  const bookmarkPath = entry.starred
+    ? "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"
+    : "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z";
+  bookmarkBtn.replaceChildren(createIcon(bookmarkPath));
 
   bookmarkBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
@@ -370,9 +371,9 @@ const createEntryTitle = async (entry) => {
   markReadBtn.className = "entry-action-btn";
   markReadBtn.type = "button";
   markReadBtn.title = chrome.i18n.getMessage("pagePopupMarkAsRead");
-  markReadBtn.innerHTML = createIcon(
-    "M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z",
-  ).outerHTML;
+  markReadBtn.replaceChildren(
+    createIcon("M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"),
+  );
 
   markReadBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
@@ -417,9 +418,9 @@ const createEntryTitle = async (entry) => {
   toggleBtn.className = "entry-action-btn";
   toggleBtn.type = "button";
   toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
-  toggleBtn.innerHTML = createIcon(
-    "M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z",
-  ).outerHTML;
+  toggleBtn.replaceChildren(
+    createIcon(svg_toggle_open),
+  );
 
   toggleBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -432,17 +433,17 @@ const createEntryTitle = async (entry) => {
     if (entryContent) {
       // Collapse
       titleContainer.classList.remove("expanded");
-      toggleBtn.innerHTML = createIcon(
-        "M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z",
-      ).outerHTML;
+      toggleBtn.replaceChildren(
+        createIcon(svg_toggle_open),
+      );
       toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
       entryContent.remove();
     } else {
       // Expand
       titleContainer.classList.add("expanded");
-      toggleBtn.innerHTML = createIcon(
-        "M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z",
-      ).outerHTML;
+      toggleBtn.replaceChildren(
+        createIcon(svg_toggle_close),
+      );
       toggleBtn.title = chrome.i18n.getMessage("pagePopupHideContent");
       entryContainer.appendChild(createEntryContent(entry));
     }
