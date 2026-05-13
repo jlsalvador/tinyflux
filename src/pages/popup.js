@@ -257,7 +257,7 @@ const createEntryTitle = async (entry) => {
       );
 
     if (shouldMarkAsRead) {
-      await browser.runtime.sendMessage({
+      browser.runtime.sendMessage({
         action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
         entryIds: [entry.id],
       });
