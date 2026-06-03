@@ -504,6 +504,12 @@ body.window #btnOpenSidePanel {
   opacity: 1;
 }
 
+@media (hover: none) {
+  .entry-actions {
+    opacity: 1;
+  }
+}
+
 .entry-action-btn {
   padding: var(--spacing-xs);
   background: none;
