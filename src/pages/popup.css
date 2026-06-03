@@ -413,9 +413,9 @@ body.window #btnOpenSidePanel {
   border-style: solid;
   border-image: linear-gradient(
       90deg,
-      transparent,
-      var(--color-border),
-      transparent
+      transparent 10%,
+      var(--color-border) 50%,
+      transparent 90%
     )
     1;
 }
