@@ -391,19 +391,6 @@ body.window #btnOpenSidePanel {
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-bg);
   transition: background-color var(--transition-fast);
-  animation: slideIn var(--transition-base) ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .entry:hover {
