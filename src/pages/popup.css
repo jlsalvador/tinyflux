@@ -412,11 +412,18 @@ body.window #btnOpenSidePanel {
   position: sticky;
   top: 0;
   z-index: var(--z-entry-expanded);
-  background-color: color-mix(in srgb, var(--color-bg), transparent 50%);
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--color-border), transparent 10%);
+  background-color: color-mix(in srgb, var(--color-bg), transparent 35%);
+  backdrop-filter: blur(8px) saturate(150%);
   box-shadow: var(--shadow-md);
-  backdrop-filter: blur(10px);
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-border),
+      transparent
+    )
+    1;
 }
 
 .entry-title-text {
