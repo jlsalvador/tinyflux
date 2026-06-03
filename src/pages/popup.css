@@ -157,7 +157,7 @@ body.window #btnOpenSidePanel {
   border-bottom: 1px solid
     color-mix(in srgb, var(--color-border), transparent 10%);
   box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
 }
 
 .navbar-container {
