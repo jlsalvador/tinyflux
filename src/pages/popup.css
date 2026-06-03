@@ -621,7 +621,7 @@ body.window #btnOpenSidePanel {
    ============================================================================ */
 
 ::-webkit-scrollbar {
-  width: 3px;
+  width: 5px;
   height: 8px;
 }
 
