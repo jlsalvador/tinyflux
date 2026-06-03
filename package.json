@@ -33,15 +33,19 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "adm-zip": "^0.5.17",
-    "dompurify": "^3.4.2",
+    "dompurify": "^3.4.8",
     "esbuild": "^0.28.0",
-    "eslint": "^10.3.0",
+    "eslint": "^10.4.1",
     "globals": "^17.6.0",
-    "htmlnano": "^3.2.1",
+    "htmlnano": "^3.3.2",
     "node-watch": "^0.7.4",
     "prettier": "^3.8.3",
     "sharp": "^0.34.5",
     "svgo": "^4.0.1",
     "webextension-polyfill": "^0.12.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.0": true,
+    "sharp@0.34.5": true
   }
 }
