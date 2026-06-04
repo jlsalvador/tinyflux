@@ -38,6 +38,7 @@ const state = {
   iconCache: new Map(),
   confirmMarkAllEntriesTimeout: null,
   dropdownOpen: false,
+  pendingReadIds: new Set(),
 };
 
 // ============================================================================
@@ -267,6 +268,7 @@ const createEntryTitle = async (entry) => {
       );
 
     if (shouldMarkAsRead) {
+      state.pendingReadIds.add(entry.id);
       browser.runtime.sendMessage({
         action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
         entryIds: [entry.id],
@@ -382,6 +384,7 @@ const createEntryTitle = async (entry) => {
   markReadBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
 
+    state.pendingReadIds.add(entry.id);
     const entryElement = document.getElementById(`entry-${entry.id}`);
     const previousEntries = await browser.storage.local
       .get("entries")
@@ -405,6 +408,7 @@ const createEntryTitle = async (entry) => {
       });
     } catch (error) {
       console.error("Failed to mark as read:", error);
+      state.pendingReadIds.delete(entry.id);
       await browser.storage.local.set({ entries: previousEntries });
       if (entryElement) {
         await addDOMEntry(entry);
@@ -508,7 +512,8 @@ const addDOMEntries = async (entries) => {
 
   const filtered = entries
     .filter((entry) => !entry.feed?.hide_globally)
-    .filter((entry) => !entry.feed?.category?.hide_globally);
+    .filter((entry) => !entry.feed?.category?.hide_globally)
+    .filter((entry) => !state.pendingReadIds.has(entry.id));
 
   await Promise.all(filtered.map(addDOMEntry));
 };
@@ -541,6 +546,13 @@ const handleRefreshViewEntries = async () => {
     const entries = await browser.storage.local
       .get("entries")
       .then((r) => r.entries || []);
+
+    const fetchedIds = new Set(entries.map(e => e.id));
+    for (const id of state.pendingReadIds) {
+      if (!fetchedIds.has(id)) {
+        state.pendingReadIds.delete(id);
+      }
+    }
 
     cleanupOldDOMEntries(entries);
     await addDOMEntries(entries);
@@ -655,6 +667,8 @@ const setupMarkAllAsReadButton = () => {
         .get("entries")
         .then((data) => data.entries || []);
 
+      entryIds.forEach(id => state.pendingReadIds.add(id));
+
       try {
         const entryIds = Array.from(document.querySelectorAll(".entry"))
           .map((entry) => Number(entry.dataset.entryId))
@@ -676,6 +690,9 @@ const setupMarkAllAsReadButton = () => {
         }
       } catch (error) {
         console.error("Failed to mark all as read:", error);
+
+        entryIds.forEach(id => state.pendingReadIds.delete(id));
+
         await browser.storage.local.set({ entries: previousEntries });
         await addDOMEntries(previousEntries);
         updateEmptyState();
@@ -705,6 +722,7 @@ const setupRefreshButton = () => {
       icon.classList.add("loading");
 
       await refreshEntries();
+      state.pendingReadIds.clear();
       await handleRefreshViewEntries();
     } catch (error) {
       console.error("Failed to refresh:", error);
