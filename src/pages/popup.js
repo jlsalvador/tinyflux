@@ -36,6 +36,7 @@ const ICON_CACHE_KEY_PREFIX = "icon";
 
 const state = {
   iconCache: new Map(),
+  iconPromises: new Map(),
   confirmMarkAllEntriesTimeout: null,
   dropdownOpen: false,
   pendingReadIds: new Set(),
@@ -116,36 +117,50 @@ const getIcon = async (iconID) => {
     return state.iconCache.get(iconID);
   }
 
-  // Check storage cache
-  const cacheKey = `${ICON_CACHE_KEY_PREFIX}${iconID}`;
-  const cachedIcon = await browser.storage.local
-    .get(cacheKey)
-    .then((data) => data[cacheKey]);
-
-  if (cachedIcon) {
-    state.iconCache.set(iconID, cachedIcon);
-    return cachedIcon;
+  if (state.iconPromises.has(iconID)) {
+    return state.iconPromises.get(iconID);
   }
 
-  // Fetch from API
-  try {
-    const response = await request(`/v1/icons/${iconID}`);
+  const fetchIconPromise = (async () => {
+    // Check storage cache
+    const cacheKey = `${ICON_CACHE_KEY_PREFIX}${iconID}`;
+    const cachedIcon = await browser.storage.local
+      .get(cacheKey)
+      .then((data) => data[cacheKey]);
 
-    if (response.status !== 200) {
-      console.error("Failed to fetch icon:", response);
-      return { data: "" };
+    if (cachedIcon) {
+      state.iconCache.set(iconID, cachedIcon);
+      return cachedIcon;
     }
 
-    const icon = await response.json();
+    // Fetch from API
+    try {
+      const response = await request(`/v1/icons/${iconID}`);
 
-    // Cache the icon
-    state.iconCache.set(iconID, icon);
-    await browser.storage.local.set({ [cacheKey]: icon });
+      if (response.status !== 200) {
+        console.error("Failed to fetch icon:", response);
+        return { data: "" };
+      }
 
-    return icon;
-  } catch (error) {
-    console.error("Error fetching icon:", error);
-    return { data: "" };
+      const icon = await response.json();
+
+      // Cache the icon
+      state.iconCache.set(iconID, icon);
+      await browser.storage.local.set({ [cacheKey]: icon });
+
+      return icon;
+    } catch (error) {
+      console.error("Error fetching icon:", error);
+      return { data: "" };
+    }
+  })();
+
+  state.iconPromises.set(iconID, fetchIconPromise);
+
+  try {
+    return await fetchIconPromise;
+  } finally {
+    state.iconPromises.delete(iconID);
   }
 };
 
@@ -214,11 +229,7 @@ const sortDOMEntries = () => {
   const entries = Array.from(container.querySelectorAll(".entry"));
 
   entries
-    .sort((a, b) => {
-      const dateA = new Date(a.dataset.entryPublishedAt);
-      const dateB = new Date(b.dataset.entryPublishedAt);
-      return dateB - dateA;
-    })
+    .sort((a, b) => Number(b.dataset.timestamp) - Number(a.dataset.timestamp))
     .forEach((entry) => container.appendChild(entry));
 };
 
@@ -411,7 +422,7 @@ const createEntryTitle = async (entry) => {
       state.pendingReadIds.delete(entry.id);
       await browser.storage.local.set({ entries: previousEntries });
       if (entryElement) {
-        await addDOMEntry(entry);
+        await addDOMEntries([entry]);
       }
       updateEmptyState();
     } finally {
@@ -474,6 +485,7 @@ const createEntry = async (domId, entry) => {
   entryElement.id = domId;
   entryElement.dataset.entryId = entry.id;
   entryElement.dataset.entryPublishedAt = entry.published_at;
+  entryElement.dataset.timestamp = new Date(entry.published_at).getTime();
   entryElement.className = "entry";
 
   const title = await createEntryTitle(entry);
@@ -498,7 +510,6 @@ const addDOMEntry = async (entry) => {
 
   if (container) {
     container.appendChild(entryElement);
-    sortDOMEntries();
   }
 };
 
@@ -516,6 +527,7 @@ const addDOMEntries = async (entries) => {
     .filter((entry) => !state.pendingReadIds.has(entry.id));
 
   await Promise.all(filtered.map(addDOMEntry));
+  sortDOMEntries();
 };
 
 /**
@@ -547,7 +559,7 @@ const handleRefreshViewEntries = async () => {
       .get("entries")
       .then((r) => r.entries || []);
 
-    const fetchedIds = new Set(entries.map(e => e.id));
+    const fetchedIds = new Set(entries.map((e) => e.id));
     for (const id of state.pendingReadIds) {
       if (!fetchedIds.has(id)) {
         state.pendingReadIds.delete(id);
@@ -667,13 +679,13 @@ const setupMarkAllAsReadButton = () => {
         .get("entries")
         .then((data) => data.entries || []);
 
-      entryIds.forEach(id => state.pendingReadIds.add(id));
+      const entryIds = Array.from(document.querySelectorAll(".entry"))
+        .map((entry) => Number(entry.dataset.entryId))
+        .filter((id) => !isNaN(id));
+
+      entryIds.forEach((id) => state.pendingReadIds.add(id));
 
       try {
-        const entryIds = Array.from(document.querySelectorAll(".entry"))
-          .map((entry) => Number(entry.dataset.entryId))
-          .filter((id) => !isNaN(id));
-
         // Optimistic UI update: remove the entries immediately.
         document.querySelectorAll(".entry").forEach((entry) => entry.remove());
         await browser.storage.local.set({ entries: [] });
@@ -691,7 +703,7 @@ const setupMarkAllAsReadButton = () => {
       } catch (error) {
         console.error("Failed to mark all as read:", error);
 
-        entryIds.forEach(id => state.pendingReadIds.delete(id));
+        entryIds.forEach((id) => state.pendingReadIds.delete(id));
 
         await browser.storage.local.set({ entries: previousEntries });
         await addDOMEntries(previousEntries);
