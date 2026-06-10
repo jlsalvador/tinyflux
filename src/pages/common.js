@@ -248,8 +248,11 @@ export async function request(path, options = {}) {
 
   const headers = new Headers({
     "X-Auth-Token": token,
-    "Content-Type": contentType,
   });
+
+  if (body !== undefined) {
+    headers.set("Content-Type", contentType);
+  }
 
   const requestUrl = new URL(path, url);
   const requestOptions = {
