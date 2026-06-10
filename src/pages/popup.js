@@ -294,7 +294,8 @@ const createEntryTitle = async (entry) => {
   meta.className = "entry-meta";
 
   // Feed info
-  const icon = await getIcon(entry.feed.icon.icon_id);
+  const iconId = entry.feed?.icon?.icon_id;
+  const icon = iconId ? await getIcon(iconId) : { data: "" };
   const feedInfo = document.createElement("div");
   feedInfo.className = "entry-feed-info";
   feedInfo.title = entry.feed.title;
