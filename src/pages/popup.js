@@ -420,13 +420,13 @@ const createEntryTitle = async (entry) => {
       });
     } catch (error) {
       console.error("Failed to mark as read:", error);
-      state.pendingReadIds.delete(entry.id);
       await browser.storage.local.set({ entries: previousEntries });
       if (entryElement) {
         await addDOMEntries([entry]);
       }
       updateEmptyState();
     } finally {
+      state.pendingReadIds.delete(entry.id);
       markReadBtn.disabled = false;
       markReadBtn.querySelector(".icon").classList.remove("loading");
     }
