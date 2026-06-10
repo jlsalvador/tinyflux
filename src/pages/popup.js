@@ -596,6 +596,7 @@ const setupDropdown = () => {
 
   const toggleDropdown = () => {
     state.dropdownOpen = !state.dropdownOpen;
+    document.body.classList.toggle("dropdown-open");
     menu.classList.toggle("show", state.dropdownOpen);
     button.setAttribute("aria-expanded", String(state.dropdownOpen));
   };
