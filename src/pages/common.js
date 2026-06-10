@@ -90,9 +90,9 @@ import browser from "webextension-polyfill";
 
 /**
  * @typedef {Object} Icon
- * @property {number} id
- * @property {string} data
- * @property {string} mime_type
+ * @property {number} id 262
+ * @property {string} data "image/png;base64,iVBORw0KGgoAAA...."
+ * @property {string} mime_type "image/png"
  */
 
 /**
