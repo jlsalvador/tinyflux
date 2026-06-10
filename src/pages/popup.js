@@ -761,7 +761,9 @@ const initializePopup = async () => {
   // Configure DOMPurify
   DOMPurify.addHook("uponSanitizeElement", (node, data) => {
     const src =
-      typeof node.getAttribute === "function" ? node.getAttribute("src") : "";
+      (typeof node.getAttribute === "function"
+        ? node.getAttribute("src")
+        : "") || "";
 
     switch (data.tagName) {
       case "iframe": {
