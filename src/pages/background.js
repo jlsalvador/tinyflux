@@ -26,7 +26,7 @@ import {
  * @returns {Entry[]}
  * @throws {Error}
  */
-const markEntryIdAsRead = async (entryIds) => {
+const markEntriesAsRead = async (entryIds) => {
   /**
    * Mark an entry as read in the Miniflux instance.
    *
@@ -60,7 +60,7 @@ const handleStartup = async () => {
 const handleInstalled = handleStartup;
 const handleMessage = (message) => {
   if (message.action === MESSAGE_MARK_ENTRY_IDS_AS_READ) {
-    return markEntryIdAsRead(message.entryIds);
+    return markEntriesAsRead(message.entryIds);
   } else {
     return false;
   }
