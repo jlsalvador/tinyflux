@@ -411,9 +411,6 @@ const createEntryTitle = async (entry) => {
       await browser.storage.local.set({ entries: updatedEntries });
       updateEmptyState();
 
-      markReadBtn.disabled = true;
-      markReadBtn.querySelector(".icon").classList.add("loading");
-
       await browser.runtime.sendMessage({
         action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
         entryIds: [entry.id],
