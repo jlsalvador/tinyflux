@@ -601,6 +601,7 @@ const setupDropdown = () => {
 
   const closeDropdown = () => {
     state.dropdownOpen = false;
+    document.body.classList.remove("dropdown-open");
     menu.classList.remove("show");
     button.setAttribute("aria-expanded", "false");
   };
