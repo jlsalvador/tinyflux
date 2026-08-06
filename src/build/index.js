@@ -100,7 +100,7 @@ async function buildManifests(label, pkg, srcdir, resdir) {
     for (const key in obj) {
       const value = obj[key];
 
-      if (typeof value == "object" && value !== null) {
+      if (typeof value === "object" && value !== null) {
         obj[key] = replaceByPackage(value);
         continue;
       }
@@ -178,13 +178,15 @@ async function buildLocales(label, pkg, srcdir, resdir) {
         .filter((entry) => entry.isFile())
         .map((entry) => parse(entry.name).name),
     );
-  locales.forEach(async (locale) => {
-    await fs.mkdir(resolve(resdir, "_locales", locale), { recursive: true });
-    await fs.copyFile(
-      resolve(srcdir, "locales", locale + ".json"),
-      resolve(resdir, "_locales", locale, "messages.json"),
-    );
-  });
+  await Promise.all(
+    locales.map(async (locale) => {
+      await fs.mkdir(resolve(resdir, "_locales", locale), { recursive: true });
+      await fs.copyFile(
+        resolve(srcdir, "locales", locale + ".json"),
+        resolve(resdir, "_locales", locale, "messages.json"),
+      );
+    }),
+  );
 
   console.timeEnd(label);
 }
@@ -235,7 +237,11 @@ async function buildPages(label, dev, srcdir, resdir) {
 
   // Copy HTML and CSS files
   const htmlFiles = ["pages/options.html", "pages/popup.html"];
-  const cssFiles = ["pages/options.css", "pages/popup.css"];
+  const cssFiles = [
+    "pages/variables.css",
+    "pages/options.css",
+    "pages/popup.css",
+  ];
 
   await Promise.all([
     ...htmlFiles.map((file) =>
@@ -445,7 +451,7 @@ Flags:
 async function main() {
   let argDev = false;
   let argBuild = false;
-  let arhWatch = false;
+  let argWatch = false;
   let argHelp = false;
 
   for (const arg of process.argv.slice(2)) {
@@ -462,7 +468,7 @@ async function main() {
         argBuild = true;
         break;
       case "watch":
-        arhWatch = true;
+        argWatch = true;
         break;
     }
   }
@@ -471,7 +477,7 @@ async function main() {
     showHelp();
   } else if (argBuild) {
     await buildExtensions(argDev);
-  } else if (arhWatch) {
+  } else if (argWatch) {
     await watchExtensions(argDev);
   } else {
     showHelp();

@@ -1,0 +1,73 @@
+/**
+ * @typedef {import('../pages/common.js').Icon} Icon
+ */
+
+/** @type {Icon} */
+export const testIcon = {
+  id: 20,
+  data: "image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  mime_type: "image/png",
+};
+
+export const testEntry = {
+  author: "Author",
+  changed_at: "2024-07-11T13:12:10.690975+02:00",
+  comments_url: "https://example.com/comments",
+  content: "<p>Lorem ipsum dolor sit amet.</p>",
+  created_at: "2024-07-11T13:12:10.690975+02:00",
+  enclosures: [],
+  feed: {
+    allow_self_signed_certificates: false,
+    apprise_service_urls: "",
+    blocklist_rules: "",
+    category: {
+      id: 8,
+      title: "Tech News",
+      user_id: 1,
+      hide_globally: false,
+    },
+    checked_at: "2024-07-11T13:12:06.025126+02:00",
+    cookie: "",
+    crawler: false,
+    description: "",
+    disable_http2: false,
+    disabled: false,
+    etag_header: "",
+    feed_url: "https://example.com/rss",
+    fetch_via_proxy: false,
+    hide_globally: false,
+    icon: {
+      feed_id: 28,
+      icon_id: 20,
+    },
+    id: 28,
+    ignore_http_cache: false,
+    keeplist_rules: "",
+    last_modified_header: "",
+    next_check_at: "0001-01-01T00:00:00Z",
+    no_media_player: false,
+    parsing_error_count: 0,
+    parsing_error_message: "",
+    password: "",
+    rewrite_rules: "",
+    scraper_rules: "",
+    site_url: "https://example.com/",
+    title: "Example Feed",
+    urlrewrite_rules: "",
+    user_agent: "",
+    user_id: 1,
+    username: "",
+  },
+  feed_id: 28,
+  hash: "49c994b75dc859ad39d40cadbab8dd537070447157876ab7635dec16a04264fe",
+  id: 121699,
+  published_at: "2024-07-11T13:05:04+02:00",
+  reading_time: 1,
+  share_code: "",
+  starred: false,
+  status: "unread",
+  tags: ["news", "world"],
+  title: "Test News Title",
+  url: "https://example.com/121699",
+  user_id: 1,
+};

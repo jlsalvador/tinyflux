@@ -28,7 +28,7 @@ const timeFormatsExtremeNarrow = [
 ];
 
 const timeFormatsLong = [
-  [1, "1 second ago", " 1 second from now"],
+  [1, "1 second ago", "1 second from now"],
   [1, "%d seconds ago", "%d seconds from now"],
   [60, "1 minute ago", "1 minute from now"],
   [60, "%d minutes ago", "%d minutes from now"],
@@ -87,14 +87,29 @@ export function TimeAgo(time, style = Style.Long) {
   }
 
   let i = 0;
-  let format = timeFormats[i++];
   let result;
-  let diff = seconds;
-  do {
-    result = format[pastOrFuture].replace("%d", diff);
-    format = timeFormats[i++];
-    diff = Math.floor(seconds / format[0]);
-  } while (diff > 1);
+
+  while (i < timeFormats.length - 1) {
+    const [divisor, ,] = timeFormats[i];
+    const nextDivisor = timeFormats[i + 2]?.[0] ?? Infinity;
+    const nextDiff = Math.floor(seconds / nextDivisor);
+
+    if (nextDiff >= 1) {
+      i += 2;
+      continue;
+    }
+
+    const count = Math.floor(seconds / divisor);
+    const template = count <= 1 ? timeFormats[i] : timeFormats[i + 1];
+    result = template[pastOrFuture].replace("%d", count);
+    break;
+  }
+
+  if (!result) {
+    const d = timeFormats[i]?.[0] ?? 1;
+    const count = Math.floor(seconds / d);
+    result = timeFormats[i][pastOrFuture].replace("%d", count);
+  }
 
   return result;
 }

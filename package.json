@@ -28,7 +28,8 @@
     "build": "node src/build build",
     "watch": "node src/build watch --dev",
     "format": "npx prettier -w src package.json",
-    "lint": "npx eslint --fix eslint.config.js src"
+    "lint": "npx eslint --fix eslint.config.js src",
+    "test": "node --import ./src/test/setup.js --test ./src/pages/*.test.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

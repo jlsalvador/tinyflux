@@ -143,6 +143,7 @@ export const ALARM_REFRESH = "ALARM_REFRESH";
 export const MESSAGE_REFRESH_THEME = "refresh_theme";
 export const MESSAGE_REFRESH_VIEW_ENTRIES = "refresh_view_entries";
 export const MESSAGE_MARK_ENTRY_IDS_AS_READ = "mark_entry_ids_as_read";
+export const MESSAGE_TOGGLE_ENTRY_BOOKMARK = "toggle_bookmark";
 
 // Custom error types
 export class InvalidUrlOrTokenError extends Error {
@@ -152,25 +153,14 @@ export class InvalidUrlOrTokenError extends Error {
   }
 }
 
-export class ReceivingEndDoesNotExistError extends Error {
-  constructor(
-    message = "Could not establish connection. Receiving end does not exist.",
-  ) {
-    super(message);
-    this.name = "ReceivingEndDoesNotExistError";
-  }
-}
-
-// Legacy error exports for backwards compatibility
-export const ErrorInvalidUrlOrToken = new InvalidUrlOrTokenError();
-export const ErrorReceivingEndDoesNotExist =
-  new ReceivingEndDoesNotExistError();
+const RECEIVING_END_ERROR =
+  "Could not establish connection. Receiving end does not exist.";
 
 /**
  * Get popup style from URL parameters
  * @returns {string} The style ('popup' or 'window')
  */
-const getPopupStyle = () => {
+export const getPopupStyle = () => {
   if (typeof window === "undefined") {
     return "popup";
   }
@@ -180,7 +170,7 @@ const getPopupStyle = () => {
 /**
  * Close window if in popup mode
  */
-const closeIfPopup = () => {
+export const closeIfPopup = () => {
   if (typeof window === "undefined") {
     return;
   }
@@ -287,7 +277,7 @@ export async function updateBadgeColor() {
  * @param {Entry[]} entries - Array of entries to filter
  * @returns {Entry[]} Filtered entries
  */
-const filterVisibleEntries = (entries) => {
+export const filterVisibleEntries = (entries) => {
   return entries
     .filter((entry) => entry?.feed && !entry.feed.hide_globally)
     .filter(
@@ -342,7 +332,7 @@ export async function updateBadgeConnectionError() {
  * @returns {boolean}
  */
 const isIgnorableError = (error) => {
-  return error?.message === ErrorReceivingEndDoesNotExist.message;
+  return error?.message === RECEIVING_END_ERROR;
 };
 
 /**
@@ -422,7 +412,7 @@ async function sendNotification(newEntries) {
   // Build notification
   let extensionName = chrome.i18n.getMessage("extensionName");
   let options = {
-    iconUrl: "assets/icon-dark-196x196.png",
+    iconUrl: "pages/assets/icon-dark-196x196.png",
     title: extensionName,
     message: "",
   };
@@ -493,10 +483,7 @@ export async function refreshEntries() {
     console.log(`${fetchedEntries.length} entries fetched.`);
     return fetchedEntries;
   } catch (error) {
-    if (
-      error instanceof InvalidUrlOrTokenError ||
-      error === ErrorInvalidUrlOrToken
-    ) {
+    if (error instanceof InvalidUrlOrTokenError) {
       await openSettings();
     } else {
       await updateBadgeConnectionError();
@@ -530,12 +517,8 @@ export async function actionSidePanel() {
  * Remove action listeners
  */
 const removeActionListeners = () => {
-  if (browser.action.onClicked.hasListener(actionWindow)) {
-    browser.action.onClicked.removeListener(actionWindow);
-  }
-  if (browser.action.onClicked.hasListener(actionSidePanel)) {
-    browser.action.onClicked.removeListener(actionSidePanel);
-  }
+  browser.action.onClicked.removeListener(actionWindow);
+  browser.action.onClicked.removeListener(actionSidePanel);
 };
 
 /**

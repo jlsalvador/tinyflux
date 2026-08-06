@@ -84,26 +84,26 @@ async function saveOptions(e) {
     showNotifications: showNotifications,
   });
 
-  if (url != oldUrl || token != oldToken) {
+  if (url !== oldUrl || token !== oldToken) {
     await refreshEntries();
   }
 
-  if (extensionClickBehavior != oldExtensionClickBehavior) {
+  if (extensionClickBehavior !== oldExtensionClickBehavior) {
     await refreshActionBehavior();
   }
 
-  if (periodInMinutes != oldPeriodInMinutes) {
+  if (periodInMinutes !== oldPeriodInMinutes) {
     await refreshAlarm();
   }
 
-  if (theme != oldTheme) {
+  if (theme !== oldTheme) {
     await refreshTheme();
     await notifyRefreshTheme();
   }
 
   if (
-    badgeBackgroundColor != oldBackgroundColor ||
-    badgeTextColor != oldBadgeTextColor
+    badgeBackgroundColor !== oldBackgroundColor ||
+    badgeTextColor !== oldBadgeTextColor
   ) {
     await updateBadgeColor();
   }
@@ -200,7 +200,7 @@ async function testMinifluxApi() {
 }
 
 async function clearIconsCache() {
-  return await browser.storage.local.get(null).then((data) => {
+  return browser.storage.local.get(null).then((data) => {
     const keysToRemove = [];
     for (const key of Object.keys(data)) {
       if (/^icon\d+$/.test(key)) {

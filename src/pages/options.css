@@ -1,42 +1,18 @@
+@import "./variables.css";
+
+/* ============================================================================
+   Options-specific Variables
+   ============================================================================ */
+
 :root {
-  /* Color Palette - Light Theme (Default) */
-  --bg-app: #f5f7fa;
-  --bg-card: #ffffff;
-  --text-main: #2d3748;
-  --text-muted: #718096;
-  --border-color: #e2e8f0;
-  --primary: #3182ce;
-  --primary-hover: #2b6cb0;
-  --primary-text: #ffffff;
-  --danger: #e53e3e;
-  --success: #38a169;
-
-  /* Input Styles */
-  --input-bg: #ffffff;
-  --input-border: #cbd5e0;
-  --focus-ring: rgba(66, 153, 225, 0.5);
-
-  /* Layout & Spacing */
-  --radius: 8px;
-  --spacing: 1.5rem;
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  --color-input-bg: var(--color-bg);
+  --color-input-border: var(--color-border);
 }
 
-/* Dark Theme Override - Triggered by data-theme="dark" on html element */
-:root[data-theme="dark"] {
-  --bg-app: #1a202c;
-  --bg-card: #2d3748;
-  --text-main: #edf2f7;
-  --text-muted: #a0aec0;
-  --border-color: #4a5568;
-  --primary: #63b3ed;
-  --primary-hover: #4299e1;
-  --primary-text: #1a202c;
-  --input-bg: #1a202c;
-  --input-border: #4a5568;
-  --focus-ring: rgba(99, 179, 237, 0.5);
+[data-theme="dark"] {
+  --color-input-bg: var(--color-bg-secondary);
+  --color-input-border: var(--color-border);
+  --color-primary-text: var(--color-bg);
 }
 
 /* Reset & Base Styles */
@@ -46,8 +22,8 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
-  color: var(--text-main);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text);
   margin: 0;
   padding: 20px;
   line-height: 1.5;
@@ -65,17 +41,17 @@ body {
 header h1 {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: var(--spacing);
-  color: var(--text-main);
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text);
 }
 
 /* Card Component */
 .settings-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  padding: var(--spacing);
-  margin-bottom: var(--spacing);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -84,7 +60,7 @@ header h1 {
   margin-bottom: 1.25rem;
   font-size: 1.1rem;
   font-weight: 600;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 0.75rem;
 }
 
@@ -106,10 +82,10 @@ input[type="number"],
 select {
   width: 100%;
   padding: 0.625rem;
-  border: 1px solid var(--input-border);
-  background-color: var(--input-bg);
-  color: var(--text-main);
-  border-radius: var(--radius);
+  border: 1px solid var(--color-input-border);
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  border-radius: var(--border-radius-md);
   font-size: 1rem;
   transition:
     border-color 0.2s,
@@ -119,8 +95,8 @@ select {
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .font-mono {
@@ -131,11 +107,11 @@ select:focus {
 .help-text {
   margin-top: 0.4rem;
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
 }
 
 .help-text a {
-  color: var(--primary);
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -155,7 +131,7 @@ input[type="checkbox"] {
   width: 1.2rem;
   height: 1.2rem;
   margin-top: 0.15rem;
-  accent-color: var(--primary);
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 
@@ -181,8 +157,8 @@ input[type="checkbox"] {
 }
 
 .color-picker-wrapper input[type="color"]::-webkit-color-swatch {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
 }
 
 /* Buttons */
@@ -198,7 +174,7 @@ input[type="checkbox"] {
   justify-content: space-between;
   align-items: center;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border);
 }
 
 .btn {
@@ -207,7 +183,7 @@ input[type="checkbox"] {
   justify-content: center;
   padding: 0.625rem 1.25rem;
   font-weight: 500;
-  border-radius: var(--radius);
+  border-radius: var(--border-radius-md);
   border: 1px solid transparent;
   cursor: pointer;
   font-size: 1rem;
@@ -221,45 +197,45 @@ input[type="checkbox"] {
 }
 
 .btn-primary {
-  background-color: var(--primary);
-  color: var(--primary-text);
+  background-color: var(--color-primary);
+  color: var(--color-primary-text);
   width: 100%;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+  background-color: var(--color-primary-hover);
 }
 
 .btn-outline {
   background-color: transparent;
-  border-color: var(--border-color);
-  color: var(--text-main);
+  border-color: var(--color-border);
+  color: var(--color-text);
 }
 
 .btn-outline:hover:not(:disabled) {
-  border-color: var(--text-muted);
+  border-color: var(--color-text-secondary);
   background-color: rgba(0, 0, 0, 0.03);
 }
 
 .btn-ghost {
   background-color: transparent;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
 .btn-ghost:hover:not(:disabled) {
-  color: var(--danger);
+  color: var(--color-danger);
 }
 
 /* Feedback Status Classes (Used in JS) */
 .btn.status-success {
-  background-color: var(--success);
-  border-color: var(--success);
+  background-color: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .btn.status-error {
-  background-color: var(--danger);
-  border-color: var(--danger);
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
   color: white;
 }

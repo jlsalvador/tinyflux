@@ -6,6 +6,7 @@ import browser from "webextension-polyfill";
 import {
   ALARM_REFRESH,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
+  MESSAGE_TOGGLE_ENTRY_BOOKMARK,
   notifyRefreshEntries,
   refreshActionBehavior,
   refreshEntries,
@@ -15,7 +16,6 @@ import {
 
 /**
  * @typedef {import('./common.js').Entry} Entry
- * @typedef {import('./common.js').ErrorInvalidUrlOrToken} ErrorInvalidUrlOrToken
  */
 
 /**
@@ -27,30 +27,65 @@ import {
  * @throws {Error}
  */
 const markEntriesAsRead = async (entryIds) => {
-  /**
-   * Mark an entry as read in the Miniflux instance.
-   *
-   * @param {Number[]} entryIds
-   * @returns {Promise<void>}
-   * @throws {ErrorInvalidUrlOrToken|AbortError|TypeError}
-   */
-  const markMinifluxEntryAsRead = (entryIds) => {
-    return request(`/v1/entries`, {
+  const data = await browser.storage.local.get("entries");
+  const previousEntries = data.entries || [];
+
+  const updatedEntries = previousEntries.filter(
+    (e) => !entryIds.includes(e.id),
+  );
+
+  // Optimistic UI.
+  await browser.storage.local.set({ entries: updatedEntries });
+  await Promise.all([notifyRefreshEntries(), updateBadge()]);
+
+  try {
+    // Mark an entry as read in the Miniflux instance.
+    await request(`/v1/entries`, {
       method: "PUT",
       body: JSON.stringify({ entry_ids: entryIds, status: "read" }),
     });
-  };
+    return updatedEntries;
+  } catch (error) {
+    console.error("Error while marking entry as read, reverting: ", error);
+    await browser.storage.local.set({ entries: previousEntries });
+    await Promise.all([notifyRefreshEntries(), updateBadge()]);
+    throw error;
+  }
+};
 
-  await markMinifluxEntryAsRead(entryIds);
-  return browser.storage.local
-    .get("entries")
-    .then((data) => data.entries)
-    .then((entries) => entries.filter((e) => entryIds.indexOf(e.id) === -1))
-    .then(async (entries) => {
-      await browser.storage.local.set({ entries: entries }); // Remove entries from the local cache.
-      await Promise.all([notifyRefreshEntries(), updateBadge()]);
-      return entries;
-    });
+/**
+ * Change entry bookmark status in an optimistic way.
+ *
+ * @param {number} entryId
+ */
+const toggleBookmark = async (entryId) => {
+  const data = await browser.storage.local.get("entries");
+  const previousEntries = data.entries || [];
+
+  const entryIndex = previousEntries.findIndex((e) => e.id === entryId);
+  if (entryIndex === -1) return;
+
+  const isStarred = previousEntries[entryIndex].starred;
+
+  const updatedEntries = [...previousEntries];
+  updatedEntries[entryIndex] = {
+    ...updatedEntries[entryIndex],
+    starred: !isStarred,
+  };
+  await browser.storage.local.set({ entries: updatedEntries });
+
+  await notifyRefreshEntries();
+
+  try {
+    await request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
+    return updatedEntries;
+  } catch (error) {
+    console.error("Error bookmarking entry, reverting:", error);
+
+    await browser.storage.local.set({ entries: previousEntries });
+    await notifyRefreshEntries();
+    throw error;
+  }
 };
 
 const handleStartup = async () => {
@@ -61,6 +96,8 @@ const handleInstalled = handleStartup;
 const handleMessage = (message) => {
   if (message.action === MESSAGE_MARK_ENTRY_IDS_AS_READ) {
     return markEntriesAsRead(message.entryIds);
+  } else if (message.action === MESSAGE_TOGGLE_ENTRY_BOOKMARK) {
+    return toggleBookmark(message.entryId);
   } else {
     return false;
   }

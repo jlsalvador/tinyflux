@@ -1,8 +1,19 @@
-/* global document, URLSearchParams, window, console, chrome, setTimeout, clearTimeout */
+/* global document, window, console, chrome, setTimeout, clearTimeout */
 
 "use strict";
 
 import "./localize.js";
+import {
+  createSvg,
+  svg_path_calendar,
+  svg_path_clock,
+  svg_path_eye,
+  svg_path_question_mark,
+  svg_path_star_empty,
+  svg_path_star_filled,
+  svg_path_toggle_close,
+  svg_path_toggle_open,
+} from "./icons.js";
 import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
@@ -11,6 +22,10 @@ import {
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_REFRESH_THEME,
   MESSAGE_REFRESH_VIEW_ENTRIES,
+  MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+  closeIfPopup,
+  filterVisibleEntries,
+  getPopupStyle,
   notifyRefreshTheme,
   refreshEntries,
   refreshTheme,
@@ -39,29 +54,11 @@ const state = {
   iconPromises: new Map(),
   confirmMarkAllEntriesTimeout: null,
   dropdownOpen: false,
-  pendingReadIds: new Set(),
 };
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
-
-/**
- * Get popup style from URL parameters
- * @returns {string}
- */
-const getPopupStyle = () => {
-  return new URLSearchParams(window.location.search).get("style") || "popup";
-};
-
-/**
- * Close window if in popup mode
- */
-const closeIfPopup = () => {
-  if (getPopupStyle() === "popup") {
-    window.close();
-  }
-};
 
 /**
  * Open a URL in a new tab
@@ -78,28 +75,6 @@ const openLink = async (url, active = true) => {
   }
 
   return tab;
-};
-
-/**
- * Create an SVG element
- * @param {string} path - SVG path data
- * @param {string} className - CSS class name
- * @returns {SVGElement}
- */
-const createIcon = (path, className = "icon") => {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", className);
-  svg.setAttribute("viewBox", "0 0 16 16");
-  svg.setAttribute("aria-hidden", "true");
-
-  const pathElement = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "path",
-  );
-  pathElement.setAttribute("d", path);
-
-  svg.appendChild(pathElement);
-  return svg;
 };
 
 // ============================================================================
@@ -168,48 +143,11 @@ const getIcon = async (iconID) => {
 // Entry Management
 // ============================================================================
 
-/**
- * Toggle bookmark status
- * @param {number} entryId
- * @returns {Promise<Response>}
- */
-const toggleBookmark = async (entryId) => {
-  return request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
-};
-
-const svg_star_filled =
-  "M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z";
-const svg_star_empty =
-  "M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z";
-const svg_toggle_open =
-  "M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z";
-const svg_toggle_close =
-  "M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z";
-const svg_calendar =
-  "M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z";
-const svg_clock =
-  "M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-1 0A7 7 0 1 0 1 8a7 7 0 0 0 14 0z";
-const svg_eye =
-  "M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z";
-
 const setBookmarkButtonState = (button, isStarred) => {
   button.classList.toggle("starred", isStarred);
   button.replaceChildren(
-    createIcon(isStarred ? svg_star_filled : svg_star_empty),
+    createSvg(isStarred ? svg_path_star_filled : svg_path_star_empty),
   );
-};
-
-const updateEntryCache = async (entryId, callback) => {
-  const entries = await browser.storage.local
-    .get("entries")
-    .then((data) => data.entries || []);
-
-  const updatedEntries = entries.map((entry) =>
-    entry.id === entryId ? callback(entry) : entry,
-  );
-
-  await browser.storage.local.set({ entries: updatedEntries });
-  return updatedEntries;
 };
 
 const updateEmptyState = () => {
@@ -279,7 +217,6 @@ const createEntryTitle = async (entry) => {
       );
 
     if (shouldMarkAsRead) {
-      state.pendingReadIds.add(entry.id);
       browser.runtime.sendMessage({
         action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
         entryIds: [entry.id],
@@ -328,7 +265,7 @@ const createEntryTitle = async (entry) => {
   });
   const publishedTime = document.createElement("span");
   publishedTime.textContent = TimeAgo(entry.published_at, Style.ExtremeNarrow);
-  publishedStat.replaceChildren(createIcon(svg_calendar), publishedTime);
+  publishedStat.replaceChildren(createSvg(svg_path_calendar), publishedTime);
   stats.appendChild(publishedStat);
 
   // Reading time
@@ -349,7 +286,7 @@ const createEntryTitle = async (entry) => {
     "pagePopupReadingTimeShort",
     String(entry.reading_time),
   );
-  readingTimeStat.replaceChildren(createIcon(svg_clock), readingText);
+  readingTimeStat.replaceChildren(createSvg(svg_path_clock), readingText);
   stats.appendChild(readingTimeStat);
 
   // Actions
@@ -362,23 +299,21 @@ const createEntryTitle = async (entry) => {
   bookmarkBtn.type = "button";
   bookmarkBtn.title = chrome.i18n.getMessage("pagePopupToggleBookmark");
   bookmarkBtn.replaceChildren(
-    createIcon(entry.starred ? svg_star_filled : svg_star_empty),
+    createSvg(entry.starred ? svg_path_star_filled : svg_path_star_empty),
   );
 
   bookmarkBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
     const isStarred = bookmarkBtn.classList.contains("starred");
-    const nextStarredState = !isStarred;
 
     // Optimistic UI update
-    setBookmarkButtonState(bookmarkBtn, nextStarredState);
+    setBookmarkButtonState(bookmarkBtn, !isStarred);
 
     try {
-      await toggleBookmark(entry.id);
-      await updateEntryCache(entry.id, (e) => ({
-        ...e,
-        starred: nextStarredState,
-      }));
+      await browser.runtime.sendMessage({
+        action: MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+        entryId: entry.id,
+      });
     } catch (error) {
       console.error("Failed to toggle bookmark:", error);
       setBookmarkButtonState(bookmarkBtn, isStarred);
@@ -391,39 +326,22 @@ const createEntryTitle = async (entry) => {
   markReadBtn.className = "entry-action-btn";
   markReadBtn.type = "button";
   markReadBtn.title = chrome.i18n.getMessage("pagePopupMarkAsRead");
-  markReadBtn.replaceChildren(createIcon(svg_eye));
+  markReadBtn.replaceChildren(createSvg(svg_path_eye));
 
   markReadBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
-
-    state.pendingReadIds.add(entry.id);
-    const entryElement = document.getElementById(`entry-${entry.id}`);
-    const previousEntries = await browser.storage.local
-      .get("entries")
-      .then((data) => data.entries || []);
-    const updatedEntries = previousEntries.filter((e) => e.id !== entry.id);
+    markReadBtn.disabled = true;
+    markReadBtn.querySelector(".icon").classList.add("loading");
 
     try {
-      // Optimistic UI update: remove the entry immediately.
-      if (entryElement) {
-        entryElement.remove();
-      }
-      await browser.storage.local.set({ entries: updatedEntries });
-      updateEmptyState();
-
       await browser.runtime.sendMessage({
         action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
         entryIds: [entry.id],
       });
     } catch (error) {
       console.error("Failed to mark as read:", error);
-      await browser.storage.local.set({ entries: previousEntries });
-      if (entryElement) {
-        await addDOMEntries([entry]);
-      }
-      updateEmptyState();
     } finally {
-      state.pendingReadIds.delete(entry.id);
+      updateEmptyState();
       markReadBtn.disabled = false;
       markReadBtn.querySelector(".icon").classList.remove("loading");
     }
@@ -435,7 +353,7 @@ const createEntryTitle = async (entry) => {
   toggleBtn.className = "entry-action-btn";
   toggleBtn.type = "button";
   toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
-  toggleBtn.replaceChildren(createIcon(svg_toggle_open));
+  toggleBtn.replaceChildren(createSvg(svg_path_toggle_open));
 
   toggleBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -448,13 +366,13 @@ const createEntryTitle = async (entry) => {
     if (entryContent) {
       // Collapse
       titleContainer.classList.remove("expanded");
-      toggleBtn.replaceChildren(createIcon(svg_toggle_open));
+      toggleBtn.replaceChildren(createSvg(svg_path_toggle_open));
       toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
       entryContent.remove();
     } else {
       // Expand
       titleContainer.classList.add("expanded");
-      toggleBtn.replaceChildren(createIcon(svg_toggle_close));
+      toggleBtn.replaceChildren(createSvg(svg_path_toggle_close));
       toggleBtn.title = chrome.i18n.getMessage("pagePopupHideContent");
       entryContainer.appendChild(createEntryContent(entry));
     }
@@ -482,7 +400,6 @@ const createEntry = async (domId, entry) => {
   const entryElement = document.createElement("div");
   entryElement.id = domId;
   entryElement.dataset.entryId = entry.id;
-  entryElement.dataset.entryPublishedAt = entry.published_at;
   entryElement.dataset.timestamp = new Date(entry.published_at).getTime();
   entryElement.className = "entry";
 
@@ -519,12 +436,7 @@ const addDOMEntry = async (entry) => {
 const addDOMEntries = async (entries) => {
   if (!entries?.length) return;
 
-  const filtered = entries
-    .filter((entry) => !entry.feed?.hide_globally)
-    .filter((entry) => !entry.feed?.category?.hide_globally)
-    .filter((entry) => !state.pendingReadIds.has(entry.id));
-
-  await Promise.all(filtered.map(addDOMEntry));
+  await Promise.all(filterVisibleEntries(entries).map(addDOMEntry));
   sortDOMEntries();
 };
 
@@ -557,23 +469,8 @@ const handleRefreshViewEntries = async () => {
       .get("entries")
       .then((r) => r.entries || []);
 
-    const fetchedIds = new Set(entries.map((e) => e.id));
-    for (const id of state.pendingReadIds) {
-      if (!fetchedIds.has(id)) {
-        state.pendingReadIds.delete(id);
-      }
-    }
-
     cleanupOldDOMEntries(entries);
     await addDOMEntries(entries);
-
-    // Show/hide empty state
-    const isEmpty = document.getElementById("isEmpty");
-    const hasEntries = document.querySelectorAll(".entry").length > 0;
-
-    if (isEmpty) {
-      isEmpty.classList.toggle("hidden", hasEntries);
-    }
   } catch (error) {
     console.error("Failed to refresh entries:", error);
   }
@@ -645,17 +542,13 @@ const setupMarkAllAsReadButton = () => {
 
   const icon = button.querySelector(".icon");
   const pathElement = icon.querySelector("path");
-
-  // Store original icon SVG
-  const originalIconPath = pathElement.getAttribute("d");
-  const questionIconPath =
-    "M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z";
+  const previousIconPath = pathElement.getAttribute("d");
 
   button.addEventListener("click", async () => {
     if (!button.classList.contains("danger")) {
       // First click: show confirmation
       button.classList.add("danger");
-      pathElement.setAttribute("d", questionIconPath); // Change to question mark
+      pathElement.setAttribute("d", svg_path_question_mark); // Change to question mark
       button.title = chrome.i18n.getMessage(
         "pagePopupAreYouSureToMarkAllEntriesAsRead",
       );
@@ -666,7 +559,7 @@ const setupMarkAllAsReadButton = () => {
 
       state.confirmMarkAllEntriesTimeout = setTimeout(() => {
         button.classList.remove("danger");
-        pathElement.setAttribute("d", originalIconPath); // Restore original icon
+        pathElement.setAttribute("d", previousIconPath); // Restore original icon
         button.title = chrome.i18n.getMessage("pagePopupMarkEntriesAsRead");
       }, MARK_ENTRIES_AS_READ_TIMEOUT_MS);
     } else {
@@ -675,25 +568,14 @@ const setupMarkAllAsReadButton = () => {
         clearTimeout(state.confirmMarkAllEntriesTimeout);
       }
 
-      const previousEntries = await browser.storage.local
-        .get("entries")
-        .then((data) => data.entries || []);
-
       const entryIds = Array.from(document.querySelectorAll(".entry"))
         .map((entry) => Number(entry.dataset.entryId))
         .filter((id) => !isNaN(id));
 
-      entryIds.forEach((id) => state.pendingReadIds.add(id));
+      button.disabled = true;
+      icon.classList.add("loading");
 
       try {
-        // Optimistic UI update: remove the entries immediately.
-        document.querySelectorAll(".entry").forEach((entry) => entry.remove());
-        await browser.storage.local.set({ entries: [] });
-        updateEmptyState();
-
-        button.disabled = true;
-        icon.classList.add("loading");
-
         if (entryIds.length > 0) {
           await browser.runtime.sendMessage({
             action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
@@ -702,18 +584,13 @@ const setupMarkAllAsReadButton = () => {
         }
       } catch (error) {
         console.error("Failed to mark all as read:", error);
-
-        entryIds.forEach((id) => state.pendingReadIds.delete(id));
-
-        await browser.storage.local.set({ entries: previousEntries });
-        await addDOMEntries(previousEntries);
-        updateEmptyState();
       } finally {
         button.disabled = false;
         icon.classList.remove("loading");
-        pathElement.setAttribute("d", originalIconPath); // Restore original icon
+        pathElement.setAttribute("d", previousIconPath); // Restore original icon
         button.classList.remove("danger");
         button.title = chrome.i18n.getMessage("pagePopupMarkEntriesAsRead");
+        updateEmptyState();
       }
     }
   });
@@ -734,7 +611,6 @@ const setupRefreshButton = () => {
       icon.classList.add("loading");
 
       await refreshEntries();
-      state.pendingReadIds.clear();
       await handleRefreshViewEntries();
     } catch (error) {
       console.error("Failed to refresh:", error);
@@ -858,23 +734,17 @@ const initializePopup = async () => {
 // Message Listener
 // ============================================================================
 
-browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message) => {
   if (message.action === MESSAGE_REFRESH_VIEW_ENTRIES) {
-    handleRefreshViewEntries()
-      .then(() => sendResponse())
-      .catch((error) => {
-        console.error("Error refreshing entries:", error);
-        sendResponse();
-      });
-    return true;
-  } else if (message.action === MESSAGE_REFRESH_THEME) {
-    refreshTheme()
-      .then(() => sendResponse())
-      .catch((error) => {
-        console.error("Error refreshing theme:", error);
-        sendResponse();
-      });
-    return true;
+    return handleRefreshViewEntries().catch((error) => {
+      console.error("Error refreshing entries:", error);
+    });
+  }
+
+  if (message.action === MESSAGE_REFRESH_THEME) {
+    return refreshTheme().catch((error) => {
+      console.error("Error refreshing theme:", error);
+    });
   }
 
   return false;

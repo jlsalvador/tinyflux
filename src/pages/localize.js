@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return v1 ? chrome.i18n.getMessage(v1) : "";
     });
 
-    if (msg != tag) obj[dst] = msg;
+    if (msg !== tag) obj[dst] = msg;
   }
 
   function localizeHtmlPage() {
@@ -19,24 +19,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     var data = document.querySelectorAll(
       "[data-localize],[data-title-localize]",
     );
-    for (var i in data)
-      if (Object.prototype.hasOwnProperty.call(data, i)) {
-        var obj = data[i];
-        var tag = obj.getAttribute("data-localize")?.toString();
-        if (tag) replace_i18n(obj, tag, "innerHTML");
-        var title = obj.getAttribute("data-title-localize")?.toString();
-        if (title) replace_i18n(obj, title, "title");
-      }
-
-    // // Localize everything else by replacing all __MSG_***__ tags
-    // var page = document.getElementsByTagName("html");
-
-    // for (var j = 0; j < page.length; j++) {
-    //   var obj = page[j];
-    //   var tag = obj.innerHTML.toString();
-
-    //   replace_i18n(obj, tag);
-    // }
+    data.forEach(function (obj) {
+      var tag = obj.getAttribute("data-localize")?.toString();
+      if (tag) replace_i18n(obj, tag, "innerHTML");
+      var title = obj.getAttribute("data-title-localize")?.toString();
+      if (title) replace_i18n(obj, title, "title");
+    });
   }
 
   localizeHtmlPage();
