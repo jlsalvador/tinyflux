@@ -471,6 +471,7 @@ const handleRefreshViewEntries = async () => {
 
     cleanupOldDOMEntries(entries);
     await addDOMEntries(entries);
+    updateEmptyState();
   } catch (error) {
     console.error("Failed to refresh entries:", error);
   }
