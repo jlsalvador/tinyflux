@@ -445,7 +445,7 @@ Commands:
 \twatch\tContinuously build on each detected changes.
 
 Flags:
-\t--dev\t-d\tGenerate sourceMaps and disable minification.`);
+\t--dev\t-d\tGenerate source maps and disable minification.`);
 }
 
 async function main() {

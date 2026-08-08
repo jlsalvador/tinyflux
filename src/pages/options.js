@@ -157,17 +157,17 @@ async function handleNotificationToggle(e) {
   const checkbox = e.target;
 
   if (checkbox.checked) {
-    // Ask browser for permission to show notifications
+    // Ask the browser for permission to show notifications
     const granted = await browser.permissions.request({
       permissions: ["notifications"],
     });
 
     if (!granted) {
-      // User does not grant permission
+      // User did not grant permission
       checkbox.checked = false;
     }
   } else {
-    // Remove permission to show notifications
+    // Remove the permission to show notifications
     await browser.permissions.remove({
       permissions: ["notifications"],
     });

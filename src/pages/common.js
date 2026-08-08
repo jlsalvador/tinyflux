@@ -147,14 +147,14 @@ export const MESSAGE_TOGGLE_ENTRY_BOOKMARK = "toggle_bookmark";
 
 // Custom error types
 export class InvalidUrlOrTokenError extends Error {
-  constructor(message = "You must configure your Miniflux URL and Token") {
+  constructor(message = "You must configure your Miniflux URL and token") {
     super(message);
     this.name = "InvalidUrlOrTokenError";
   }
 }
 
 const RECEIVING_END_ERROR =
-  "Could not establish connection. Receiving end does not exist.";
+  "Could not establish a connection. Receiving end does not exist.";
 
 /**
  * Get popup style from URL parameters
@@ -405,7 +405,7 @@ async function sendNotification(newEntries) {
   });
 
   if (!hasPermission) {
-    console.warn("Notification option is on, but permission is missing.");
+    console.warn("The notification option is on, but permission is missing.");
     return;
   }
 
@@ -469,9 +469,9 @@ export async function refreshEntries() {
       const newArrivals = fetchedEntries.filter((e) => !cachedIds.has(e.id));
 
       if (newArrivals.length > 0) {
-        // Do not await here to not block the saving process
+        // Do not await here to avoid blocking the saving process
         sendNotification(newArrivals).catch((err) =>
-          console.error("Notif error:", err),
+          console.error("Notification error:", err),
         );
       }
     }

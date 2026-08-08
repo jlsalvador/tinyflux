@@ -46,7 +46,7 @@ const markEntriesAsRead = async (entryIds) => {
     });
     return updatedEntries;
   } catch (error) {
-    console.error("Error while marking entry as read, reverting: ", error);
+    console.error("Error while marking the entry as read, reverting:", error);
     await browser.storage.local.set({ entries: previousEntries });
     await Promise.all([notifyRefreshEntries(), updateBadge()]);
     throw error;
@@ -80,7 +80,7 @@ const toggleBookmark = async (entryId) => {
     await request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
     return updatedEntries;
   } catch (error) {
-    console.error("Error bookmarking entry, reverting:", error);
+    console.error("Error bookmarking the entry, reverting:", error);
 
     await browser.storage.local.set({ entries: previousEntries });
     await notifyRefreshEntries();
@@ -107,7 +107,7 @@ browser.runtime.onStartup.addListener(handleStartup);
 browser.runtime.onInstalled.addListener(handleInstalled);
 browser.runtime.onMessage.addListener(handleMessage);
 
-// Create browser alarm to wakeup the background service.
+// Create browser alarm to wake up the background service.
 browser.alarms.onAlarm.addListener((alarmInfo) => {
   if (alarmInfo.name === ALARM_REFRESH) {
     return refreshEntries();

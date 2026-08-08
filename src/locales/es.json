@@ -130,12 +130,12 @@
     "description": "Ayuda para el campo de entrada de Color del texto de la insignia."
   },
 
-  "pageSettingsBrowserBehaviourShowNotifications": {
+  "pageSettingsBrowserBehaviorShowNotifications": {
     "message": "Mostrar notificaciones al actualizar entradas",
     "description": "Opción para mostrar notificaciones cuando se actualicen las entradas."
   },
 
-  "pageSettingsBrowserBehaviourShowNotificationsHelp": {
+  "pageSettingsBrowserBehaviorShowNotificationsHelp": {
     "message": "Requiere el permiso del navegador. Resumiremos si llegan al mismo tiempo muchas entradas.",
     "description": "Ayuda para el campo de entrada de Mostrar notificaciones."
   },

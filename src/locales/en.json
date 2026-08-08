@@ -5,13 +5,13 @@
   },
 
   "extensionDescription": {
-    "message": "Tinyflux is a fast, minimal Miniflux reader. Read and stay focused — all without leaving your tab. Needs a Miniflux instance.",
+    "message": "Tinyflux is a fast, minimal Miniflux reader. Read and stay focused — all without leaving your tab. Requires a Miniflux instance.",
     "description": "Description of the extension."
   },
 
   "connectionMinifluxError": {
-    "message": "Can not connect to Miniflux: $URL$",
-    "description": "Error message when the extension can not connect to Miniflux.",
+    "message": "Cannot connect to Miniflux: $URL$",
+    "description": "Error message when the extension cannot connect to Miniflux.",
     "placeholders": {
       "url": {
         "content": "$1",
@@ -31,23 +31,23 @@
   },
 
   "pageSettingsMinifluxInstanceUrlHelp": {
-    "message": "Address to your Miniflux instance, ex: https://reader.miniflux.app/",
+    "message": "The address of your Miniflux instance, e.g. https://reader.miniflux.app/",
     "description": "Help text for the Miniflux instance URL input field."
   },
 
   "pageSettingsMinifluxInstanceTokenHelp": {
-    "message": "Token to access your Miniflux, ex: CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">Documentation</a>.",
+    "message": "Token to access your Miniflux instance, e.g. CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">Documentation</a>.",
     "description": "Help text for the Miniflux instance token input field."
   },
 
   "pageSettingsMinifluxInstancePeriodToRefresh": {
-    "message": "Period to refresh (in minutes)",
-    "description": "Label for the period to refresh input field."
+    "message": "Refresh interval (in minutes)",
+    "description": "Label for the refresh interval input field."
   },
 
   "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux will refresh all the user's entries at this period of time, ex: 15",
-    "description": "Help text for the period to refresh input field."
+    "message": "Tinyflux will refresh all the user's entries at this interval, e.g. 15",
+    "description": "Help text for the refresh interval input field."
   },
 
   "pageSettingsBrowserBehavior": {
@@ -76,7 +76,7 @@
   },
 
   "pageSettingsBrowserBehaviorClickBehaviorHelp": {
-    "message": "Defines what happen when you click in the extension icon.",
+    "message": "Defines what happens when you click on the extension icon.",
     "description": "Help text for the on extension icon click select field."
   },
 
@@ -130,13 +130,13 @@
     "description": "Help text for the Badge text color input field."
   },
 
-  "pageSettingsBrowserBehaviourShowNotifications": {
+  "pageSettingsBrowserBehaviorShowNotifications": {
     "message": "Show notifications on new entries",
     "description": "Option to enable or disable notifications in the extension."
   },
 
-  "pageSettingsBrowserBehaviourShowNotificationsHelp": {
-    "message": "Requires browser permission. We will summarize if many entries arrive at once.",
+  "pageSettingsBrowserBehaviorShowNotificationsHelp": {
+    "message": "Requires browser permission. Notifications will be summarized if many entries arrive at once.",
     "description": "Help text for the Show Notifications checkbox."
   },
 
@@ -161,7 +161,7 @@
   },
 
   "pageSettingsTestError": {
-    "message": "Test Error, try again?",
+    "message": "Test failed. Try again?",
     "description": "Error message displayed when testing Miniflux instance connection fails."
   },
 
@@ -236,7 +236,7 @@
   },
 
   "pagePopupAreYouSureToMarkAllEntriesAsRead": {
-    "message": "Are you sure to mark all entries as read?",
+    "message": "Are you sure you want to mark all entries as read?",
     "description": "Tooltip for confirming the action of marking all entries as read in Tinyflux."
   },
 
