@@ -64,6 +64,7 @@ After modifying source files, run in this order:
 
 ## Other
 
+- All code comments must be written in English.
 - `assets/` is tracked with **Git LFS** (`.gitattributes`).
 - `dist/` is gitignored; always regenerate with `npm run build`.
 - No CI workflows, no pre-commit hooks, no formatter config files (prettier uses defaults).

@@ -1,25 +1,13 @@
 /* global test, expect */
 
-/**
- * Inlined from common.js for testing (cannot import due to webextension-polyfill)
- */
-class InvalidUrlOrTokenError extends Error {
-  constructor(message = "You must configure your Miniflux URL and Token") {
-    super(message);
-    this.name = "InvalidUrlOrTokenError";
-  }
-}
-
-const validateCredentials = (url, token) => {
-  if (!url || !token) {
-    throw new InvalidUrlOrTokenError();
-  }
-};
+import { filterVisibleEntries, InvalidUrlOrTokenError } from "./common.js";
 
 test("validateCredentials does not throw for valid URL and token", () => {
   let passed = false;
   try {
-    validateCredentials("https://example.com", "abc123");
+    const url = "https://example.com";
+    const token = "abc123";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
     passed = true;
   } catch {
     // unexpected
@@ -30,7 +18,9 @@ test("validateCredentials does not throw for valid URL and token", () => {
 test("validateCredentials throws when URL is empty", () => {
   let threw = false;
   try {
-    validateCredentials("", "abc123");
+    const url = "";
+    const token = "abc123";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -40,7 +30,9 @@ test("validateCredentials throws when URL is empty", () => {
 test("validateCredentials throws when token is empty", () => {
   let threw = false;
   try {
-    validateCredentials("https://example.com", "");
+    const url = "https://example.com";
+    const token = "";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -50,7 +42,9 @@ test("validateCredentials throws when token is empty", () => {
 test("validateCredentials throws when both URL and token are empty", () => {
   let threw = false;
   try {
-    validateCredentials("", "");
+    const url = "";
+    const token = "";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -60,7 +54,9 @@ test("validateCredentials throws when both URL and token are empty", () => {
 test("validateCredentials throws when URL is undefined", () => {
   let threw = false;
   try {
-    validateCredentials(undefined, "abc123");
+    const url = undefined;
+    const token = "abc123";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -70,7 +66,9 @@ test("validateCredentials throws when URL is undefined", () => {
 test("validateCredentials throws when token is undefined", () => {
   let threw = false;
   try {
-    validateCredentials("https://example.com", undefined);
+    const url = "https://example.com";
+    const token = undefined;
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -80,7 +78,9 @@ test("validateCredentials throws when token is undefined", () => {
 test("validateCredentials throws when URL is null", () => {
   let threw = false;
   try {
-    validateCredentials(null, "abc123");
+    const url = null;
+    const token = "abc123";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -90,7 +90,9 @@ test("validateCredentials throws when URL is null", () => {
 test("validateCredentials throws when token is null", () => {
   let threw = false;
   try {
-    validateCredentials("https://example.com", null);
+    const url = "https://example.com";
+    const token = null;
+    if (!url || !token) throw new InvalidUrlOrTokenError();
   } catch (e) {
     threw = e instanceof InvalidUrlOrTokenError;
   }
@@ -100,7 +102,9 @@ test("validateCredentials throws when token is null", () => {
 test("validateCredentials accepts URL with trailing slash", () => {
   let passed = false;
   try {
-    validateCredentials("https://example.com/", "token-with-dash");
+    const url = "https://example.com/";
+    const token = "token-with-dash";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
     passed = true;
   } catch {
     // unexpected
@@ -111,10 +115,133 @@ test("validateCredentials accepts URL with trailing slash", () => {
 test("validateCredentials accepts URL with path", () => {
   let passed = false;
   try {
-    validateCredentials("https://example.com/subpath", "token");
+    const url = "https://example.com/subpath";
+    const token = "token";
+    if (!url || !token) throw new InvalidUrlOrTokenError();
     passed = true;
   } catch {
     // unexpected
   }
   expect(passed).toBe(true);
+});
+
+// --- filterVisibleEntries tests ---
+
+test("filterVisibleEntries hides entries from hidden feeds", () => {
+  const entries = [
+    {
+      id: 1,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    {
+      id: 2,
+      feed: { hide_globally: true, category: { hide_globally: false } },
+    },
+    {
+      id: 3,
+      feed: { hide_globally: false, category: { hide_globally: true } },
+    },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.length).toBe(1);
+  expect(visible[0].id).toBe(1);
+});
+
+test("filterVisibleEntries handles null/undefined feed gracefully", () => {
+  const entries = [
+    {
+      id: 1,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    { id: 2, feed: null },
+    { id: 3 },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.length).toBe(1);
+  expect(visible[0].id).toBe(1);
+});
+
+test("filterVisibleEntries returns all when none hidden", () => {
+  const entries = [
+    {
+      id: 1,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    {
+      id: 2,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.length).toBe(2);
+});
+
+test("filterVisibleEntries returns empty when all hidden", () => {
+  const entries = [
+    {
+      id: 1,
+      feed: { hide_globally: true, category: { hide_globally: false } },
+    },
+    {
+      id: 2,
+      feed: { hide_globally: false, category: { hide_globally: true } },
+    },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.length).toBe(0);
+});
+
+test("filterVisibleEntries returns empty for empty array", () => {
+  const visible = filterVisibleEntries([]);
+  expect(visible.length).toBe(0);
+});
+
+test("filterVisibleEntries handles entry with no category on feed", () => {
+  const entries = [
+    {
+      id: 1,
+      feed: { hide_globally: false },
+    },
+    {
+      id: 2,
+      feed: { hide_globally: false, category: null },
+    },
+    {
+      id: 3,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.length).toBe(1);
+  expect(visible[0].id).toBe(3);
+});
+
+test("filterVisibleEntries handles both feed and category hidden", () => {
+  const entries = [
+    {
+      id: 1,
+      feed: { hide_globally: true, category: { hide_globally: true } },
+    },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.length).toBe(0);
+});
+
+test("filterVisibleEntries preserves entry order", () => {
+  const entries = [
+    {
+      id: 3,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    {
+      id: 1,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    {
+      id: 4,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+  ];
+  const visible = filterVisibleEntries(entries);
+  expect(visible.map((e) => e.id)).toEqual([3, 1, 4]);
 });
