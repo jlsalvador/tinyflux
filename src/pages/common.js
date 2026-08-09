@@ -153,6 +153,14 @@ export class InvalidUrlOrTokenError extends Error {
   }
 }
 
+export class MinifluxConnectionError extends Error {
+  constructor(message, { cause } = {}) {
+    super(message);
+    this.name = "MinifluxConnectionError";
+    this.cause = cause;
+  }
+}
+
 const RECEIVING_END_ERROR =
   "Could not establish a connection. Receiving end does not exist.";
 
@@ -304,7 +312,7 @@ export async function updateBadge() {
       updateBadgeColor(),
     ]);
   } catch (error) {
-    console.error("Failed to update badge:", error);
+    throw new Error("Failed to update badge", { cause: error });
   }
 }
 
@@ -313,7 +321,12 @@ export async function updateBadge() {
  * @returns {Promise<void[]>}
  */
 export async function updateBadgeConnectionError() {
-  const { url = "" } = await browser.storage.local.get("url");
+  const { url = "", badgeBackgroundColor } = await browser.storage.local.get([
+    "url",
+    "badgeBackgroundColor",
+  ]);
+
+  const fallbackColor = badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
 
   await browser.action.setTitle({
     title: chrome.i18n.getMessage("connectionMinifluxError", url),
@@ -323,8 +336,7 @@ export async function updateBadgeConnectionError() {
   try {
     await browser.action.setBadgeBackgroundColor({ color: "transparent" });
   } catch {
-    // "transparent" is not supported on all browsers
-    await browser.action.setBadgeBackgroundColor({ color: "#ff0000" });
+    await browser.action.setBadgeBackgroundColor({ color: fallbackColor });
   }
 }
 
@@ -450,6 +462,8 @@ async function sendNotification(newEntries) {
  * @throws {Error}
  */
 export async function refreshEntries() {
+  let fetchedEntries;
+
   try {
     const response = await request(
       "/v1/entries?status=unread&order=published_at&direction=desc",
@@ -457,41 +471,51 @@ export async function refreshEntries() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch entries: ${errorText}`);
+      throw new MinifluxConnectionError(
+        `Failed to fetch entries: ${errorText}`,
+        { cause: new Error(errorText) },
+      );
     }
 
     const data = await response.json();
-    const fetchedEntries = data.entries || [];
-    const { entries: cachedEntries = [] } =
-      await browser.storage.local.get("entries");
-
-    if (fetchedEntries.length > 0) {
-      const cachedIds = new Set(cachedEntries.map((e) => e.id));
-      // Filter out already cached entries to avoid duplicates
-      const newArrivals = fetchedEntries.filter((e) => !cachedIds.has(e.id));
-
-      if (newArrivals.length > 0) {
-        // Do not await here to avoid blocking the saving process
-        sendNotification(newArrivals).catch((err) =>
-          console.error("Notification error:", err),
-        );
-      }
-    }
-
-    await browser.storage.local.set({ entries: fetchedEntries });
-
-    await Promise.all([updateBadge(), notifyRefreshEntries(), refreshAlarm()]);
-
-    console.log(`${fetchedEntries.length} entries fetched.`);
-    return fetchedEntries;
+    fetchedEntries = data.entries || [];
   } catch (error) {
     if (error instanceof InvalidUrlOrTokenError) {
       await openSettings();
-    } else {
-      await updateBadgeConnectionError();
+      throw error;
     }
+    if (error instanceof MinifluxConnectionError) {
+      await updateBadgeConnectionError();
+      throw error;
+    }
+    console.error("Unexpected error during refresh:", error);
     throw error;
   }
+
+  const { entries: cachedEntries = [] } =
+    await browser.storage.local.get("entries");
+
+  if (fetchedEntries.length > 0) {
+    const cachedIds = new Set(cachedEntries.map((e) => e.id));
+    const newArrivals = fetchedEntries.filter((e) => !cachedIds.has(e.id));
+
+    if (newArrivals.length > 0) {
+      sendNotification(newArrivals).catch((err) =>
+        console.error("Notification error:", err),
+      );
+    }
+  }
+
+  await browser.storage.local.set({ entries: fetchedEntries });
+
+  try {
+    await Promise.all([updateBadge(), notifyRefreshEntries(), refreshAlarm()]);
+  } catch (error) {
+    console.error("Failed to update UI after refresh:", error);
+  }
+
+  console.log(`${fetchedEntries.length} entries fetched.`);
+  return fetchedEntries;
 }
 
 /**
