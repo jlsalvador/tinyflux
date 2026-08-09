@@ -161,9 +161,6 @@ export class MinifluxConnectionError extends Error {
   }
 }
 
-const RECEIVING_END_ERROR =
-  "Could not establish a connection. Receiving end does not exist.";
-
 /**
  * Get popup style from URL parameters
  * @returns {string} The style ('popup' or 'window')
@@ -346,7 +343,7 @@ export async function updateBadgeConnectionError() {
  * @returns {boolean}
  */
 const isIgnorableError = (error) => {
-  return error?.message === RECEIVING_END_ERROR;
+  return error?.message?.includes("Could not establish connection");
 };
 
 /**
