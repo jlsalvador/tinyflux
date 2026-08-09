@@ -3,6 +3,13 @@
 import { createSvg } from "./icons.js";
 import { filterVisibleEntries, InvalidUrlOrTokenError } from "./common.js";
 import { TimeAgo, Style } from "./timeago.js";
+import {
+  createEntryContent,
+  setBookmarkButtonState,
+  updateEmptyState,
+  sortDOMEntries,
+  cleanupOldDOMEntries,
+} from "./popup.js";
 
 const testEntries = [
   {
@@ -341,4 +348,272 @@ test("querySelectorAll returns NodeList", () => {
   );
   const entries = document.querySelectorAll(".entry");
   expect(entries.length).toBe(2);
+});
+
+// ============================================================================
+// createEntryContent tests
+// ============================================================================
+
+test("createEntryContent creates a div with entry-content class", () => {
+  resetDOM("<!doctype html><body></body>");
+  const entry = {
+    id: 1,
+    content: "<p>Test content</p>",
+  };
+  const content = createEntryContent(entry);
+  expect(content.tagName).toBe("DIV");
+  expect(content.classList.contains("entry-content")).toBe(true);
+  expect(content.id).toBe("entryContent-1");
+});
+
+test("createEntryContent sanitizes HTML content", () => {
+  resetDOM("<!doctype html><body></body>");
+  const entry = {
+    id: 1,
+    content: "<p>Safe</p><script>alert('xss')</script>",
+  };
+  const content = createEntryContent(entry);
+  expect(content.querySelector("script")).toBeFalsy();
+  expect(content.querySelector("p")).toBeTruthy();
+});
+
+test("createEntryContent handles empty content", () => {
+  resetDOM("<!doctype html><body></body>");
+  const entry = {
+    id: 1,
+    content: "",
+  };
+  const content = createEntryContent(entry);
+  expect(content.children.length).toBe(0);
+});
+
+test("createEntryContent preserves allowed tags", () => {
+  resetDOM("<!doctype html><body></body>");
+  const entry = {
+    id: 1,
+    content: "<p>Paragraph</p><strong>Bold</strong>",
+  };
+  const content = createEntryContent(entry);
+  expect(content.querySelector("p")).toBeTruthy();
+  expect(content.querySelector("strong")).toBeTruthy();
+});
+
+// ============================================================================
+// setBookmarkButtonState tests
+// ============================================================================
+
+test("setBookmarkButtonState adds starred class when starred", () => {
+  resetDOM(
+    "<!doctype html><body><button class='entry-action-btn'></button></body>",
+  );
+  const btn = document.querySelector("button");
+  setBookmarkButtonState(btn, true);
+  expect(btn.classList.contains("starred")).toBe(true);
+});
+
+test("setBookmarkButtonState removes starred class when not starred", () => {
+  resetDOM(
+    "<!doctype html><body><button class='entry-action-btn starred'></button></body>",
+  );
+  const btn = document.querySelector("button");
+  setBookmarkButtonState(btn, false);
+  expect(btn.classList.contains("starred")).toBe(false);
+});
+
+test("setBookmarkButtonState sets filled star icon when starred", () => {
+  resetDOM(
+    "<!doctype html><body><button class='entry-action-btn'></button></body>",
+  );
+  const btn = document.querySelector("button");
+  setBookmarkButtonState(btn, true);
+  const svg = btn.querySelector("svg");
+  expect(svg).toBeTruthy();
+});
+
+test("setBookmarkButtonState sets empty star icon when not starred", () => {
+  resetDOM(
+    "<!doctype html><body><button class='entry-action-btn'></button></body>",
+  );
+  const btn = document.querySelector("button");
+  setBookmarkButtonState(btn, false);
+  const svg = btn.querySelector("svg");
+  expect(svg).toBeTruthy();
+});
+
+// ============================================================================
+// updateEmptyState tests
+// ============================================================================
+
+test("updateEmptyState hides empty state when entries exist", () => {
+  resetDOM(
+    "<!doctype html><body><div class='entries'><div id='isEmpty' class='empty-state'></div><div class='entry' data-entry-id='1'></div></div></body>",
+  );
+  updateEmptyState();
+  const isEmpty = document.getElementById("isEmpty");
+  expect(isEmpty.classList.contains("hidden")).toBe(true);
+});
+
+test("updateEmptyState shows empty state when no entries exist", () => {
+  resetDOM(
+    "<!doctype html><body><div class='entries'><div id='isEmpty' class='empty-state hidden'></div></div></body>",
+  );
+  updateEmptyState();
+  const isEmpty = document.getElementById("isEmpty");
+  expect(isEmpty.classList.contains("hidden")).toBe(false);
+});
+
+test("updateEmptyState does nothing when isEmpty element is missing", () => {
+  resetDOM(
+    "<!doctype html><body><div class='entries'><div class='entry'></div></div></body>",
+  );
+  let threw = false;
+  try {
+    updateEmptyState();
+  } catch {
+    threw = true;
+  }
+  expect(threw).toBe(false);
+});
+
+// ============================================================================
+// sortDOMEntries tests
+// ============================================================================
+
+test("sortDOMEntries sorts entries by timestamp descending", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='1' data-timestamp='1000'></div>" +
+      "<div class='entry' data-entry-id='2' data-timestamp='3000'></div>" +
+      "<div class='entry' data-entry-id='3' data-timestamp='2000'></div>" +
+      "</div></body>",
+  );
+  sortDOMEntries();
+  const container = document.querySelector(".entries");
+  const entries = container.querySelectorAll(".entry");
+  expect(entries[0].dataset.entryId).toBe("2");
+  expect(entries[1].dataset.entryId).toBe("3");
+  expect(entries[2].dataset.entryId).toBe("1");
+});
+
+test("sortDOMEntries handles empty container", () => {
+  resetDOM("<!doctype html><body><div class='entries'></div></body>");
+  let threw = false;
+  try {
+    sortDOMEntries();
+  } catch {
+    threw = true;
+  }
+  expect(threw).toBe(false);
+});
+
+test("sortDOMEntries does nothing when no container exists", () => {
+  resetDOM("<!doctype html><body></body>");
+  let threw = false;
+  try {
+    sortDOMEntries();
+  } catch {
+    threw = true;
+  }
+  expect(threw).toBe(false);
+});
+
+test("sortDOMEntries handles single entry", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='1' data-timestamp='1000'></div>" +
+      "</div></body>",
+  );
+  sortDOMEntries();
+  const container = document.querySelector(".entries");
+  const entries = container.querySelectorAll(".entry");
+  expect(entries.length).toBe(1);
+  expect(entries[0].dataset.entryId).toBe("1");
+});
+
+test("sortDOMEntries handles equal timestamps", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='1' data-timestamp='1000'></div>" +
+      "<div class='entry' data-entry-id='2' data-timestamp='1000'></div>" +
+      "</div></body>",
+  );
+  sortDOMEntries();
+  const container = document.querySelector(".entries");
+  expect(container.children.length).toBe(2);
+});
+
+// ============================================================================
+// cleanupOldDOMEntries tests
+// ============================================================================
+
+test("cleanupOldDOMEntries removes entries not in new set", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='1'></div>" +
+      "<div class='entry' data-entry-id='2'></div>" +
+      "<div class='entry' data-entry-id='3'></div>" +
+      "</div></body>",
+  );
+  const newEntries = [{ id: 1 }, { id: 3 }];
+  cleanupOldDOMEntries(newEntries);
+  const remaining = document.querySelectorAll(".entry");
+  expect(remaining.length).toBe(2);
+  expect(remaining[0].dataset.entryId).toBe("1");
+  expect(remaining[1].dataset.entryId).toBe("3");
+});
+
+test("cleanupOldDOMEntries keeps all entries when all present in new set", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='1'></div>" +
+      "<div class='entry' data-entry-id='2'></div>" +
+      "</div></body>",
+  );
+  const newEntries = [{ id: 1 }, { id: 2 }];
+  cleanupOldDOMEntries(newEntries);
+  const remaining = document.querySelectorAll(".entry");
+  expect(remaining.length).toBe(2);
+});
+
+test("cleanupOldDOMEntries removes all entries when new set is empty", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='1'></div>" +
+      "<div class='entry' data-entry-id='2'></div>" +
+      "</div></body>",
+  );
+  cleanupOldDOMEntries([]);
+  const remaining = document.querySelectorAll(".entry");
+  expect(remaining.length).toBe(0);
+});
+
+test("cleanupOldDOMEntries does nothing when no container exists", () => {
+  resetDOM("<!doctype html><body></body>");
+  let threw = false;
+  try {
+    cleanupOldDOMEntries([{ id: 1 }]);
+  } catch {
+    threw = true;
+  }
+  expect(threw).toBe(false);
+});
+
+test("cleanupOldDOMEntries handles entries with invalid entryId", () => {
+  resetDOM(
+    "<!doctype html><body>" +
+      "<div class='entries'>" +
+      "<div class='entry' data-entry-id='abc'></div>" +
+      "<div class='entry' data-entry-id='1'></div>" +
+      "</div></body>",
+  );
+  cleanupOldDOMEntries([{ id: 1 }]);
+  const remaining = document.querySelectorAll(".entry");
+  expect(remaining.length).toBe(1);
+  expect(remaining[0].dataset.entryId).toBe("1");
 });

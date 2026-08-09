@@ -12,7 +12,7 @@ import {
   refreshEntries,
   request,
   updateBadge,
-} from "./common";
+} from "./common.js";
 
 /**
  * @typedef {import('./common.js').Entry} Entry
@@ -26,7 +26,7 @@ import {
  * @returns {Entry[]}
  * @throws {Error}
  */
-const markEntriesAsRead = async (entryIds) => {
+export const markEntriesAsRead = async (entryIds) => {
   const data = await browser.storage.local.get("entries");
   const previousEntries = data.entries || [];
 
@@ -58,7 +58,7 @@ const markEntriesAsRead = async (entryIds) => {
  *
  * @param {number} entryId
  */
-const toggleBookmark = async (entryId) => {
+export const toggleBookmark = async (entryId) => {
   const data = await browser.storage.local.get("entries");
   const previousEntries = data.entries || [];
 
@@ -93,7 +93,7 @@ const handleStartup = async () => {
   await Promise.all([refreshActionBehavior(), refreshEntries()]);
 };
 const handleInstalled = handleStartup;
-const handleMessage = (message) => {
+export const handleMessage = (message) => {
   if (message.action === MESSAGE_MARK_ENTRY_IDS_AS_READ) {
     return markEntriesAsRead(message.entryIds);
   } else if (message.action === MESSAGE_TOGGLE_ENTRY_BOOKMARK) {

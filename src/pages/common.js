@@ -372,7 +372,7 @@ export async function notifyRefreshTheme() {
  * @param {Array<Entry>} entries - Array of entry objects
  * @returns {Object} - Object with feed title as key and array of entry titles as value
  */
-function groupEntriesByFeed(entries) {
+export function groupEntriesByFeed(entries) {
   return entries.reduce((groups, entry) => {
     const feedTitle =
       entry.feed.title || chrome.i18n.getMessage("extensionName");

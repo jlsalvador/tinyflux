@@ -143,14 +143,22 @@ const getIcon = async (iconID) => {
 // Entry Management
 // ============================================================================
 
-const setBookmarkButtonState = (button, isStarred) => {
+/**
+ * Update bookmark button visual state
+ * @param {HTMLButtonElement} button
+ * @param {boolean} isStarred
+ */
+export const setBookmarkButtonState = (button, isStarred) => {
   button.classList.toggle("starred", isStarred);
   button.replaceChildren(
     createSvg(isStarred ? svg_path_star_filled : svg_path_star_empty),
   );
 };
 
-const updateEmptyState = () => {
+/**
+ * Toggle empty state visibility based on entry count
+ */
+export const updateEmptyState = () => {
   const isEmpty = document.getElementById("isEmpty");
   if (!isEmpty) return;
   const hasEntries = document.querySelectorAll(".entry").length > 0;
@@ -160,7 +168,7 @@ const updateEmptyState = () => {
 /**
  * Sort DOM entries by published date (descending)
  */
-const sortDOMEntries = () => {
+export const sortDOMEntries = () => {
   const container = document.querySelector(".entries");
   if (!container) return;
 
@@ -176,7 +184,7 @@ const sortDOMEntries = () => {
  * @param {Entry} entry
  * @returns {HTMLDivElement}
  */
-const createEntryContent = (entry) => {
+export const createEntryContent = (entry) => {
   const content = document.createElement("div");
   content.id = `entryContent-${entry.id}`;
   content.className = "entry-content";
@@ -414,7 +422,7 @@ const createEntry = async (domId, entry) => {
  * @param {Entry} entry
  * @returns {Promise<void>}
  */
-const addDOMEntry = async (entry) => {
+export const addDOMEntry = async (entry) => {
   const domId = `entry-${entry.id}`;
   const existing = document.getElementById(domId);
 
@@ -433,7 +441,7 @@ const addDOMEntry = async (entry) => {
  * @param {Entry[]} entries
  * @returns {Promise<void>}
  */
-const addDOMEntries = async (entries) => {
+export const addDOMEntries = async (entries) => {
   if (!entries?.length) return;
 
   await Promise.all(filterVisibleEntries(entries).map(addDOMEntry));
@@ -444,7 +452,7 @@ const addDOMEntries = async (entries) => {
  * Remove old entries from DOM
  * @param {Entry[]} newEntries
  */
-const cleanupOldDOMEntries = (newEntries) => {
+export const cleanupOldDOMEntries = (newEntries) => {
   const container = document.querySelector(".entries");
   if (!container) return;
 
@@ -542,7 +550,9 @@ const setupMarkAllAsReadButton = () => {
   if (!button) return;
 
   const icon = button.querySelector(".icon");
+  if (!icon) return;
   const pathElement = icon.querySelector("path");
+  if (!pathElement) return;
   const previousIconPath = pathElement.getAttribute("d");
 
   button.addEventListener("click", async () => {
@@ -605,6 +615,7 @@ const setupRefreshButton = () => {
   if (!button) return;
 
   const icon = button.querySelector(".icon");
+  if (!icon) return;
 
   button.addEventListener("click", async () => {
     try {
