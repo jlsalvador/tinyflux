@@ -304,7 +304,7 @@ export async function updateBadge() {
       updateBadgeColor(),
     ]);
   } catch (error) {
-    throw new Error("Failed to update badge", { cause: error });
+    console.error("Failed to update badge:", error);
   }
 }
 
@@ -315,14 +315,17 @@ export async function updateBadge() {
 export async function updateBadgeConnectionError() {
   const { url = "" } = await browser.storage.local.get("url");
 
-  return Promise.all([
-    browser.action.setTitle({
-      title: chrome.i18n.getMessage("connectionMinifluxError", url),
-    }),
-    browser.action.setBadgeText({ text: "⚡" }),
-    browser.action.setBadgeTextColor({ color: "white" }),
-    browser.action.setBadgeBackgroundColor({ color: "transparent" }),
-  ]);
+  await browser.action.setTitle({
+    title: chrome.i18n.getMessage("connectionMinifluxError", url),
+  });
+  await browser.action.setBadgeText({ text: "⚡" });
+  await browser.action.setBadgeTextColor({ color: "white" });
+  try {
+    await browser.action.setBadgeBackgroundColor({ color: "transparent" });
+  } catch {
+    // "transparent" is not supported on all browsers
+    await browser.action.setBadgeBackgroundColor({ color: "#ff0000" });
+  }
 }
 
 /**

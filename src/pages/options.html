@@ -87,6 +87,17 @@
           </div>
 
           <div class="input-group">
+            <button
+              data-localize="__MSG_pageSettingsMinifluxInstanceTestConnection__"
+              type="button"
+              id="btnTest"
+              class="btn btn-outline"
+            >
+              Test Connection
+            </button>
+          </div>
+
+          <div class="input-group">
             <label
               data-localize="__MSG_pageSettingsMinifluxInstancePeriodToRefresh__"
               for="inputMinifluxPeriodInMinutes"
@@ -246,31 +257,13 @@
 
         <div class="action-bar">
           <button
-            data-localize="__MSG_pageSettingsSaveChanges__"
-            type="submit"
-            class="btn btn-primary"
+            data-localize="__MSG_pageSettingsMinifluxInstanceClearFaviconsCache__"
+            type="button"
+            id="btnCleanIconsCache"
+            class="btn btn-ghost"
           >
-            Save Changes
+            Clear FavIcons Cache
           </button>
-
-          <div class="secondary-actions">
-            <button
-              data-localize="__MSG_pageSettingsMinifluxInstanceTestConnection__"
-              type="button"
-              id="btnTest"
-              class="btn btn-outline"
-            >
-              Test Connection
-            </button>
-            <button
-              data-localize="__MSG_pageSettingsMinifluxInstanceClearFaviconsCache__"
-              type="button"
-              id="btnCleanIconsCache"
-              class="btn btn-ghost"
-            >
-              Clear FavIcons Cache
-            </button>
-          </div>
         </div>
       </form>
     </main>

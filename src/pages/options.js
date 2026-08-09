@@ -1,4 +1,4 @@
-/* global document, chrome */
+/* global document, chrome, setTimeout, clearTimeout */
 
 import "./localize.js";
 import browser from "webextension-polyfill";
@@ -21,96 +21,29 @@ import {
   updateBadgeColor,
 } from "./common.js";
 
-async function saveOptions(e) {
-  e.preventDefault();
+const SAVE_DEBOUNCE_MS = 500;
 
-  const url = document.querySelector("#inputMinifluxUrl").value;
-  const token = document.querySelector("#inputMinifluxToken").value;
-  const periodInMinutes = document.querySelector(
-    "#inputMinifluxPeriodInMinutes",
-  ).valueAsNumber;
-  const extensionClickBehavior = document.querySelector(
-    "#selectExtensionClickBehavior",
-  ).value;
-  const markEntryAsReadWhenOpenedAsTab = document.querySelector(
-    "#checkMarkEntryAsReadWhenOpenedAsTab",
-  ).checked;
-  const theme = document.querySelector("#selectTheme").value;
-  const badgeBackgroundColor = document.querySelector(
-    "#inputBadgeBackgroundColor",
-  ).value;
-  const badgeTextColor = document.querySelector("#inputBadgeTextColor").value;
-  const showNotifications = document.querySelector(
-    "#checkShowNotifications",
-  ).checked;
+let saveTimeout = null;
+let isSaving = false;
 
-  const [
-    oldUrl,
-    oldToken,
-    oldPeriodInMinutes,
-    oldExtensionClickBehavior,
-    oldTheme,
-    oldBackgroundColor,
-    oldBadgeTextColor,
-  ] = await browser.storage.local
-    .get([
-      "url",
-      "token",
-      "periodInMinutes",
-      "extensionClickBehavior",
-      "theme",
-      "badgeBackgroundColor",
-      "badgeTextColor",
-    ])
-    .then((r) => [
-      r.url,
-      r.token,
-      r.periodInMinutes,
-      r.extensionClickBehavior,
-      r.theme,
-      r.badgeBackgroundColor,
-      r.badgeTextColor,
-    ]);
+const elements = {
+  url: () => document.querySelector("#inputMinifluxUrl"),
+  token: () => document.querySelector("#inputMinifluxToken"),
+  periodInMinutes: () =>
+    document.querySelector("#inputMinifluxPeriodInMinutes"),
+  extensionClickBehavior: () =>
+    document.querySelector("#selectExtensionClickBehavior"),
+  markEntryAsReadWhenOpenedAsTab: () =>
+    document.querySelector("#checkMarkEntryAsReadWhenOpenedAsTab"),
+  theme: () => document.querySelector("#selectTheme"),
+  badgeBackgroundColor: () =>
+    document.querySelector("#inputBadgeBackgroundColor"),
+  badgeTextColor: () => document.querySelector("#inputBadgeTextColor"),
+  showNotifications: () => document.querySelector("#checkShowNotifications"),
+};
 
-  await browser.storage.local.set({
-    url: url,
-    token: token,
-    periodInMinutes: periodInMinutes,
-    extensionClickBehavior: extensionClickBehavior,
-    markEntryAsReadWhenOpenedAsTab: markEntryAsReadWhenOpenedAsTab,
-    theme: theme,
-    badgeBackgroundColor: badgeBackgroundColor,
-    badgeTextColor: badgeTextColor,
-    showNotifications: showNotifications,
-  });
-
-  if (url !== oldUrl || token !== oldToken) {
-    await refreshEntries();
-  }
-
-  if (extensionClickBehavior !== oldExtensionClickBehavior) {
-    await refreshActionBehavior();
-  }
-
-  if (periodInMinutes !== oldPeriodInMinutes) {
-    await refreshAlarm();
-  }
-
-  if (theme !== oldTheme) {
-    await refreshTheme();
-    await notifyRefreshTheme();
-  }
-
-  if (
-    badgeBackgroundColor !== oldBackgroundColor ||
-    badgeTextColor !== oldBadgeTextColor
-  ) {
-    await updateBadgeColor();
-  }
-}
-
-async function restoreOptions() {
-  const res = await browser.storage.local.get([
+async function getStoredValues() {
+  return browser.storage.local.get([
     "url",
     "token",
     "periodInMinutes",
@@ -121,69 +54,120 @@ async function restoreOptions() {
     "badgeTextColor",
     "showNotifications",
   ]);
+}
 
-  document.querySelector("#inputMinifluxUrl").value = res.url || DEFAULT_URL;
+function readFormValues() {
+  return {
+    url: elements.url().value,
+    token: elements.token().value,
+    periodInMinutes: elements.periodInMinutes().valueAsNumber,
+    extensionClickBehavior: elements.extensionClickBehavior().value,
+    markEntryAsReadWhenOpenedAsTab:
+      elements.markEntryAsReadWhenOpenedAsTab().checked,
+    theme: elements.theme().value,
+    badgeBackgroundColor: elements.badgeBackgroundColor().value,
+    badgeTextColor: elements.badgeTextColor().value,
+    showNotifications: elements.showNotifications().checked,
+  };
+}
 
-  document.querySelector("#inputMinifluxToken").value =
-    res.token || DEFAULT_TOKEN;
+async function applyChanges(currentValues, storedValues) {
+  const changes = {};
+  for (const key of Object.keys(currentValues)) {
+    if (currentValues[key] !== storedValues[key]) {
+      changes[key] = true;
+    }
+  }
 
-  document.querySelector("#inputMinifluxPeriodInMinutes").valueAsNumber =
+  await browser.storage.local.set(currentValues);
+
+  if (changes.url || changes.token) {
+    await refreshEntries();
+  }
+
+  if (changes.extensionClickBehavior) {
+    await refreshActionBehavior();
+  }
+
+  if (changes.periodInMinutes) {
+    await refreshAlarm();
+  }
+
+  if (changes.theme) {
+    await refreshTheme();
+    await notifyRefreshTheme();
+  }
+
+  if (changes.badgeBackgroundColor || changes.badgeTextColor) {
+    await updateBadgeColor();
+  }
+
+  if (changes.showNotifications !== undefined) {
+    if (currentValues.showNotifications) {
+      await browser.permissions.request({ permissions: ["notifications"] });
+    } else {
+      await browser.permissions.remove({ permissions: ["notifications"] });
+    }
+  }
+}
+
+async function debouncedSave() {
+  if (isSaving) return;
+
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+
+  saveTimeout = setTimeout(async () => {
+    isSaving = true;
+    try {
+      const currentValues = readFormValues();
+      const storedValues = await getStoredValues();
+      await applyChanges(currentValues, storedValues);
+    } catch {
+      // Silently fail on auto-save
+    } finally {
+      isSaving = false;
+      saveTimeout = null;
+    }
+  }, SAVE_DEBOUNCE_MS);
+}
+
+async function restoreOptions() {
+  const res = await getStoredValues();
+
+  elements.url().value = res.url || DEFAULT_URL;
+  elements.token().value = res.token || DEFAULT_TOKEN;
+  elements.periodInMinutes().valueAsNumber =
     res.periodInMinutes || DEFAULT_PERIOD_REFRESH;
-
-  document.querySelector("#selectExtensionClickBehavior").value =
+  elements.extensionClickBehavior().value =
     res.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
-
-  document.querySelector("#checkMarkEntryAsReadWhenOpenedAsTab").checked =
+  elements.markEntryAsReadWhenOpenedAsTab().checked =
     res.markEntryAsReadWhenOpenedAsTab ||
     DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
-
-  document.querySelector("#selectTheme").value = res.theme || DEFAULT_THEME;
-
-  document.querySelector("#inputBadgeBackgroundColor").value =
+  elements.theme().value = res.theme || DEFAULT_THEME;
+  elements.badgeBackgroundColor().value =
     res.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
-
-  document.querySelector("#inputBadgeTextColor").value =
+  elements.badgeTextColor().value =
     res.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
 
   const hasPermission = await browser.permissions.contains({
     permissions: ["notifications"],
   });
   const storedSetting = res.showNotifications || DEFAULT_SHOW_NOTIFICATIONS;
-  document.querySelector("#checkShowNotifications").checked =
-    storedSetting && hasPermission;
-}
-
-async function handleNotificationToggle(e) {
-  const checkbox = e.target;
-
-  if (checkbox.checked) {
-    // Ask the browser for permission to show notifications
-    const granted = await browser.permissions.request({
-      permissions: ["notifications"],
-    });
-
-    if (!granted) {
-      // User did not grant permission
-      checkbox.checked = false;
-    }
-  } else {
-    // Remove the permission to show notifications
-    await browser.permissions.remove({
-      permissions: ["notifications"],
-    });
-  }
+  elements.showNotifications().checked = storedSetting && hasPermission;
 }
 
 async function testMinifluxApi() {
-  const url = document.querySelector("#inputMinifluxUrl").value;
-  const token = document.querySelector("#inputMinifluxToken").value;
+  const url = elements.url().value;
+  const token = elements.token().value;
 
   const btnTest = document.getElementById("btnTest");
   btnTest.innerText = chrome.i18n.getMessage("pageSettingsTesting");
   btnTest.disabled = true;
   btnTest.classList.remove("status-success", "status-error");
 
-  return request("/v1/me", { url: url, token: token })
+  return request("/v1/me", { url, token })
     .then(async (response) => {
       if (!response.ok) {
         btnTest.classList.add("status-error");
@@ -215,15 +199,48 @@ async function clearIconsCache() {
 document.addEventListener("DOMContentLoaded", async () => {
   await Promise.all([refreshTheme(), restoreOptions()]);
 
-  const domForm = document.querySelector("form");
-  domForm?.addEventListener("submit", saveOptions);
+  const autoSaveElements = [
+    elements.url(),
+    elements.token(),
+    elements.periodInMinutes(),
+    elements.extensionClickBehavior(),
+    elements.markEntryAsReadWhenOpenedAsTab(),
+    elements.theme(),
+    elements.badgeBackgroundColor(),
+    elements.badgeTextColor(),
+  ];
 
-  const btnTest = document.getElementById("btnTest");
-  btnTest?.addEventListener("click", testMinifluxApi);
+  for (const el of autoSaveElements) {
+    el.addEventListener("input", debouncedSave);
+    el.addEventListener("change", debouncedSave);
+  }
 
-  const btnClearIconsCache = document.getElementById("btnCleanIconsCache");
-  btnClearIconsCache?.addEventListener("click", clearIconsCache);
+  elements.showNotifications().addEventListener("change", async (e) => {
+    const checkbox = e.target;
 
-  const notifCheckbox = document.getElementById("checkShowNotifications");
-  notifCheckbox?.addEventListener("change", handleNotificationToggle);
+    if (checkbox.checked) {
+      const granted = await browser.permissions.request({
+        permissions: ["notifications"],
+      });
+
+      if (!granted) {
+        checkbox.checked = false;
+        return;
+      }
+    } else {
+      await browser.permissions.remove({
+        permissions: ["notifications"],
+      });
+    }
+
+    debouncedSave();
+  });
+
+  document
+    .getElementById("btnTest")
+    ?.addEventListener("click", testMinifluxApi);
+
+  document
+    .getElementById("btnCleanIconsCache")
+    ?.addEventListener("click", clearIconsCache);
 });

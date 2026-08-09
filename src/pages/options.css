@@ -164,17 +164,9 @@ input[type="checkbox"] {
 /* Buttons */
 .action-bar {
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
   gap: 1rem;
   margin-top: 2rem;
-}
-
-.secondary-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
 }
 
 .btn {
