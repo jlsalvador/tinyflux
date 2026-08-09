@@ -304,8 +304,7 @@ export async function updateBadge() {
       updateBadgeColor(),
     ]);
   } catch (error) {
-    console.error("Failed to update badge:", error);
-    throw error;
+    throw new Error("Failed to update badge", { cause: error });
   }
 }
 
