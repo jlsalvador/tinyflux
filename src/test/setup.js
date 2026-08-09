@@ -144,6 +144,14 @@ const mockBrowser = {
 };
 Object.assign(globalThis, { browser: mockBrowser });
 
+// Mock fetch - returns a successful JSON response by default
+globalThis.mockFetchResponse = {
+  status: 200,
+  ok: true,
+  json: () => Promise.resolve({}),
+};
+globalThis.fetch = async () => globalThis.mockFetchResponse;
+
 // Mock chrome (for APIs not in polyfill)
 const mockChrome = {
   i18n: {
