@@ -39,17 +39,17 @@ export const markEntriesAsRead = async (entryIds) => {
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
   try {
-    // Mark an entry as read in the Miniflux instance.
     await request(`/v1/entries`, {
       method: "PUT",
       body: JSON.stringify({ entry_ids: entryIds, status: "read" }),
     });
     return updatedEntries;
   } catch (error) {
-    console.error("Error while marking the entry as read, reverting:", error);
     await browser.storage.local.set({ entries: previousEntries });
     await Promise.all([notifyRefreshEntries(), updateBadge()]);
-    throw error;
+    throw new Error("Error while marking the entry as read, reverting", {
+      cause: error,
+    });
   }
 };
 
@@ -80,11 +80,9 @@ export const toggleBookmark = async (entryId) => {
     await request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
     return updatedEntries;
   } catch (error) {
-    console.error("Error bookmarking the entry, reverting:", error);
-
     await browser.storage.local.set({ entries: previousEntries });
     await notifyRefreshEntries();
-    throw error;
+    throw new Error("Error bookmarking the entry, reverting", { cause: error });
   }
 };
 
@@ -93,11 +91,19 @@ const handleStartup = async () => {
   await Promise.all([refreshActionBehavior(), refreshEntries()]);
 };
 const handleInstalled = handleStartup;
-export const handleMessage = (message) => {
+export const handleMessage = async (message) => {
   if (message.action === MESSAGE_MARK_ENTRY_IDS_AS_READ) {
-    return markEntriesAsRead(message.entryIds);
+    try {
+      return await markEntriesAsRead(message.entryIds);
+    } catch (error) {
+      console.error(error);
+    }
   } else if (message.action === MESSAGE_TOGGLE_ENTRY_BOOKMARK) {
-    return toggleBookmark(message.entryId);
+    try {
+      return await toggleBookmark(message.entryId);
+    } catch (error) {
+      console.error(error);
+    }
   } else {
     return false;
   }

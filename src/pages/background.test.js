@@ -93,11 +93,11 @@ test("handleMessage routes toggle bookmark message", async () => {
   globalThis.fetch = originalFetch;
 });
 
-test("handleMessage returns false for unknown message", () => {
+test("handleMessage returns false for unknown message", async () => {
   const message = {
     action: "unknown_action",
   };
-  const result = handleMessage(message);
+  const result = await handleMessage(message);
   expect(result).toBe(false);
 });
 
@@ -155,13 +155,17 @@ test("markEntriesAsRead reverts on API failure", async () => {
   };
   globalThis.fetch = () => Promise.reject(new Error("API error"));
 
-  let threw = false;
+  let caughtError = null;
   try {
     await markEntriesAsRead([1, 2]);
-  } catch {
-    threw = true;
+  } catch (error) {
+    caughtError = error;
   }
-  expect(threw).toBe(true);
+  expect(caughtError).toBeTruthy();
+  expect(caughtError.message).toBe(
+    "Error while marking the entry as read, reverting",
+  );
+  expect(caughtError.cause.message).toBe("API error");
   expect(optimisticSets.length).toBe(2);
   const revertedSet = optimisticSets[1];
   expect(revertedSet.length).toBe(3);
@@ -430,13 +434,15 @@ test("toggleBookmark reverts on API failure", async () => {
   };
   globalThis.fetch = () => Promise.reject(new Error("API error"));
 
-  let threw = false;
+  let caughtError = null;
   try {
     await toggleBookmark(1);
-  } catch {
-    threw = true;
+  } catch (error) {
+    caughtError = error;
   }
-  expect(threw).toBe(true);
+  expect(caughtError).toBeTruthy();
+  expect(caughtError.message).toBe("Error bookmarking the entry, reverting");
+  expect(caughtError.cause.message).toBe("API error");
   expect(optimisticSets.length).toBe(2);
   const revertedSet = optimisticSets[1];
   const revertedEntry = revertedSet.find((e) => e.id === 1);
