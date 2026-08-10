@@ -99,7 +99,7 @@ body.window #btnOpenSidePanel {
   align-items: center;
   justify-content: space-between;
   height: var(--navbar-height);
-  padding: 0 var(--spacing-md);
+  padding: 0 var(--spacing-sm);
   gap: var(--spacing-md);
   margin-left: var(--spacing-sm);
 }
@@ -332,7 +332,7 @@ body.window #btnOpenSidePanel {
 }
 
 .entry-title {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   cursor: pointer;
 }
 
@@ -583,25 +583,6 @@ body.window #btnOpenSidePanel {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
-  }
-}
-
-/* ============================================================================
-   Responsive Design
-   ============================================================================ */
-
-@media (max-width: 360px) {
-  :root {
-    --spacing-md: 0.75rem;
-    --spacing-lg: 1rem;
-  }
-
-  .navbar-container {
-    padding: 0 var(--spacing-sm);
-  }
-
-  .entry-title {
-    padding: var(--spacing-md);
   }
 }
 
