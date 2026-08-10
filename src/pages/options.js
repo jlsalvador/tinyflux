@@ -101,14 +101,6 @@ async function applyChanges(currentValues, storedValues) {
   if (changes.badgeBackgroundColor || changes.badgeTextColor) {
     await updateBadgeColor();
   }
-
-  if (changes.showNotifications !== undefined) {
-    if (currentValues.showNotifications) {
-      await browser.permissions.request({ permissions: ["notifications"] });
-    } else {
-      await browser.permissions.remove({ permissions: ["notifications"] });
-    }
-  }
 }
 
 async function debouncedSave() {

@@ -51,46 +51,36 @@ const timeFormatsLong = [
 ];
 
 /**
+ * Format a timestamp as a relative time string.
  * @param {string|number|Date} time
  * @param {string} [style=Style.Long]
- * @returns
+ * @returns {string}
  */
 export function TimeAgo(time, style = Style.Long) {
-  switch (typeof time) {
-    case "number":
-      break;
-    case "string":
-      time = +new Date(time);
-      break;
-    case "object":
-      if (time.constructor === Date) time = time.getTime();
-      break;
-    default:
-      time = +new Date();
-  }
+  const timestamp =
+    typeof time === "number"
+      ? time
+      : typeof time === "string"
+        ? +new Date(time)
+        : time instanceof Date
+          ? time.getTime()
+          : +new Date();
 
-  let seconds = (+new Date() - time) / 1000;
+  let seconds = Math.round((+new Date() - timestamp) / 1000);
 
-  let pastOrFuture = 1; //1 = past, 2 = future
-  if (seconds < 0) {
+  const isFuture = seconds < 0;
+  if (isFuture) {
     seconds = Math.abs(seconds);
-    pastOrFuture = 2;
   }
 
-  let timeFormats;
-  switch (style) {
-    case Style.ExtremeNarrow:
-      timeFormats = timeFormatsExtremeNarrow;
-      break;
-    default:
-      timeFormats = timeFormatsLong;
-  }
+  const timeFormats =
+    style === Style.ExtremeNarrow ? timeFormatsExtremeNarrow : timeFormatsLong;
 
   let i = 0;
   let result;
 
   while (i < timeFormats.length - 1) {
-    const [divisor, ,] = timeFormats[i];
+    const [divisor] = timeFormats[i];
     const nextDivisor = timeFormats[i + 2]?.[0] ?? Infinity;
     const nextDiff = Math.floor(seconds / nextDivisor);
 
@@ -101,14 +91,14 @@ export function TimeAgo(time, style = Style.Long) {
 
     const count = Math.floor(seconds / divisor);
     const template = count <= 1 ? timeFormats[i] : timeFormats[i + 1];
-    result = template[pastOrFuture].replace("%d", count);
+    result = template[isFuture ? 2 : 1].replace("%d", String(count));
     break;
   }
 
   if (!result) {
     const d = timeFormats[i]?.[0] ?? 1;
     const count = Math.floor(seconds / d);
-    result = timeFormats[i][pastOrFuture].replace("%d", count);
+    result = timeFormats[i][isFuture ? 2 : 1].replace("%d", String(count));
   }
 
   return result;
