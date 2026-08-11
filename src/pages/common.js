@@ -423,7 +423,7 @@ async function sendNotification(newEntries) {
   // Build notification
   let extensionName = chrome.i18n.getMessage("extensionName");
   let options = {
-    iconUrl: "pages/assets/icon-dark-196x196.png",
+    iconUrl: chrome.runtime.getURL("/pages/assets/icon-dark-196x196.png"),
     title: extensionName,
     message: "",
   };
