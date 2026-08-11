@@ -1,9 +1,10 @@
-/* global test, expect, browser */
+/* global test, expect, browser, resetDOM */
 
 import {
   markEntriesAsRead,
   toggleBookmark,
   handleMessage,
+  handleStartup,
 } from "./background.js";
 import {
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
@@ -449,4 +450,56 @@ test("toggleBookmark reverts on API failure", async () => {
   browser.storage.local.get = originalGet;
   browser.storage.local.set = originalSet;
   globalThis.fetch = originalFetch;
+});
+
+// --- handleStartup tests ---
+
+test("handleStartup opens settings silently when credentials are missing", async () => {
+  const originalGet = browser.storage.local.get;
+  let settingsOpened = false;
+  const originalOpenOptionsPage = browser.runtime.openOptionsPage;
+
+  browser.storage.local.get = () =>
+    Promise.resolve({
+      url: "",
+      token: "",
+    });
+  browser.runtime.openOptionsPage = () => {
+    settingsOpened = true;
+    return Promise.resolve();
+  };
+  resetDOM("<!doctype html><html><head></head><body></body></html>");
+
+  try {
+    await handleStartup();
+    expect(settingsOpened).toBe(true);
+  } finally {
+    browser.storage.local.get = originalGet;
+    browser.runtime.openOptionsPage = originalOpenOptionsPage;
+  }
+});
+
+test("handleStartup throws non-credential errors", async () => {
+  const originalGet = browser.storage.local.get;
+  const originalAction = browser.action;
+
+  browser.storage.local.get = () => Promise.resolve({});
+  browser.action = {
+    setPopup: () => {
+      throw new Error("unexpected action error");
+    },
+  };
+
+  let caughtError = null;
+  try {
+    await handleStartup();
+  } catch (error) {
+    caughtError = error;
+  }
+
+  expect(caughtError).toBeTruthy();
+  expect(caughtError.message).toBe("unexpected action error");
+
+  browser.storage.local.get = originalGet;
+  browser.action = originalAction;
 });

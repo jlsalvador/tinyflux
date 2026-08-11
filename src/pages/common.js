@@ -179,8 +179,12 @@ export const closeIfPopup = () => {
   if (typeof window === "undefined") {
     return;
   }
-  if (getPopupStyle() === "popup") {
-    window.close();
+  try {
+    if (getPopupStyle() === "popup") {
+      window.close();
+    }
+  } catch {
+    // window.location may be unavailable in certain environments
   }
 };
 

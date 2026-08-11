@@ -111,7 +111,11 @@ async function applyChanges(currentValues, storedValues) {
 
   await browser.storage.local.set(currentValues);
 
-  if (changes.url || changes.token) {
+  if (
+    (changes.url || changes.token) &&
+    currentValues.url &&
+    currentValues.token
+  ) {
     await refreshEntries();
   }
 

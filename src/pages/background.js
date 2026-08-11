@@ -5,9 +5,11 @@
 import browser from "webextension-polyfill";
 import {
   ALARM_REFRESH,
+  InvalidUrlOrTokenError,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_TOGGLE_ENTRY_BOOKMARK,
   notifyRefreshEntries,
+  openSettings,
   refreshActionBehavior,
   refreshEntries,
   request,
@@ -97,9 +99,17 @@ export const toggleBookmark = async (entryId) => {
 /**
  * Initialize extension on startup or installation.
  */
-const handleStartup = async () => {
+export const handleStartup = async () => {
   console.log("Extension started.");
-  await Promise.all([refreshActionBehavior(), refreshEntries()]);
+  try {
+    await Promise.all([refreshActionBehavior(), refreshEntries()]);
+  } catch (error) {
+    if (error instanceof InvalidUrlOrTokenError) {
+      await openSettings();
+    } else {
+      throw error;
+    }
+  }
 };
 
 /**
