@@ -188,6 +188,22 @@ async function restoreOptions() {
 }
 
 // ============================================================================
+// UI Helpers
+// ============================================================================
+
+/**
+ * Enable or disable the Test Connection button based on URL and Token values.
+ */
+function updateTestButtonState() {
+  const url = elements.url().value;
+  const token = elements.token().value;
+  const btnTest = document.getElementById("btnTest");
+  if (btnTest) {
+    btnTest.disabled = !url || !token;
+  }
+}
+
+// ============================================================================
 // Actions
 // ============================================================================
 
@@ -236,6 +252,7 @@ async function clearIconsCache() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await Promise.all([refreshTheme(), restoreOptions()]);
+  updateTestButtonState();
 
   // Attach auto-save listeners to input fields
   const autoSaveElements = [
@@ -252,6 +269,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   for (const el of autoSaveElements) {
     el.addEventListener("input", debouncedSave);
     el.addEventListener("change", debouncedSave);
+  }
+
+  // Update Test Connection button state on URL/Token input
+  for (const el of [elements.url(), elements.token()]) {
+    el.addEventListener("input", updateTestButtonState);
   }
 
   // Notification permission toggle
