@@ -52,7 +52,7 @@ body.popup {
 }
 
 body.popup.dropdown-open {
-  min-height: 320px;
+  min-height: 330px;
 }
 
 /* Hide elements in specific modes */

@@ -226,9 +226,7 @@ async function testMinifluxApi() {
  */
 async function clearIconsCache() {
   const data = await browser.storage.local.get(null);
-  const keysToRemove = Object.keys(data).filter((key) =>
-    /^icon\d+$/.test(key),
-  );
+  const keysToRemove = Object.keys(data).filter((key) => /^icon\d+$/.test(key));
   await browser.storage.local.remove(keysToRemove);
 }
 
