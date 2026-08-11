@@ -162,9 +162,7 @@ test("markEntriesAsRead reverts on API failure", async () => {
     caughtError = error;
   }
   expect(caughtError).toBeTruthy();
-  expect(caughtError.message).toBe(
-    "Error while marking the entry as read, reverting",
-  );
+  expect(caughtError.message).toBe("Failed to mark entries as read, reverting");
   expect(caughtError.cause.message).toBe("API error");
   expect(optimisticSets.length).toBe(2);
   const revertedSet = optimisticSets[1];
@@ -441,7 +439,7 @@ test("toggleBookmark reverts on API failure", async () => {
     caughtError = error;
   }
   expect(caughtError).toBeTruthy();
-  expect(caughtError.message).toBe("Error bookmarking the entry, reverting");
+  expect(caughtError.message).toBe("Failed to toggle bookmark, reverting");
   expect(caughtError.cause.message).toBe("API error");
   expect(optimisticSets.length).toBe(2);
   const revertedSet = optimisticSets[1];

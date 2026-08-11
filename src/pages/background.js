@@ -18,23 +18,26 @@ import {
  * @typedef {import('./common.js').Entry} Entry
  */
 
+// ============================================================================
+// Entry Actions
+// ============================================================================
+
 /**
- * Removes multiple entry IDs from the Miniflux instance, update local cache,
- * notify refresh, and update badge.
- *
- * @param {Number[]} entryIds
- * @returns {Entry[]}
+ * Mark entries as read via Miniflux API with optimistic UI update.
+ * Reverts local cache on API failure.
+ * @param {number[]} entryIds
+ * @returns {Promise<Entry[]>}
  * @throws {Error}
  */
 export const markEntriesAsRead = async (entryIds) => {
-  const data = await browser.storage.local.get("entries");
-  const previousEntries = data.entries || [];
+  const { entries: previousEntries = [] } =
+    await browser.storage.local.get("entries");
 
   const updatedEntries = previousEntries.filter(
-    (e) => !entryIds.includes(e.id),
+    (entry) => !entryIds.includes(entry.id),
   );
 
-  // Optimistic UI.
+  // Optimistic UI update
   await browser.storage.local.set({ entries: updatedEntries });
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
@@ -47,22 +50,23 @@ export const markEntriesAsRead = async (entryIds) => {
   } catch (error) {
     await browser.storage.local.set({ entries: previousEntries });
     await Promise.all([notifyRefreshEntries(), updateBadge()]);
-    throw new Error("Error while marking the entry as read, reverting", {
+    throw new Error("Failed to mark entries as read, reverting", {
       cause: error,
     });
   }
 };
 
 /**
- * Change entry bookmark status in an optimistic way.
- *
+ * Toggle entry bookmark status with optimistic UI update.
+ * Reverts local cache on API failure.
  * @param {number} entryId
+ * @returns {Promise<Entry[]>}
  */
 export const toggleBookmark = async (entryId) => {
-  const data = await browser.storage.local.get("entries");
-  const previousEntries = data.entries || [];
+  const { entries: previousEntries = [] } =
+    await browser.storage.local.get("entries");
 
-  const entryIndex = previousEntries.findIndex((e) => e.id === entryId);
+  const entryIndex = previousEntries.findIndex((entry) => entry.id === entryId);
   if (entryIndex === -1) return;
 
   const isStarred = previousEntries[entryIndex].starred;
@@ -72,8 +76,8 @@ export const toggleBookmark = async (entryId) => {
     ...updatedEntries[entryIndex],
     starred: !isStarred,
   };
-  await browser.storage.local.set({ entries: updatedEntries });
 
+  await browser.storage.local.set({ entries: updatedEntries });
   await notifyRefreshEntries();
 
   try {
@@ -82,38 +86,50 @@ export const toggleBookmark = async (entryId) => {
   } catch (error) {
     await browser.storage.local.set({ entries: previousEntries });
     await notifyRefreshEntries();
-    throw new Error("Error bookmarking the entry, reverting", { cause: error });
+    throw new Error("Failed to toggle bookmark, reverting", { cause: error });
   }
 };
 
+// ============================================================================
+// Lifecycle
+// ============================================================================
+
+/**
+ * Initialize extension on startup or installation.
+ */
 const handleStartup = async () => {
   console.log("Extension started.");
   await Promise.all([refreshActionBehavior(), refreshEntries()]);
 };
-const handleInstalled = handleStartup;
+
+/**
+ * Route incoming messages to the appropriate handler.
+ * @param {object} message
+ * @returns {Promise<Entry[]|false>}
+ */
 export const handleMessage = async (message) => {
-  if (message.action === MESSAGE_MARK_ENTRY_IDS_AS_READ) {
-    try {
-      return await markEntriesAsRead(message.entryIds);
-    } catch (error) {
-      console.error(error);
-    }
-  } else if (message.action === MESSAGE_TOGGLE_ENTRY_BOOKMARK) {
-    try {
-      return await toggleBookmark(message.entryId);
-    } catch (error) {
-      console.error(error);
-    }
-  } else {
-    return false;
+  switch (message.action) {
+    case MESSAGE_MARK_ENTRY_IDS_AS_READ:
+      return markEntriesAsRead(message.entryIds).catch((error) => {
+        console.error(error);
+      });
+    case MESSAGE_TOGGLE_ENTRY_BOOKMARK:
+      return toggleBookmark(message.entryId).catch((error) => {
+        console.error(error);
+      });
+    default:
+      return false;
   }
 };
 
+// ============================================================================
+// Event Listeners
+// ============================================================================
+
 browser.runtime.onStartup.addListener(handleStartup);
-browser.runtime.onInstalled.addListener(handleInstalled);
+browser.runtime.onInstalled.addListener(handleStartup);
 browser.runtime.onMessage.addListener(handleMessage);
 
-// Create browser alarm to wake up the background service.
 browser.alarms.onAlarm.addListener((alarmInfo) => {
   if (alarmInfo.name === ALARM_REFRESH) {
     return refreshEntries();

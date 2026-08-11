@@ -1,10 +1,10 @@
 /**
- * @typedef {Object} Style
- * @property {string} ExtremeNarrow
- * @property {string} Long
+ * Time format styles for relative time display.
  */
 export const Style = {
+  /** Compact format (e.g., "5m", "2h") */
   ExtremeNarrow: "extremeNarrow",
+  /** Verbose format (e.g., "5 minutes ago", "2 hours ago") */
   Long: "long",
 };
 
@@ -51,9 +51,9 @@ const timeFormatsLong = [
 ];
 
 /**
- * Format a timestamp as a relative time string.
+ * Format a timestamp as a relative time string (e.g., "5 minutes ago").
  * @param {string|number|Date} time
- * @param {string} [style=Style.Long]
+ * @param {string} [style=Style.Long] - Use `Style.ExtremeNarrow` for compact format
  * @returns {string}
  */
 export function TimeAgo(time, style = Style.Long) {

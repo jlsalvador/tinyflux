@@ -21,10 +21,19 @@ import {
   updateBadgeColor,
 } from "./common.js";
 
+// ============================================================================
+// Constants & State
+// ============================================================================
+
 const SAVE_DEBOUNCE_MS = 500;
 
+/** @type {ReturnType<typeof setTimeout>|null} */
 let saveTimeout = null;
 let isSaving = false;
+
+// ============================================================================
+// DOM Element References
+// ============================================================================
 
 const elements = {
   url: () => document.querySelector("#inputMinifluxUrl"),
@@ -42,6 +51,14 @@ const elements = {
   showNotifications: () => document.querySelector("#checkShowNotifications"),
 };
 
+// ============================================================================
+// Storage Helpers
+// ============================================================================
+
+/**
+ * Retrieve all stored settings values.
+ * @returns {Promise<object>}
+ */
 async function getStoredValues() {
   return browser.storage.local.get([
     "url",
@@ -56,6 +73,10 @@ async function getStoredValues() {
   ]);
 }
 
+/**
+ * Read current values from form fields.
+ * @returns {object}
+ */
 function readFormValues() {
   return {
     url: elements.url().value,
@@ -71,6 +92,15 @@ function readFormValues() {
   };
 }
 
+// ============================================================================
+// Settings Persistence
+// ============================================================================
+
+/**
+ * Save changed settings and trigger side effects (refresh, badge update, etc.).
+ * @param {object} currentValues
+ * @param {object} storedValues
+ */
 async function applyChanges(currentValues, storedValues) {
   const changes = {};
   for (const key of Object.keys(currentValues)) {
@@ -103,6 +133,9 @@ async function applyChanges(currentValues, storedValues) {
   }
 }
 
+/**
+ * Debounced auto-save: saves form values after a short delay.
+ */
 async function debouncedSave() {
   if (isSaving) return;
 
@@ -125,31 +158,43 @@ async function debouncedSave() {
   }, SAVE_DEBOUNCE_MS);
 }
 
+/**
+ * Populate form fields with stored values.
+ */
 async function restoreOptions() {
-  const res = await getStoredValues();
+  const storedValues = await getStoredValues();
 
-  elements.url().value = res.url || DEFAULT_URL;
-  elements.token().value = res.token || DEFAULT_TOKEN;
+  elements.url().value = storedValues.url || DEFAULT_URL;
+  elements.token().value = storedValues.token || DEFAULT_TOKEN;
   elements.periodInMinutes().valueAsNumber =
-    res.periodInMinutes || DEFAULT_PERIOD_REFRESH;
+    storedValues.periodInMinutes || DEFAULT_PERIOD_REFRESH;
   elements.extensionClickBehavior().value =
-    res.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
+    storedValues.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
   elements.markEntryAsReadWhenOpenedAsTab().checked =
-    res.markEntryAsReadWhenOpenedAsTab ||
+    storedValues.markEntryAsReadWhenOpenedAsTab ||
     DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
-  elements.theme().value = res.theme || DEFAULT_THEME;
+  elements.theme().value = storedValues.theme || DEFAULT_THEME;
   elements.badgeBackgroundColor().value =
-    res.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
+    storedValues.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
   elements.badgeTextColor().value =
-    res.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
+    storedValues.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
 
   const hasPermission = await browser.permissions.contains({
     permissions: ["notifications"],
   });
-  const storedSetting = res.showNotifications || DEFAULT_SHOW_NOTIFICATIONS;
+  const storedSetting =
+    storedValues.showNotifications || DEFAULT_SHOW_NOTIFICATIONS;
   elements.showNotifications().checked = storedSetting && hasPermission;
 }
 
+// ============================================================================
+// Actions
+// ============================================================================
+
+/**
+ * Test Miniflux API connection with provided credentials.
+ * @returns {Promise<void>}
+ */
 async function testMinifluxApi() {
   const url = elements.url().value;
   const token = elements.token().value;
@@ -175,22 +220,26 @@ async function testMinifluxApi() {
     });
 }
 
+/**
+ * Remove all cached feed icons from local storage.
+ * @returns {Promise<void>}
+ */
 async function clearIconsCache() {
-  return browser.storage.local.get(null).then((data) => {
-    const keysToRemove = [];
-    for (const key of Object.keys(data)) {
-      if (/^icon\d+$/.test(key)) {
-        keysToRemove.push(key);
-      }
-    }
-
-    return browser.storage.local.remove(keysToRemove);
-  });
+  const data = await browser.storage.local.get(null);
+  const keysToRemove = Object.keys(data).filter((key) =>
+    /^icon\d+$/.test(key),
+  );
+  await browser.storage.local.remove(keysToRemove);
 }
+
+// ============================================================================
+// Initialization
+// ============================================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
   await Promise.all([refreshTheme(), restoreOptions()]);
 
+  // Attach auto-save listeners to input fields
   const autoSaveElements = [
     elements.url(),
     elements.token(),
@@ -207,8 +256,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     el.addEventListener("change", debouncedSave);
   }
 
-  elements.showNotifications().addEventListener("change", async (e) => {
-    const checkbox = e.target;
+  // Notification permission toggle
+  elements.showNotifications().addEventListener("change", async (event) => {
+    const checkbox = event.target;
 
     if (checkbox.checked) {
       const granted = await browser.permissions.request({
@@ -228,6 +278,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     debouncedSave();
   });
 
+  // Action buttons
   document
     .getElementById("btnTest")
     ?.addEventListener("click", testMinifluxApi);
