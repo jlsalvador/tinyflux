@@ -1,0 +1,322 @@
+{
+  "extensionName": {
+    "message": "Tinyflux",
+    "description": "Name of the extension."
+  },
+
+  "extensionDescription": {
+    "message": "Tinyflux 是一个快速、极简的 Miniflux 阅读器。阅读并保持专注，无需离开当前标签页。需要一个 Miniflux 实例。",
+    "description": "Description of the extension."
+  },
+
+  "connectionMinifluxError": {
+    "message": "无法连接到 Miniflux：$URL$",
+    "description": "Error message when the extension cannot connect to Miniflux.",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://reader.miniflux.app/"
+      }
+    }
+  },
+
+  "pageSettingsTitle": {
+    "message": "Tinyflux — 设置",
+    "description": "Page title for the settings page."
+  },
+
+  "pageSettingsMinifluxInstance": {
+    "message": "Miniflux 实例",
+    "description": "Label for the Miniflux instance input field."
+  },
+
+  "pageSettingsMinifluxInstanceUrlHelp": {
+    "message": "您的 Miniflux 实例地址，例如：https://reader.miniflux.app/",
+    "description": "Help text for the Miniflux instance URL input field."
+  },
+
+  "pageSettingsMinifluxInstanceTokenHelp": {
+    "message": "用于访问 Miniflux 实例的令牌，例如：CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">文档</a>。",
+    "description": "Help text for the Miniflux instance token input field."
+  },
+
+  "pageSettingsMinifluxInstancePeriodToRefresh": {
+    "message": "刷新间隔（分钟）",
+    "description": "Label for the refresh interval input field."
+  },
+
+  "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
+    "message": "Tinyflux 将按照此间隔刷新所有用户文章，例如：15",
+    "description": "Help text for the refresh interval input field."
+  },
+
+  "pageSettingsBrowserBehavior": {
+    "message": "浏览器行为",
+    "description": "Label for the browser behavior section."
+  },
+
+  "pageSettingsBrowserBehaviorClickBehavior": {
+    "message": "单击扩展图标时",
+    "description": "Label for the on extension icon click select field."
+  },
+
+  "pageSettingsBrowserBehaviorClickBehaviorOpenPopup": {
+    "message": "打开弹出窗口",
+    "description": "Option to open a popup when clicking on the extension icon."
+  },
+
+  "pageSettingsBrowserBehaviorClickBehaviorOpenWindow": {
+    "message": "打开新窗口",
+    "description": "Option to open a new window when clicking on the extension icon."
+  },
+
+  "pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel": {
+    "message": "打开侧边栏",
+    "description": "Option to open a side panel when clicking on the extension icon."
+  },
+
+  "pageSettingsBrowserBehaviorClickBehaviorHelp": {
+    "message": "定义单击扩展图标时执行的操作。",
+    "description": "Help text for the on extension icon click select field."
+  },
+
+  "pageSettingsBrowserBehaviorTheme": {
+    "message": "选择主题",
+    "description": "Label for the select theme select field."
+  },
+
+  "pageSettingsBrowserBehaviorThemeLight": {
+    "message": "浅色主题",
+    "description": "Option to use a light theme in the extension."
+  },
+
+  "pageSettingsBrowserBehaviorThemeDark": {
+    "message": "深色主题",
+    "description": "Option to use a dark theme in the extension."
+  },
+
+  "pageSettingsBrowserBehaviorThemeHelp": {
+    "message": "定义扩展使用的主题。",
+    "description": "Help text for the select theme select field."
+  },
+
+  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTab": {
+    "message": "在新标签页打开时标记为已读",
+    "description": "Option to mark an entry as read when it is opened in a new tab."
+  },
+
+  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
+    "message": "如果您希望在将文章作为新标签页打开时将其标记为已读，请选中此选项。",
+    "description": "Help text for the Mark entry as read when opened as tab checkbox."
+  },
+
+  "pageSettingsBrowserBehaviorBadgeBackgroundColor": {
+    "message": "徽章背景颜色",
+    "description": "Option to set the badge background color in the extension."
+  },
+
+  "pageSettingsBrowserBehaviorBadgeBackgroundColorHelp": {
+    "message": "定义徽章的背景颜色。",
+    "description": "Help text for the Badge background color input field."
+  },
+
+  "pageSettingsBrowserBehaviorBadgeTextColor": {
+    "message": "徽章文本颜色",
+    "description": "Option to set the badge text color in the extension."
+  },
+
+  "pageSettingsBrowserBehaviorBadgeTextColorHelp": {
+    "message": "定义徽章的文本颜色。",
+    "description": "Help text for the Badge text color input field."
+  },
+
+  "pageSettingsBrowserBehaviorShowNotifications": {
+    "message": "有新文章时显示通知",
+    "description": "Option to enable or disable notifications in the extension."
+  },
+
+  "pageSettingsBrowserBehaviorShowNotificationsHelp": {
+    "message": "需要浏览器权限。如果同时到达多篇文章，通知将被汇总。",
+    "description": "Help text for the Show Notifications checkbox."
+  },
+
+  "pageSettingsSaveChanges": {
+    "message": "保存更改",
+    "description": "Button to save changes made in the options page."
+  },
+
+  "pageSettingsMinifluxInstanceTestConnection": {
+    "message": "测试连接",
+    "description": "Button to test the connection with Miniflux instance."
+  },
+
+  "pageSettingsMinifluxInstanceClearFaviconsCache": {
+    "message": "清除图标缓存",
+    "description": "Button to clear the favicon cache in Miniflux instance."
+  },
+
+  "pageSettingsTesting": {
+    "message": "测试中…",
+    "description": "Text displayed while testing Miniflux instance connection."
+  },
+
+  "pageSettingsTestError": {
+    "message": "测试失败，再试一次？",
+    "description": "Error message displayed when testing Miniflux instance connection fails."
+  },
+
+  "pageSettingsTestOK": {
+    "message": "测试通过",
+    "description": "Text displayed when testing Miniflux instance connection is successful."
+  },
+
+  "pagePopupTitle": {
+    "message": "Tinyflux",
+    "description": "Title of the popup page."
+  },
+
+  "pagePopupOpenInSidePanel": {
+    "message": "在侧边栏中打开",
+    "description": "Button to open Tinyflux in a side panel."
+  },
+
+  "pagePopupOpenInWindow": {
+    "message": "在新窗口中打开",
+    "description": "Button to open Tinyflux in a new window."
+  },
+
+  "pagePopupToggleTheme": {
+    "message": "切换浅色/深色模式",
+    "description": "Button to toggle between light and dark mode in Tinyflux."
+  },
+
+  "pagePopupOpenMiniflux": {
+    "message": "打开 Miniflux",
+    "description": "Button to open Miniflux in a new tab."
+  },
+
+  "pagePopupOpenSettings": {
+    "message": "打开设置",
+    "description": "Button to open Tinyflux settings in a new tab."
+  },
+
+  "pagePopupEmpty": {
+    "message": "您已读完所有内容！",
+    "description": "Message displayed when there are no unread entries in Tinyflux."
+  },
+
+  "pagePopupMarkEntriesAsRead": {
+    "message": "标记所有文章为已读",
+    "description": "Button to mark all unread entries as read in Tinyflux."
+  },
+
+  "pagePopupOpenLink": {
+    "message": "在新标签页中打开",
+    "description": "Tooltip for opening a link in a new tab."
+  },
+
+  "pagePopupToggleBookmark": {
+    "message": "切换书签",
+    "description": "Tooltip for toggling a bookmark in Tinyflux."
+  },
+
+  "pagePopupMarkAsRead": {
+    "message": "标记为已读",
+    "description": "Tooltip for marking an entry as read in Tinyflux."
+  },
+
+  "pagePopupShowContent": {
+    "message": "显示内容",
+    "description": "Tooltip for showing an entry's content in Tinyflux."
+  },
+
+  "pagePopupHideContent": {
+    "message": "收起内容",
+    "description": "Tooltip for collapsing an entry's content in Tinyflux."
+  },
+
+  "pagePopupAreYouSureToMarkAllEntriesAsRead": {
+    "message": "您确定要将所有文章标记为已读吗？",
+    "description": "Tooltip for confirming the action of marking all entries as read in Tinyflux."
+  },
+
+  "pagePopupMarkAll": {
+    "message": "全部标记",
+    "description": "Tooltip for marking all entries as read in Tinyflux."
+  },
+
+  "pagePopupPublished": {
+    "message": "发布于 $DATE$",
+    "description": "Tooltip for showing when an entry was published in Tinyflux.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "周四 4月10日 13:44:20 CEST 2025"
+      }
+    }
+  },
+
+  "pagePopupReadingTimeSingular": {
+    "message": "阅读时间：$MINUTE$ 分钟",
+    "description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
+    "placeholders": {
+      "minute": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+
+  "pagePopupReadingTimePlural": {
+    "message": "阅读时间：$MINUTES$ 分钟",
+    "description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+
+  "pagePopupReadingTimeShort": {
+    "message": "$MINUTES$分钟",
+    "description": "Short tooltip for showing how long it takes to read an entry in Tinyflux.",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+
+  "msgURL": {
+    "message": "URL",
+    "description": "Label for the URL input field."
+  },
+
+  "msgToken": {
+    "message": "令牌",
+    "description": "Label for the Token input field."
+  },
+
+  "msgMenu": {
+    "message": "菜单",
+    "description": "Button to open the menu in Tinyflux."
+  },
+
+  "msgRefresh": {
+    "message": "刷新",
+    "description": "Button to refresh Tinyflux."
+  },
+
+  "notificationNewEntriesAvailable": {
+    "message": "有 $COUNTER$ 篇新文章。",
+    "description": "Notification message when new entries are available in Tinyflux.",
+    "placeholders": {
+      "counter": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  }
+}
