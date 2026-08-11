@@ -209,6 +209,11 @@ input[type="checkbox"] {
   background-color: rgba(0, 0, 0, 0.03);
 }
 
+.btn-outline:not(.status-success):not(.status-error):hover {
+  border-color: var(--color-text-secondary);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
 .btn-ghost {
   background-color: transparent;
   color: var(--color-text-secondary);
@@ -220,13 +225,15 @@ input[type="checkbox"] {
 }
 
 /* Feedback Status Classes (Used in JS) */
-.btn.status-success {
+.btn.status-success,
+.btn.btn-outline.status-success {
   background-color: var(--color-success);
   border-color: var(--color-success);
   color: white;
 }
 
-.btn.status-error {
+.btn.status-error,
+.btn.btn-outline.status-error {
   background-color: var(--color-danger);
   border-color: var(--color-danger);
   color: white;
