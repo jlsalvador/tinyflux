@@ -23,7 +23,7 @@ offering a clean reading experience directly in your browser.
 - **Optional Sidebar Integration:**
   Access your feeds in a dedicated sidebar for better multitasking.
 - **Multi-Language Support:**
-  Currently available in English and Spanish.
+  Available in English, Spanish, Chinese, French, and German.
 - **Dark and Light Modes:**
   Toggle between themes based on your preference.
 - **Bookmarks:**
