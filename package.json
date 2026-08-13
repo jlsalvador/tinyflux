@@ -37,7 +37,7 @@
     "dompurify": "^3.4.13",
     "esbuild": "^0.28.2",
     "eslint": "^10.8.1",
-    "globals": "^17.9.0",
+    "globals": "^17.11.0",
     "htmlnano": "^3.4.0",
     "jsdom": "^30.0.1",
     "node-watch": "^0.7.4",
