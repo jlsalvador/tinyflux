@@ -407,13 +407,9 @@ async function buildExtensions(dev) {
     .readFile(resolve(import.meta.dirname, "../../package.json"))
     .then((content) => JSON.parse(content));
 
-  try {
-    await cleanDist(label, outdir);
-    await buildResources(label, pkg, dev, srcdir, resources);
-    await buildPack(label, pkg, resources, outdir);
-  } catch (err) {
-    console.error(err);
-  }
+  await cleanDist(label, outdir);
+  await buildResources(label, pkg, dev, srcdir, resources);
+  await buildPack(label, pkg, resources, outdir);
 
   console.timeEnd(label);
 }
@@ -430,7 +426,11 @@ async function watchExtensions(dev) {
 
   await buildExtensions(dev);
   watch(srcdir, { recursive: true }, async () => {
-    await buildExtensions(dev);
+    try {
+      await buildExtensions(dev);
+    } catch (err) {
+      console.error(err);
+    }
   });
 
   console.timeEnd(label);

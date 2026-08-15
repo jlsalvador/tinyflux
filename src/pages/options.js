@@ -1,4 +1,4 @@
-/* global document, chrome, setTimeout, clearTimeout */
+/* global document, chrome, console, setTimeout, clearTimeout */
 
 import "./localize.js";
 import browser from "webextension-polyfill";
@@ -224,20 +224,24 @@ async function testMinifluxApi() {
   btnTest.disabled = true;
   btnTest.classList.remove("status-success", "status-error");
 
-  return request("/v1/me", { url, token })
-    .then(async (response) => {
-      if (!response.ok) {
-        btnTest.classList.add("status-error");
-        btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestError");
-        throw new Error(await response.text());
-      }
+  try {
+    const response = await request("/v1/me", { url, token });
 
-      btnTest.classList.add("status-success");
-      btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestOK");
-    })
-    .finally(() => {
-      btnTest.disabled = false;
-    });
+    if (!response.ok) {
+      btnTest.classList.add("status-error");
+      btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestError");
+      return;
+    }
+
+    btnTest.classList.add("status-success");
+    btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestOK");
+  } catch (error) {
+    btnTest.classList.add("status-error");
+    btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestError");
+    console.error("Failed to test Miniflux API:", error);
+  } finally {
+    btnTest.disabled = false;
+  }
 }
 
 /**

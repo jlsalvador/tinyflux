@@ -8,6 +8,7 @@ import {
   InvalidUrlOrTokenError,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+  MinifluxConnectionError,
   notifyRefreshEntries,
   openSettings,
   refreshActionBehavior,
@@ -44,10 +45,19 @@ export const markEntriesAsRead = async (entryIds) => {
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
   try {
-    await request(`/v1/entries`, {
+    const response = await request(`/v1/entries`, {
       method: "PUT",
       body: JSON.stringify({ entry_ids: entryIds, status: "read" }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new MinifluxConnectionError(
+        `Failed to mark entries as read: ${errorText}`,
+        { cause: new Error(errorText) },
+      );
+    }
+
     return updatedEntries;
   } catch (error) {
     await browser.storage.local.set({ entries: previousEntries });
@@ -83,7 +93,18 @@ export const toggleBookmark = async (entryId) => {
   await notifyRefreshEntries();
 
   try {
-    await request(`/v1/entries/${entryId}/bookmark`, { method: "PUT" });
+    const response = await request(`/v1/entries/${entryId}/bookmark`, {
+      method: "PUT",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new MinifluxConnectionError(
+        `Failed to toggle bookmark: ${errorText}`,
+        { cause: new Error(errorText) },
+      );
+    }
+
     return updatedEntries;
   } catch (error) {
     await browser.storage.local.set({ entries: previousEntries });

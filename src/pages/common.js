@@ -214,7 +214,7 @@ const validateCredentials = (url, token) => {
  *
  * The URL and Token will be fetched from browser.storage.local if not supplied.
  *
- * @param {string} path - API endpoint path (e.g., "/v1/me/")
+ * @param {string} path - API endpoint path (e.g., "/v1/me/"), resolved against the Miniflux URL (any subpath in the URL is preserved)
  * @param {Object} [options] - Request options
  * @param {string} [options.url] - Miniflux URL (fetched from storage if not provided)
  * @param {string} [options.token] - API token (fetched from storage if not provided)
@@ -253,7 +253,9 @@ export async function request(path, options = {}) {
     headers.set("Content-Type", contentType);
   }
 
-  const requestUrl = new URL(path, url);
+  const requestUrl = new URL(
+    url.replace(/\/+$/, "") + (path.startsWith("/") ? path : `/${path}`),
+  );
   const requestOptions = {
     method,
     headers,

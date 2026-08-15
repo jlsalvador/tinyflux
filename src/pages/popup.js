@@ -243,22 +243,24 @@ const createEntryTitle = async (entry) => {
   const icon = iconId ? await getIcon(iconId) : { data: "" };
   const feedInfo = document.createElement("div");
   feedInfo.className = "entry-feed-info";
-  feedInfo.title = entry.feed.title;
+  feedInfo.title = entry.feed?.title ?? "";
 
   if (icon.data) {
     const feedIcon = document.createElement("img");
     feedIcon.className = "feed-icon";
     feedIcon.src = `data:${icon.data}`;
-    feedIcon.alt = entry.feed.title;
+    feedIcon.alt = entry.feed?.title ?? "";
     feedInfo.appendChild(feedIcon);
   }
 
   const feedTitle = document.createElement("span");
   feedTitle.className = "feed-title";
-  feedTitle.textContent = entry.feed.title;
+  feedTitle.textContent = entry.feed?.title ?? "";
   feedInfo.appendChild(feedTitle);
 
-  feedInfo.addEventListener("click", () => openLink(entry.feed.site_url));
+  if (entry.feed?.site_url) {
+    feedInfo.addEventListener("click", () => openLink(entry.feed.site_url));
+  }
 
   // Stats
   const stats = document.createElement("div");
