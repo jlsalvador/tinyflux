@@ -159,6 +159,8 @@ browser.runtime.onMessage.addListener(handleMessage);
 
 browser.alarms.onAlarm.addListener((alarmInfo) => {
   if (alarmInfo.name === ALARM_REFRESH) {
-    return refreshEntries();
+    refreshEntries().catch((error) => {
+      console.error("Scheduled refresh failed:", error);
+    });
   }
 });

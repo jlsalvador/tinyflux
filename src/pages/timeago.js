@@ -76,30 +76,19 @@ export function TimeAgo(time, style = Style.Long) {
   const timeFormats =
     style === Style.ExtremeNarrow ? timeFormatsExtremeNarrow : timeFormatsLong;
 
-  let i = 0;
-  let result;
-
-  while (i < timeFormats.length - 1) {
+  // The last bucket always matches (its next divisor is Infinity),
+  // so this loop always returns.
+  for (let i = 0; ; i += 2) {
     const [divisor] = timeFormats[i];
     const nextDivisor = timeFormats[i + 2]?.[0] ?? Infinity;
     const nextDiff = Math.floor(seconds / nextDivisor);
 
     if (nextDiff >= 1) {
-      i += 2;
       continue;
     }
 
     const count = Math.floor(seconds / divisor);
     const template = count <= 1 ? timeFormats[i] : timeFormats[i + 1];
-    result = template[isFuture ? 2 : 1].replace("%d", String(count));
-    break;
+    return template[isFuture ? 2 : 1].replace("%d", String(count));
   }
-
-  if (!result) {
-    const d = timeFormats[i]?.[0] ?? 1;
-    const count = Math.floor(seconds / d);
-    result = timeFormats[i][isFuture ? 2 : 1].replace("%d", String(count));
-  }
-
-  return result;
 }

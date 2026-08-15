@@ -206,13 +206,24 @@ async function restoreOptions() {
 
 /**
  * Enable or disable the Test Connection button based on URL and Token values.
+ * A previous test result is cleared when the credentials change.
  */
 function updateTestButtonState() {
   const url = elements.url().value;
   const token = elements.token().value;
   const btnTest = document.getElementById("btnTest");
-  if (btnTest) {
-    btnTest.disabled = !url || !token;
+  if (!btnTest) return;
+
+  btnTest.disabled = !url || !token;
+
+  if (
+    btnTest.classList.contains("status-success") ||
+    btnTest.classList.contains("status-error")
+  ) {
+    btnTest.classList.remove("status-success", "status-error");
+    btnTest.innerText = chrome.i18n.getMessage(
+      "pageSettingsMinifluxInstanceTestConnection",
+    );
   }
 }
 
