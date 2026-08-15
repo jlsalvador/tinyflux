@@ -30,6 +30,7 @@ const SAVE_DEBOUNCE_MS = 500;
 /** @type {ReturnType<typeof setTimeout>|null} */
 let saveTimeout = null;
 let isSaving = false;
+let savePending = false;
 
 // ============================================================================
 // DOM Element References
@@ -139,15 +140,20 @@ async function applyChanges(currentValues, storedValues) {
 
 /**
  * Debounced auto-save: saves form values after a short delay.
+ * Edits made while a save is in progress are queued and saved once it finishes.
  */
 async function debouncedSave() {
-  if (isSaving) return;
+  if (isSaving) {
+    savePending = true;
+    return;
+  }
 
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
 
   saveTimeout = setTimeout(async () => {
+    saveTimeout = null;
     isSaving = true;
     try {
       const currentValues = readFormValues();
@@ -157,7 +163,10 @@ async function debouncedSave() {
       // Silently fail on auto-save
     } finally {
       isSaving = false;
-      saveTimeout = null;
+      if (savePending) {
+        savePending = false;
+        debouncedSave();
+      }
     }
   }, SAVE_DEBOUNCE_MS);
 }

@@ -141,13 +141,9 @@ export const handleStartup = async () => {
 export const handleMessage = async (message) => {
   switch (message.action) {
     case MESSAGE_MARK_ENTRY_IDS_AS_READ:
-      return markEntriesAsRead(message.entryIds).catch((error) => {
-        console.error(error);
-      });
+      return markEntriesAsRead(message.entryIds);
     case MESSAGE_TOGGLE_ENTRY_BOOKMARK:
-      return toggleBookmark(message.entryId).catch((error) => {
-        console.error(error);
-      });
+      return toggleBookmark(message.entryId);
     default:
       return false;
   }

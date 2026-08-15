@@ -23,6 +23,7 @@ import {
   MESSAGE_REFRESH_THEME,
   MESSAGE_REFRESH_VIEW_ENTRIES,
   MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+  InvalidUrlOrTokenError,
   closeIfPopup,
   filterVisibleEntries,
   getPopupStyle,
@@ -225,10 +226,14 @@ const createEntryTitle = async (entry) => {
       );
 
     if (shouldMarkAsRead) {
-      browser.runtime.sendMessage({
-        action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
-        entryIds: [entry.id],
-      });
+      browser.runtime
+        .sendMessage({
+          action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+          entryIds: [entry.id],
+        })
+        .catch((error) =>
+          console.error("Failed to mark entry as read:", error),
+        );
     }
 
     await openLink(entry.url);
@@ -627,7 +632,11 @@ const setupRefreshButton = () => {
       await refreshEntries();
       await handleRefreshViewEntries();
     } catch (error) {
-      console.error("Failed to refresh:", error);
+      if (error instanceof InvalidUrlOrTokenError) {
+        await openSettings();
+      } else {
+        console.error("Failed to refresh:", error);
+      }
     } finally {
       button.disabled = false;
       icon.classList.remove("loading");

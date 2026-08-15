@@ -349,7 +349,11 @@ export async function updateBadgeConnectionError() {
  * @returns {boolean}
  */
 const isIgnorableError = (error) => {
-  return error?.message?.includes("Could not establish connection");
+  const message = error?.message ?? "";
+  return (
+    message.includes("Could not establish connection") ||
+    message.includes("No matching handler found")
+  );
 };
 
 /**
@@ -484,7 +488,6 @@ export async function refreshEntries() {
     fetchedEntries = data.entries || [];
   } catch (error) {
     if (error instanceof InvalidUrlOrTokenError) {
-      await openSettings();
       throw error;
     }
     if (error instanceof MinifluxConnectionError) {
