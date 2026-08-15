@@ -95,19 +95,9 @@
     "description": "Opción para usar un tema oscuro en la extensión."
   },
 
-  "pageSettingsBrowserBehaviorThemeHelp": {
-    "message": "Define qué tema se utilizará en la extensión.",
-    "description": "Ayuda para el campo de selección del tema."
-  },
-
   "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTab": {
     "message": "Marcar entrada como leída al abrir como pestaña",
     "description": "Opción para marcar una entrada como leída cuando se abre en una nueva pestaña."
-  },
-
-  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
-    "message": "Marcar la entrada como leída cuando la abres como pestaña.",
-    "description": "Ayuda para el checkbox de Marcar entrada como leída al abrir como pestaña."
   },
 
   "pageSettingsBrowserBehaviorBadgeBackgroundColor": {
@@ -115,19 +105,9 @@
     "description": "Opción para establecer el color de fondo de la insignia de la extensión."
   },
 
-  "pageSettingsBrowserBehaviorBadgeBackgroundColorHelp": {
-    "message": "Define el color de fondo de la insignia.",
-    "description": "Ayuda para el campo de entrada de Color de fondo de la insignia."
-  },
-
   "pageSettingsBrowserBehaviorBadgeTextColor": {
     "message": "Color del texto de la insignia",
     "description": "Opción para establecer el color del texto de la insignia de la extensión."
-  },
-
-  "pageSettingsBrowserBehaviorBadgeTextColorHelp": {
-    "message": "Define el color del texto de la insignia.",
-    "description": "Ayuda para el campo de entrada de Color del texto de la insignia."
   },
 
   "pageSettingsBrowserBehaviorShowNotifications": {
@@ -138,11 +118,6 @@
   "pageSettingsBrowserBehaviorShowNotificationsHelp": {
     "message": "Requiere el permiso del navegador. Resumiremos si llegan al mismo tiempo muchas entradas.",
     "description": "Ayuda para el campo de entrada de Mostrar notificaciones."
-  },
-
-  "pageSettingsSaveChanges": {
-    "message": "Guardar Cambios",
-    "description": "Botón para guardar los cambios realizados en la página de opciones."
   },
 
   "pageSettingsMinifluxInstanceTestConnection": {
@@ -210,11 +185,6 @@
     "description": "Botón para marcar todas las entradas sin leer como leídas en Tinyflux."
   },
 
-  "pagePopupOpenLink": {
-    "message": "Abrir en una nueva pestaña",
-    "description": "Tooltip para abrir un enlace en una nueva pestaña."
-  },
-
   "pagePopupToggleBookmark": {
     "message": "Alternar marcador",
     "description": "Tooltip para alternar marcador en Tinyflux."
@@ -238,22 +208,6 @@
   "pagePopupAreYouSureToMarkAllEntriesAsRead": {
     "message": "¿Estás seguro de marcar todas las entradas como leídas?",
     "description": "Tooltip para confirmar la acción de marcar todas las entradas como leídas en Tinyflux."
-  },
-
-  "pagePopupMarkAll": {
-    "message": "Marcar todas",
-    "description": "Tooltip para marcar todas las entradas como leídas en Tinyflux."
-  },
-
-  "pagePopupPublished": {
-    "message": "Publicado el $DATE$",
-    "description": "Tooltip para mostrar cuando una entrada fue publicada en Tinyflux.",
-    "placeholders": {
-      "date": {
-        "content": "$1",
-        "example": "jue 10 abr 2025 13:45:57 CEST"
-      }
-    }
   },
 
   "pagePopupReadingTimeSingular": {
