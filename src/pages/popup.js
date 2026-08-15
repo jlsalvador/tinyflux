@@ -176,7 +176,16 @@ export const sortDOMEntries = () => {
   const entries = Array.from(container.querySelectorAll(".entry"));
 
   entries
-    .sort((a, b) => Number(b.dataset.timestamp) - Number(a.dataset.timestamp))
+    .sort((a, b) => {
+      const timeA = Number(a.dataset.timestamp);
+      const timeB = Number(b.dataset.timestamp);
+      if (Number.isFinite(timeA) && Number.isFinite(timeB)) {
+        return timeB - timeA;
+      }
+      if (Number.isFinite(timeA)) return 1;
+      if (Number.isFinite(timeB)) return -1;
+      return 0;
+    })
     .forEach((entry) => container.appendChild(entry));
 };
 
@@ -284,25 +293,27 @@ const createEntryTitle = async (entry) => {
   stats.appendChild(publishedStat);
 
   // Reading time
-  const readingTimeStat = document.createElement("div");
-  readingTimeStat.className = "entry-stat";
-  readingTimeStat.title =
-    entry.reading_time === 1
-      ? chrome.i18n.getMessage(
-          "pagePopupReadingTimeSingular",
-          String(entry.reading_time),
-        )
-      : chrome.i18n.getMessage(
-          "pagePopupReadingTimePlural",
-          String(entry.reading_time),
-        );
-  const readingText = document.createElement("span");
-  readingText.textContent = chrome.i18n.getMessage(
-    "pagePopupReadingTimeShort",
-    String(entry.reading_time),
-  );
-  readingTimeStat.replaceChildren(createSvg(svg_path_clock), readingText);
-  stats.appendChild(readingTimeStat);
+  if (entry.reading_time) {
+    const readingTimeStat = document.createElement("div");
+    readingTimeStat.className = "entry-stat";
+    readingTimeStat.title =
+      entry.reading_time === 1
+        ? chrome.i18n.getMessage(
+            "pagePopupReadingTimeSingular",
+            String(entry.reading_time),
+          )
+        : chrome.i18n.getMessage(
+            "pagePopupReadingTimePlural",
+            String(entry.reading_time),
+          );
+    const readingText = document.createElement("span");
+    readingText.textContent = chrome.i18n.getMessage(
+      "pagePopupReadingTimeShort",
+      String(entry.reading_time),
+    );
+    readingTimeStat.replaceChildren(createSvg(svg_path_clock), readingText);
+    stats.appendChild(readingTimeStat);
+  }
 
   // Actions
   const actions = document.createElement("div");

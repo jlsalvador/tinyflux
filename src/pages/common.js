@@ -598,10 +598,12 @@ export async function refreshAlarm() {
   const { periodInMinutes = DEFAULT_PERIOD_REFRESH } =
     await browser.storage.local.get("periodInMinutes");
 
-  const period = Number(periodInMinutes) || DEFAULT_PERIOD_REFRESH;
+  const period = Number(periodInMinutes);
+  const safePeriod =
+    Number.isFinite(period) && period > 0 ? period : DEFAULT_PERIOD_REFRESH;
 
   await browser.alarms.create(ALARM_REFRESH, {
-    periodInMinutes: period,
+    periodInMinutes: safePeriod,
   });
 }
 

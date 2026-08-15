@@ -66,7 +66,14 @@ export function TimeAgo(time, style = Style.Long) {
           ? time.getTime()
           : +new Date();
 
+  if (!Number.isFinite(timestamp)) {
+    return "now";
+  }
+
   let seconds = Math.round((+new Date() - timestamp) / 1000);
+  if (seconds === 0) {
+    return "now";
+  }
 
   const isFuture = seconds < 0;
   if (isFuture) {
