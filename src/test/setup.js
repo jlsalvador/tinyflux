@@ -66,6 +66,9 @@ const createMockPromise = (result) => () => Promise.resolve(result);
 const addListener = () => {};
 const removeListener = () => {};
 
+// Capture runtime.onMessage listeners so tests can dispatch messages
+const runtimeMessageListeners = [];
+
 const mockBrowser = {
   storage: {
     local: {
@@ -75,7 +78,10 @@ const mockBrowser = {
     },
   },
   runtime: {
-    onMessage: { addListener, removeListener },
+    onMessage: {
+      addListener: (listener) => runtimeMessageListeners.push(listener),
+      removeListener,
+    },
     onStartup: { addListener, removeListener },
     onInstalled: { addListener, removeListener },
     onSuspend: { addListener, removeListener },
@@ -143,6 +149,7 @@ const mockBrowser = {
   },
 };
 Object.assign(globalThis, { browser: mockBrowser });
+globalThis.runtimeMessageListeners = runtimeMessageListeners;
 
 // Mock fetch - returns a successful JSON response by default
 globalThis.mockFetchResponse = {

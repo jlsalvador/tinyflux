@@ -1,17 +1,33 @@
-/* global test, expect, resetDOM, document */
+/* global test, expect, browser, resetDOM, document, runtimeMessageListeners, setTimeout */
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createSvg } from "./icons.js";
-import { filterVisibleEntries, InvalidUrlOrTokenError } from "./common.js";
 import {
+  createSvg,
+  svg_path_eye,
+  svg_path_star_empty,
+  svg_path_star_filled,
+  svg_path_toggle_close,
+  svg_path_toggle_open,
+} from "./icons.js";
+import {
+  filterVisibleEntries,
+  InvalidUrlOrTokenError,
+  MESSAGE_MARK_ENTRY_IDS_AS_READ,
+  MESSAGE_REFRESH_VIEW_ENTRIES,
+  MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+} from "./common.js";
+import {
+  addDOMEntries,
+  addDOMEntry,
   createEntryContent,
   setBookmarkButtonState,
   updateEmptyState,
   sortDOMEntries,
   cleanupOldDOMEntries,
 } from "./popup.js";
+import { testIcon } from "../test/fixtures/entries.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const popupHtml = readFileSync(resolve(__dirname, "popup.html"), "utf8");
@@ -72,6 +88,72 @@ const testEntries = [
     tags: [],
   },
 ];
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+const makeEntry = (overrides = {}) => {
+  const base = {
+    id: 1,
+    title: "Test Entry",
+    url: "https://example.com/1",
+    published_at: new Date(Date.now() - 60_000).toISOString(),
+    reading_time: 0,
+    starred: false,
+    content: "<p>Entry content.</p>",
+    feed: {
+      title: "Example Feed",
+      site_url: "https://example.com/",
+      hide_globally: false,
+      category: { hide_globally: false },
+    },
+  };
+  return {
+    ...base,
+    ...overrides,
+    feed: { ...base.feed, ...(overrides.feed ?? {}) },
+  };
+};
+
+const setupEntriesDOM = () => {
+  resetDOM(
+    "<!doctype html><html><head></head><body><div class='entries'></div></body></html>",
+  );
+  return document.querySelector(".entries");
+};
+
+const mockStorage = (t, data = {}) => {
+  const sets = [];
+  t.mock.method(browser.storage.local, "get", (keys) => {
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    const result = {};
+    for (const key of keyList) {
+      if (key in data) result[key] = data[key];
+    }
+    return Promise.resolve(result);
+  });
+  t.mock.method(browser.storage.local, "set", (items) => {
+    sets.push(items);
+    return Promise.resolve();
+  });
+  return sets;
+};
+
+const mockFetch = (t, body, status = 200) => {
+  const fetched = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    fetched.push(req);
+    return Promise.resolve({
+      status,
+      ok: status === 200,
+      json: () => Promise.resolve(body),
+    });
+  });
+  return fetched;
+};
+
+const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 // ============================================================================
 // createSvg tests
@@ -453,4 +535,410 @@ test("cleanupOldDOMEntries handles entries with invalid entryId", () => {
   const remaining = document.querySelectorAll(".entry");
   expect(remaining.length).toBe(1);
   expect(remaining[0].dataset.entryId).toBe("1");
+});
+
+// ============================================================================
+// addDOMEntry / createEntry / createEntryTitle tests
+// ============================================================================
+
+test("addDOMEntry renders entry title, feed info, stats and actions", async (t) => {
+  const container = setupEntriesDOM();
+  mockStorage(t);
+
+  const entry = makeEntry();
+  await addDOMEntry(entry);
+
+  const entryEl = document.getElementById("entry-1");
+  expect(entryEl).toBeTruthy();
+  expect(entryEl.classList.contains("entry")).toBe(true);
+  expect(entryEl.dataset.entryId).toBe("1");
+  expect(entryEl.dataset.timestamp).toBe(
+    String(new Date(entry.published_at).getTime()),
+  );
+  expect(container.querySelector(".entry")).toBe(entryEl);
+
+  const title = entryEl.querySelector(".entry-title");
+  expect(title.id).toBe("entryTitle-1");
+  expect(title.querySelector(".entry-title-text").textContent).toBe(
+    "Test Entry",
+  );
+
+  expect(entryEl.querySelector(".feed-title").textContent).toBe("Example Feed");
+  expect(entryEl.querySelector(".feed-icon")).toBeFalsy();
+
+  const stats = entryEl.querySelectorAll(".entry-stat");
+  expect(stats.length).toBe(1);
+  expect(stats[0].textContent).toBe("1m");
+
+  const buttons = entryEl.querySelectorAll(".entry-action-btn");
+  expect(buttons.length).toBe(3);
+  expect(buttons[0].querySelector("path").getAttribute("d")).toBe(
+    svg_path_star_empty,
+  );
+  expect(buttons[1].querySelector("path").getAttribute("d")).toBe(svg_path_eye);
+  expect(buttons[2].querySelector("path").getAttribute("d")).toBe(
+    svg_path_toggle_open,
+  );
+  expect(document.getElementById("entryContent-1")).toBeFalsy();
+});
+
+test("addDOMEntry renders starred state and reading time stat", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+
+  await addDOMEntry(makeEntry({ id: 2, starred: true, reading_time: 3 }));
+
+  const entryEl = document.getElementById("entry-2");
+  const bookmarkBtn = entryEl.querySelector(".entry-action-btn");
+  expect(bookmarkBtn.classList.contains("starred")).toBe(true);
+  expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
+    svg_path_star_filled,
+  );
+
+  const stats = entryEl.querySelectorAll(".entry-stat");
+  expect(stats.length).toBe(2);
+  expect(stats[1].textContent).toBe("pagePopupReadingTimeShort");
+});
+
+test("addDOMEntry skips rendering when entry already exists", async (t) => {
+  const container = setupEntriesDOM();
+  mockStorage(t);
+
+  await addDOMEntry(makeEntry());
+  await addDOMEntry(makeEntry());
+
+  expect(container.querySelectorAll(".entry").length).toBe(1);
+});
+
+test("addDOMEntry does nothing when entries container is missing", async (t) => {
+  resetDOM("<!doctype html><html><head></head><body></body></html>");
+  mockStorage(t);
+
+  await addDOMEntry(makeEntry());
+
+  expect(document.getElementById("entry-1")).toBeFalsy();
+});
+
+// ============================================================================
+// Feed icon (getIcon) tests
+// ============================================================================
+
+test("addDOMEntry renders feed icon from storage cache", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t, { icon20: testIcon });
+  const fetched = mockFetch(t, testIcon);
+
+  await addDOMEntry(
+    makeEntry({ feed: { icon: { feed_id: 28, icon_id: 20 } } }),
+  );
+
+  const icon = document.querySelector(".feed-icon");
+  expect(icon).toBeTruthy();
+  expect(icon.getAttribute("src")).toBe(`data:${testIcon.data}`);
+  expect(icon.alt).toBe("Example Feed");
+  expect(fetched.length).toBe(0);
+});
+
+test("addDOMEntry fetches feed icon from API and caches it", async (t) => {
+  setupEntriesDOM();
+  const sets = mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "test-token",
+  });
+  const fetched = mockFetch(t, testIcon);
+
+  await addDOMEntry(
+    makeEntry({ feed: { icon: { feed_id: 28, icon_id: 30 } } }),
+  );
+
+  const icon = document.querySelector(".feed-icon");
+  expect(icon.getAttribute("src")).toBe(`data:${testIcon.data}`);
+  expect(fetched.length).toBe(1);
+  expect(fetched[0].url).toBe("https://miniflux.example.com/v1/icons/30");
+  expect(sets.length).toBe(1);
+  expect(sets[0].icon30).toEqual(testIcon);
+});
+
+test("addDOMEntry omits feed icon when API request fails", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "test-token",
+  });
+  mockFetch(t, {}, 404);
+
+  await addDOMEntry(
+    makeEntry({ feed: { icon: { feed_id: 28, icon_id: 40 } } }),
+  );
+
+  expect(document.querySelector(".feed-icon")).toBeFalsy();
+  expect(document.querySelector(".feed-title").textContent).toBe(
+    "Example Feed",
+  );
+});
+
+test("addDOMEntry serves repeated icon lookups from memory cache", async (t) => {
+  setupEntriesDOM();
+  const sets = mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "test-token",
+  });
+  const fetched = mockFetch(t, testIcon);
+
+  await addDOMEntry(makeEntry({ id: 1, feed: { icon: { icon_id: 50 } } }));
+  await addDOMEntry(makeEntry({ id: 2, feed: { icon: { icon_id: 50 } } }));
+
+  expect(fetched.length).toBe(1);
+  expect(sets.length).toBe(1);
+  expect(document.querySelectorAll(".feed-icon").length).toBe(2);
+});
+
+// ============================================================================
+// Entry action button tests
+// ============================================================================
+
+test("toggle button expands and collapses entry content", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+
+  await addDOMEntry(makeEntry());
+
+  const entryEl = document.getElementById("entry-1");
+  const titleEl = entryEl.querySelector(".entry-title");
+  const toggleBtn = entryEl.querySelectorAll(".entry-action-btn")[2];
+
+  toggleBtn.click();
+  expect(titleEl.classList.contains("expanded")).toBe(true);
+  const content = document.getElementById("entryContent-1");
+  expect(content).toBeTruthy();
+  expect(content.textContent).toContain("Entry content.");
+  expect(toggleBtn.querySelector("path").getAttribute("d")).toBe(
+    svg_path_toggle_close,
+  );
+
+  toggleBtn.click();
+  expect(titleEl.classList.contains("expanded")).toBe(false);
+  expect(document.getElementById("entryContent-1")).toBeFalsy();
+  expect(toggleBtn.querySelector("path").getAttribute("d")).toBe(
+    svg_path_toggle_open,
+  );
+});
+
+test("bookmark click toggles star and sends toggle message", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+
+  await addDOMEntry(makeEntry());
+
+  const bookmarkBtn = document
+    .getElementById("entry-1")
+    .querySelector(".entry-action-btn");
+  bookmarkBtn.click();
+  await flushAsync();
+
+  expect(bookmarkBtn.classList.contains("starred")).toBe(true);
+  expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
+    svg_path_star_filled,
+  );
+  expect(sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    action: MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+    entryId: 1,
+  });
+});
+
+test("bookmark click reverts star when message fails", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+  t.mock.method(browser.runtime, "sendMessage", () =>
+    Promise.reject(new Error("bookmark failed")),
+  );
+
+  await addDOMEntry(makeEntry({ starred: true }));
+
+  const bookmarkBtn = document
+    .getElementById("entry-1")
+    .querySelector(".entry-action-btn");
+  expect(bookmarkBtn.classList.contains("starred")).toBe(true);
+
+  bookmarkBtn.click();
+  await flushAsync();
+
+  expect(bookmarkBtn.classList.contains("starred")).toBe(true);
+  expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
+    svg_path_star_filled,
+  );
+});
+
+test("mark as read click sends message and re-enables button", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+
+  await addDOMEntry(makeEntry());
+
+  const markReadBtn = document
+    .getElementById("entry-1")
+    .querySelectorAll(".entry-action-btn")[1];
+  markReadBtn.click();
+  await flushAsync();
+
+  expect(sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+    entryIds: [1],
+  });
+  expect(markReadBtn.disabled).toBe(false);
+  expect(markReadBtn.querySelector(".icon").classList.contains("loading")).toBe(
+    false,
+  );
+});
+
+// ============================================================================
+// Entry click (openLink) tests
+// ============================================================================
+
+test("title click opens entry url in a new tab", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+  const tabs = [];
+  t.mock.method(browser.tabs, "create", (options) => {
+    tabs.push(options);
+    return Promise.resolve({ id: 1 });
+  });
+
+  await addDOMEntry(makeEntry());
+
+  document.querySelector(".entry-title-text").click();
+  await flushAsync();
+
+  expect(tabs.length).toBe(1);
+  expect(tabs[0]).toEqual({ active: true, url: "https://example.com/1" });
+});
+
+test("title click marks entry as read when option is enabled", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t, { markEntryAsReadWhenOpenedAsTab: true });
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+  t.mock.method(browser.tabs, "create", () => Promise.resolve({ id: 1 }));
+
+  await addDOMEntry(makeEntry());
+
+  document.querySelector(".entry-title-text").click();
+  await flushAsync();
+
+  expect(sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+    entryIds: [1],
+  });
+});
+
+test("title click does not mark entry as read by default", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+  t.mock.method(browser.tabs, "create", () => Promise.resolve({ id: 1 }));
+
+  await addDOMEntry(makeEntry());
+
+  document.querySelector(".entry-title-text").click();
+  await flushAsync();
+
+  expect(sent.length).toBe(0);
+});
+
+test("feed info click opens feed site url", async (t) => {
+  setupEntriesDOM();
+  mockStorage(t);
+  const tabs = [];
+  t.mock.method(browser.tabs, "create", (options) => {
+    tabs.push(options);
+    return Promise.resolve({ id: 1 });
+  });
+
+  await addDOMEntry(makeEntry());
+
+  document.querySelector(".entry-feed-info").click();
+  await flushAsync();
+
+  expect(tabs.length).toBe(1);
+  expect(tabs[0]).toEqual({ active: true, url: "https://example.com/" });
+});
+
+// ============================================================================
+// addDOMEntries tests
+// ============================================================================
+
+test("addDOMEntries renders visible entries sorted newest first", async (t) => {
+  const container = setupEntriesDOM();
+  mockStorage(t);
+
+  const older = makeEntry({
+    id: 1,
+    published_at: new Date(Date.now() - 120_000).toISOString(),
+  });
+  const newer = makeEntry({ id: 2, url: "https://example.com/2" });
+  const hidden = makeEntry({ id: 3, feed: { hide_globally: true } });
+
+  await addDOMEntries([hidden, older, newer]);
+
+  const rendered = Array.from(container.querySelectorAll(".entry"));
+  expect(rendered.length).toBe(2);
+  expect(rendered[0].dataset.entryId).toBe("2");
+  expect(rendered[1].dataset.entryId).toBe("1");
+});
+
+test("addDOMEntries does nothing for empty list", async (t) => {
+  const container = setupEntriesDOM();
+  mockStorage(t);
+
+  await addDOMEntries([]);
+
+  expect(container.querySelectorAll(".entry").length).toBe(0);
+});
+
+// ============================================================================
+// Message listener tests
+// ============================================================================
+
+test("refresh_view_entries message re-renders entries from storage", async (t) => {
+  const container = setupEntriesDOM();
+  const nextEntry = makeEntry({
+    id: 2,
+    url: "https://example.com/2",
+    published_at: new Date(Date.now() - 30_000).toISOString(),
+  });
+  mockStorage(t, { entries: [nextEntry] });
+
+  await addDOMEntry(makeEntry({ id: 1 }));
+  expect(container.querySelectorAll(".entry").length).toBe(1);
+
+  const handler = runtimeMessageListeners.at(-1);
+  await handler({ action: MESSAGE_REFRESH_VIEW_ENTRIES });
+
+  expect(document.getElementById("entry-1")).toBeFalsy();
+  expect(document.getElementById("entry-2")).toBeTruthy();
+});
+
+test("message listener ignores unknown actions", () => {
+  const handler = runtimeMessageListeners.at(-1);
+  expect(handler({ action: "unknown-action" })).toBe(false);
 });
