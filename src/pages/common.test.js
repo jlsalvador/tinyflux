@@ -7,129 +7,63 @@ import {
   refreshAlarm,
   refreshTheme,
   updateBadge,
+  validateCredentials,
 } from "./common.js";
 
 test("validateCredentials does not throw for valid URL and token", () => {
-  let passed = false;
-  try {
-    const url = "https://example.com";
-    const token = "abc123";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-    passed = true;
-  } catch {
-    // unexpected
-  }
-  expect(passed).toBe(true);
+  validateCredentials("https://example.com", "abc123");
 });
 
 test("validateCredentials throws when URL is empty", () => {
-  let threw = false;
-  try {
-    const url = "";
-    const token = "abc123";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials("", "abc123")).toThrow(
+    InvalidUrlOrTokenError,
+  );
 });
 
 test("validateCredentials throws when token is empty", () => {
-  let threw = false;
-  try {
-    const url = "https://example.com";
-    const token = "";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials("https://example.com", "")).toThrow(
+    InvalidUrlOrTokenError,
+  );
 });
 
 test("validateCredentials throws when both URL and token are empty", () => {
-  let threw = false;
-  try {
-    const url = "";
-    const token = "";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials("", "")).toThrow(InvalidUrlOrTokenError);
 });
 
 test("validateCredentials throws when URL is undefined", () => {
-  let threw = false;
-  try {
-    const url = undefined;
-    const token = "abc123";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials(undefined, "abc123")).toThrow(
+    InvalidUrlOrTokenError,
+  );
 });
 
 test("validateCredentials throws when token is undefined", () => {
-  let threw = false;
-  try {
-    const url = "https://example.com";
-    const token = undefined;
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials("https://example.com", undefined)).toThrow(
+    InvalidUrlOrTokenError,
+  );
 });
 
 test("validateCredentials throws when URL is null", () => {
-  let threw = false;
-  try {
-    const url = null;
-    const token = "abc123";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials(null, "abc123")).toThrow(
+    InvalidUrlOrTokenError,
+  );
 });
 
 test("validateCredentials throws when token is null", () => {
-  let threw = false;
-  try {
-    const url = "https://example.com";
-    const token = null;
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-  } catch (e) {
-    threw = e instanceof InvalidUrlOrTokenError;
-  }
-  expect(threw).toBe(true);
+  expect(() => validateCredentials("https://example.com", null)).toThrow(
+    InvalidUrlOrTokenError,
+  );
 });
 
-test("validateCredentials accepts URL with trailing slash", () => {
-  let passed = false;
-  try {
-    const url = "https://example.com/";
-    const token = "token-with-dash";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-    passed = true;
-  } catch {
-    // unexpected
-  }
-  expect(passed).toBe(true);
+test("validateCredentials throws with default message", () => {
+  const error = expect(() => validateCredentials("", "")).toThrow(
+    InvalidUrlOrTokenError,
+  );
+  expect(error.message).toBe("You must configure your Miniflux URL and token");
 });
 
-test("validateCredentials accepts URL with path", () => {
-  let passed = false;
-  try {
-    const url = "https://example.com/subpath";
-    const token = "token";
-    if (!url || !token) throw new InvalidUrlOrTokenError();
-    passed = true;
-  } catch {
-    // unexpected
-  }
-  expect(passed).toBe(true);
+test("validateCredentials accepts URL with trailing slash and path", () => {
+  validateCredentials("https://example.com/", "token-with-dash");
+  validateCredentials("https://example.com/subpath", "token");
 });
 
 // --- filterVisibleEntries tests ---

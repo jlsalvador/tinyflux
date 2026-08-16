@@ -208,6 +208,31 @@ globalThis.expect = (actual) => ({
       );
     }
   },
+  toThrow: (expected) => {
+    if (typeof actual !== "function") {
+      throw new Error(`toThrow requires a function, got ${typeof actual}`);
+    }
+    let error = null;
+    try {
+      actual();
+    } catch (e) {
+      error = e;
+    }
+    if (!error) {
+      throw new Error("Expected function to throw, but it did not");
+    }
+    if (typeof expected === "function" && !(error instanceof expected)) {
+      throw new Error(
+        `Expected error to be an instance of ${expected.name}, got ${error.name}`,
+      );
+    }
+    if (typeof expected === "string" && !error.message.includes(expected)) {
+      throw new Error(
+        `Expected error message to contain "${expected}", got "${error.message}"`,
+      );
+    }
+    return error;
+  },
   toHaveClass: (className) => {
     if (!(actual instanceof Element) || !actual.classList.contains(className)) {
       throw new Error(

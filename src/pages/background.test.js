@@ -34,24 +34,51 @@ const credentials = {
   token: "test-api-token",
 };
 
-// --- handleMessage tests ---
+const okFetch = () =>
+  Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
 
-test("handleMessage routes mark entries as read message", async () => {
+const failFetch = () => Promise.reject(new Error("API error"));
+
+// Replace storage/fetch mocks for the duration of a test, restoring them in
+// an after hook so they never leak even if an assertion fails.
+const mockStorageAndFetch = (t, { get, set, fetch: fetchMock }) => {
   const originalGet = browser.storage.local.get;
   const originalSet = browser.storage.local.set;
   const originalFetch = globalThis.fetch;
 
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = () => Promise.resolve();
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+  browser.storage.local.get = get;
+  browser.storage.local.set = set;
+  globalThis.fetch = fetchMock;
+
+  t.after(() => {
+    browser.storage.local.get = originalGet;
+    browser.storage.local.set = originalSet;
+    globalThis.fetch = originalFetch;
+  });
+};
+
+const storageGet = (entries) => () =>
+  Promise.resolve({
+    ...(entries ? { entries: [...entries] } : {}),
+    ...credentials,
+  });
+
+const recordingSet = (record) => (data) => {
+  if (data.entries) {
+    record.push(data.entries);
+  }
+  return Promise.resolve();
+};
+
+// --- handleMessage tests ---
+
+test("handleMessage routes mark entries as read message", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const message = {
     action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
@@ -59,28 +86,15 @@ test("handleMessage routes mark entries as read message", async () => {
   };
   const result = await handleMessage(message);
   expect(result).toBeTruthy();
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
 });
 
-test("handleMessage routes toggle bookmark message", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = () => Promise.resolve();
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("handleMessage routes toggle bookmark message", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const message = {
     action: MESSAGE_TOGGLE_ENTRY_BOOKMARK,
@@ -88,10 +102,6 @@ test("handleMessage routes toggle bookmark message", async () => {
   };
   const result = await handleMessage(message);
   expect(result).toBeTruthy();
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
 });
 
 test("handleMessage returns false for unknown message", async () => {
@@ -104,57 +114,27 @@ test("handleMessage returns false for unknown message", async () => {
 
 // --- markEntriesAsRead tests ---
 
-test("markEntriesAsRead removes entries from storage optimistically", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("markEntriesAsRead removes entries from storage optimistically", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await markEntriesAsRead([1, 2]);
   expect(result.length).toBe(1);
   expect(result[0].id).toBe(3);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
-test("markEntriesAsRead reverts on API failure", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () => Promise.reject(new Error("API error"));
+test("markEntriesAsRead reverts on API failure", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: failFetch,
+  });
 
   let caughtError = null;
   try {
@@ -165,273 +145,129 @@ test("markEntriesAsRead reverts on API failure", async () => {
   expect(caughtError).toBeTruthy();
   expect(caughtError.message).toBe("Failed to mark entries as read, reverting");
   expect(caughtError.cause.message).toBe("API error");
-  expect(optimisticSets.length).toBe(2);
-  const revertedSet = optimisticSets[1];
-  expect(revertedSet.length).toBe(3);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(2);
+  expect(sets[1].length).toBe(3);
 });
 
-test("markEntriesAsRead handles empty entry IDs", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("markEntriesAsRead handles empty entry IDs", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await markEntriesAsRead([]);
   expect(result.length).toBe(3);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
-test("markEntriesAsRead handles missing entries in storage", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("markEntriesAsRead handles missing entries in storage", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await markEntriesAsRead([1]);
   expect(result.length).toBe(0);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
-test("markEntriesAsRead marks single entry as read", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("markEntriesAsRead marks single entry as read", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await markEntriesAsRead([2]);
   expect(result.length).toBe(2);
   expect(result[0].id).toBe(1);
   expect(result[1].id).toBe(3);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
 // --- toggleBookmark tests ---
 
-test("toggleBookmark toggles starred status from false to true", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("toggleBookmark toggles starred status from false to true", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await toggleBookmark(1);
   const entry1 = result.find((e) => e.id === 1);
   expect(entry1.starred).toBe(true);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
-test("toggleBookmark toggles starred status from true to false", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("toggleBookmark toggles starred status from true to false", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await toggleBookmark(2);
   const entry2 = result.find((e) => e.id === 2);
   expect(entry2.starred).toBe(false);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
-test("toggleBookmark does nothing for non-existent entry", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  let setCalled = false;
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = () => {
-    setCalled = true;
-    return Promise.resolve();
-  };
+test("toggleBookmark does nothing for non-existent entry", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await toggleBookmark(999);
   expect(result).toBeFalsy();
-  expect(setCalled).toBe(false);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
+  expect(sets.length).toBe(0);
 });
 
-test("toggleBookmark preserves other entries unchanged", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+test("toggleBookmark preserves other entries unchanged", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await toggleBookmark(1);
   const entry2 = result.find((e) => e.id === 2);
   expect(entry2.starred).toBe(true);
   const entry3 = result.find((e) => e.id === 3);
   expect(entry3.starred).toBe(false);
-  expect(optimisticSets.length).toBe(1);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
+  expect(sets.length).toBe(1);
 });
 
-test("toggleBookmark handles missing entries in storage", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      ...credentials,
-    });
-  browser.storage.local.set = () => Promise.resolve();
+test("toggleBookmark handles missing entries in storage", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
 
   const result = await toggleBookmark(1);
   expect(result).toBeFalsy();
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
 });
 
-test("toggleBookmark reverts on API failure", async () => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-  const optimisticSets = [];
-
-  browser.storage.local.get = () =>
-    Promise.resolve({
-      entries: [...testEntries],
-      ...credentials,
-    });
-  browser.storage.local.set = (data) => {
-    if (data.entries) {
-      optimisticSets.push(data.entries);
-    }
-    return Promise.resolve();
-  };
-  globalThis.fetch = () => Promise.reject(new Error("API error"));
+test("toggleBookmark reverts on API failure", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: failFetch,
+  });
 
   let caughtError = null;
   try {
@@ -442,22 +278,17 @@ test("toggleBookmark reverts on API failure", async () => {
   expect(caughtError).toBeTruthy();
   expect(caughtError.message).toBe("Failed to toggle bookmark, reverting");
   expect(caughtError.cause.message).toBe("API error");
-  expect(optimisticSets.length).toBe(2);
-  const revertedSet = optimisticSets[1];
-  const revertedEntry = revertedSet.find((e) => e.id === 1);
+  expect(sets.length).toBe(2);
+  const revertedEntry = sets[1].find((e) => e.id === 1);
   expect(revertedEntry.starred).toBe(false);
-
-  browser.storage.local.get = originalGet;
-  browser.storage.local.set = originalSet;
-  globalThis.fetch = originalFetch;
 });
 
 // --- handleStartup tests ---
 
-test("handleStartup opens settings silently when credentials are missing", async () => {
+test("handleStartup opens settings silently when credentials are missing", async (t) => {
   const originalGet = browser.storage.local.get;
-  let settingsOpened = false;
   const originalOpenOptionsPage = browser.runtime.openOptionsPage;
+  let settingsOpened = false;
 
   browser.storage.local.get = () =>
     Promise.resolve({
@@ -468,18 +299,17 @@ test("handleStartup opens settings silently when credentials are missing", async
     settingsOpened = true;
     return Promise.resolve();
   };
-  resetDOM("<!doctype html><html><head></head><body></body></html>");
-
-  try {
-    await handleStartup();
-    expect(settingsOpened).toBe(true);
-  } finally {
+  t.after(() => {
     browser.storage.local.get = originalGet;
     browser.runtime.openOptionsPage = originalOpenOptionsPage;
-  }
+  });
+  resetDOM("<!doctype html><html><head></head><body></body></html>");
+
+  await handleStartup();
+  expect(settingsOpened).toBe(true);
 });
 
-test("handleStartup throws non-credential errors", async () => {
+test("handleStartup throws non-credential errors", async (t) => {
   const originalGet = browser.storage.local.get;
   const originalAction = browser.action;
 
@@ -489,6 +319,10 @@ test("handleStartup throws non-credential errors", async () => {
       throw new Error("unexpected action error");
     },
   };
+  t.after(() => {
+    browser.storage.local.get = originalGet;
+    browser.action = originalAction;
+  });
 
   let caughtError = null;
   try {
@@ -499,7 +333,4 @@ test("handleStartup throws non-credential errors", async () => {
 
   expect(caughtError).toBeTruthy();
   expect(caughtError.message).toBe("unexpected action error");
-
-  browser.storage.local.get = originalGet;
-  browser.action = originalAction;
 });

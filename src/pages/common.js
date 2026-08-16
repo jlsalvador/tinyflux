@@ -203,7 +203,7 @@ export async function openSettings() {
  * @param {string} token - The API token
  * @throws {InvalidUrlOrTokenError}
  */
-const validateCredentials = (url, token) => {
+export const validateCredentials = (url, token) => {
   if (!url || !token) {
     throw new InvalidUrlOrTokenError();
   }
