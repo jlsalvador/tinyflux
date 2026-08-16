@@ -39,22 +39,12 @@ const okFetch = () =>
 
 const failFetch = () => Promise.reject(new Error("API error"));
 
-// Replace storage/fetch mocks for the duration of a test, restoring them in
-// an after hook so they never leak even if an assertion fails.
+// Replace storage/fetch for the duration of a test; node:test restores the
+// originals automatically when the test ends.
 const mockStorageAndFetch = (t, { get, set, fetch: fetchMock }) => {
-  const originalGet = browser.storage.local.get;
-  const originalSet = browser.storage.local.set;
-  const originalFetch = globalThis.fetch;
-
-  browser.storage.local.get = get;
-  browser.storage.local.set = set;
-  globalThis.fetch = fetchMock;
-
-  t.after(() => {
-    browser.storage.local.get = originalGet;
-    browser.storage.local.set = originalSet;
-    globalThis.fetch = originalFetch;
-  });
+  t.mock.method(browser.storage.local, "get", get);
+  t.mock.method(browser.storage.local, "set", set);
+  t.mock.method(globalThis, "fetch", fetchMock);
 };
 
 const storageGet = (entries) => () =>
@@ -286,22 +276,16 @@ test("toggleBookmark reverts on API failure", async (t) => {
 // --- handleStartup tests ---
 
 test("handleStartup opens settings silently when credentials are missing", async (t) => {
-  const originalGet = browser.storage.local.get;
-  const originalOpenOptionsPage = browser.runtime.openOptionsPage;
   let settingsOpened = false;
-
-  browser.storage.local.get = () =>
+  t.mock.method(browser.storage.local, "get", () =>
     Promise.resolve({
       url: "",
       token: "",
-    });
-  browser.runtime.openOptionsPage = () => {
+    }),
+  );
+  t.mock.method(browser.runtime, "openOptionsPage", () => {
     settingsOpened = true;
     return Promise.resolve();
-  };
-  t.after(() => {
-    browser.storage.local.get = originalGet;
-    browser.runtime.openOptionsPage = originalOpenOptionsPage;
   });
   resetDOM("<!doctype html><html><head></head><body></body></html>");
 
@@ -310,18 +294,9 @@ test("handleStartup opens settings silently when credentials are missing", async
 });
 
 test("handleStartup throws non-credential errors", async (t) => {
-  const originalGet = browser.storage.local.get;
-  const originalAction = browser.action;
-
-  browser.storage.local.get = () => Promise.resolve({});
-  browser.action = {
-    setPopup: () => {
-      throw new Error("unexpected action error");
-    },
-  };
-  t.after(() => {
-    browser.storage.local.get = originalGet;
-    browser.action = originalAction;
+  t.mock.method(browser.storage.local, "get", () => Promise.resolve({}));
+  t.mock.method(browser.action, "setPopup", () => {
+    throw new Error("unexpected action error");
   });
 
   let caughtError = null;

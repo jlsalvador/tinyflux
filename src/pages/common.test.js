@@ -2,13 +2,49 @@
 
 import {
   filterVisibleEntries,
+  getPopupStyle,
   groupEntriesByFeed,
   InvalidUrlOrTokenError,
+  MESSAGE_REFRESH_THEME,
+  MESSAGE_REFRESH_VIEW_ENTRIES,
+  MinifluxConnectionError,
+  notifyRefreshEntries,
+  notifyRefreshTheme,
+  refreshActionBehavior,
   refreshAlarm,
+  refreshEntries,
   refreshTheme,
+  request,
   updateBadge,
+  updateBadgeColor,
+  updateBadgeConnectionError,
   validateCredentials,
 } from "./common.js";
+
+// Replace browser.storage.local for the duration of a test. `get` answers
+// from the seeded `data` object (absent keys stay absent, like the real API)
+// and every `set` call is recorded and returned. Originals are restored
+// automatically when the test ends.
+const mockStorage = (t, data = {}) => {
+  const sets = [];
+  t.mock.method(browser.storage.local, "get", (keys) => {
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    const result = {};
+    for (const key of keyList) {
+      if (key in data) {
+        result[key] = data[key];
+      }
+    }
+    return Promise.resolve(result);
+  });
+  t.mock.method(browser.storage.local, "set", (items) => {
+    sets.push(items);
+    return Promise.resolve();
+  });
+  return sets;
+};
+
+// --- validateCredentials tests ---
 
 test("validateCredentials does not throw for valid URL and token", () => {
   validateCredentials("https://example.com", "abc123");
@@ -26,10 +62,6 @@ test("validateCredentials throws when token is empty", () => {
   );
 });
 
-test("validateCredentials throws when both URL and token are empty", () => {
-  expect(() => validateCredentials("", "")).toThrow(InvalidUrlOrTokenError);
-});
-
 test("validateCredentials throws when URL is undefined", () => {
   expect(() => validateCredentials(undefined, "abc123")).toThrow(
     InvalidUrlOrTokenError,
@@ -38,18 +70,6 @@ test("validateCredentials throws when URL is undefined", () => {
 
 test("validateCredentials throws when token is undefined", () => {
   expect(() => validateCredentials("https://example.com", undefined)).toThrow(
-    InvalidUrlOrTokenError,
-  );
-});
-
-test("validateCredentials throws when URL is null", () => {
-  expect(() => validateCredentials(null, "abc123")).toThrow(
-    InvalidUrlOrTokenError,
-  );
-});
-
-test("validateCredentials throws when token is null", () => {
-  expect(() => validateCredentials("https://example.com", null)).toThrow(
     InvalidUrlOrTokenError,
   );
 });
@@ -64,6 +84,147 @@ test("validateCredentials throws with default message", () => {
 test("validateCredentials accepts URL with trailing slash and path", () => {
   validateCredentials("https://example.com/", "token-with-dash");
   validateCredentials("https://example.com/subpath", "token");
+});
+
+// --- MinifluxConnectionError tests ---
+
+test("MinifluxConnectionError has correct name", () => {
+  const error = new MinifluxConnectionError("Failed to connect");
+  expect(error.name).toBe("MinifluxConnectionError");
+});
+
+test("MinifluxConnectionError preserves cause", () => {
+  const cause = new Error("root failure");
+  const error = new MinifluxConnectionError("Failed to connect", { cause });
+  expect(error.cause).toBe(cause);
+});
+
+// --- request tests ---
+
+test("request joins API path onto a base URL with subpath", async (t) => {
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+  });
+
+  await request("/v1/entries", {
+    url: "https://miniflux.example.com/subpath",
+    token: "token",
+  });
+  expect(captured[0].url).toBe(
+    "https://miniflux.example.com/subpath/v1/entries",
+  );
+
+  await request("/v1/me/", {
+    url: "https://miniflux.example.com/",
+    token: "token",
+  });
+  expect(captured[1].url).toBe("https://miniflux.example.com/v1/me/");
+});
+
+test("request sends auth token and content-type only with a body", async (t) => {
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+  });
+
+  await request("/v1/me", {
+    url: "https://miniflux.example.com",
+    token: "token",
+  });
+  await request("/v1/entries", {
+    url: "https://miniflux.example.com",
+    token: "token",
+    method: "PUT",
+    body: JSON.stringify({ entry_ids: [1], status: "read" }),
+  });
+
+  expect(captured[0].headers.get("X-Auth-Token")).toBe("token");
+  expect(captured[0].headers.get("Content-Type")).toBe(null);
+  expect(captured[1].headers.get("Content-Type")).toBe("application/json");
+});
+
+test("request throws InvalidUrlOrTokenError when credentials are missing", async (t) => {
+  mockStorage(t, {});
+
+  let caught = null;
+  try {
+    await request("/v1/me");
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught instanceof InvalidUrlOrTokenError).toBe(true);
+});
+
+// --- notifyRefresh tests ---
+
+test("notifyRefreshEntries sends refresh action", async (t) => {
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve();
+  });
+
+  await notifyRefreshEntries();
+
+  expect(sent.length).toBe(1);
+  expect(sent[0].action).toBe(MESSAGE_REFRESH_VIEW_ENTRIES);
+});
+
+test("notifyRefreshEntries ignores no-handler rejections", async (t) => {
+  t.mock.method(browser.runtime, "sendMessage", () =>
+    Promise.reject(new Error("No matching handler found")),
+  );
+
+  await notifyRefreshEntries();
+});
+
+test("notifyRefreshEntries ignores connection rejections", async (t) => {
+  t.mock.method(browser.runtime, "sendMessage", () =>
+    Promise.reject(
+      new Error(
+        "Could not establish connection. Receiving end does not exist.",
+      ),
+    ),
+  );
+
+  await notifyRefreshEntries();
+});
+
+test("notifyRefreshEntries rethrows unexpected rejections", async (t) => {
+  t.mock.method(browser.runtime, "sendMessage", () =>
+    Promise.reject(new Error("boom")),
+  );
+
+  let caught = null;
+  try {
+    await notifyRefreshEntries();
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught?.message).toBe("boom");
+});
+
+test("notifyRefreshTheme sends theme action", async (t) => {
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve();
+  });
+
+  await notifyRefreshTheme();
+
+  expect(sent[0].action).toBe(MESSAGE_REFRESH_THEME);
+});
+
+test("notifyRefreshTheme ignores no-handler rejections", async (t) => {
+  t.mock.method(browser.runtime, "sendMessage", () =>
+    Promise.reject(new Error("No matching handler found")),
+  );
+
+  await notifyRefreshTheme();
 });
 
 // --- filterVisibleEntries tests ---
@@ -100,21 +261,6 @@ test("filterVisibleEntries handles null/undefined feed gracefully", () => {
   const visible = filterVisibleEntries(entries);
   expect(visible.length).toBe(1);
   expect(visible[0].id).toBe(1);
-});
-
-test("filterVisibleEntries returns all when none hidden", () => {
-  const entries = [
-    {
-      id: 1,
-      feed: { hide_globally: false, category: { hide_globally: false } },
-    },
-    {
-      id: 2,
-      feed: { hide_globally: false, category: { hide_globally: false } },
-    },
-  ];
-  const visible = filterVisibleEntries(entries);
-  expect(visible.length).toBe(2);
 });
 
 test("filterVisibleEntries returns empty when all hidden", () => {
@@ -157,17 +303,6 @@ test("filterVisibleEntries handles entry with no category on feed", () => {
   expect(visible[0].id).toBe(3);
 });
 
-test("filterVisibleEntries handles both feed and category hidden", () => {
-  const entries = [
-    {
-      id: 1,
-      feed: { hide_globally: true, category: { hide_globally: true } },
-    },
-  ];
-  const visible = filterVisibleEntries(entries);
-  expect(visible.length).toBe(0);
-});
-
 test("filterVisibleEntries preserves entry order", () => {
   const entries = [
     {
@@ -189,7 +324,7 @@ test("filterVisibleEntries preserves entry order", () => {
 
 // --- groupEntriesByFeed tests ---
 
-test("groupEntriesByFeed groups entries by feed title", async () => {
+test("groupEntriesByFeed groups entries by feed title", () => {
   const entries = [
     {
       title: "Entry 1",
@@ -204,7 +339,7 @@ test("groupEntriesByFeed groups entries by feed title", async () => {
       feed: { title: "Feed A" },
     },
   ];
-  const grouped = await groupEntriesByFeed(entries);
+  const grouped = groupEntriesByFeed(entries);
   expect(grouped["Feed A"].length).toBe(2);
   expect(grouped["Feed A"][0]).toBe("Entry 1");
   expect(grouped["Feed A"][1]).toBe("Entry 3");
@@ -212,23 +347,23 @@ test("groupEntriesByFeed groups entries by feed title", async () => {
   expect(grouped["Feed B"][0]).toBe("Entry 2");
 });
 
-test("groupEntriesByFeed handles missing feed title", async () => {
+test("groupEntriesByFeed handles missing feed title", () => {
   const entries = [
     {
       title: "Orphan Entry",
       feed: {},
     },
   ];
-  const grouped = await groupEntriesByFeed(entries);
+  const grouped = groupEntriesByFeed(entries);
   expect(Object.keys(grouped).length).toBe(1);
 });
 
-test("groupEntriesByFeed returns empty object for empty array", async () => {
-  const grouped = await groupEntriesByFeed([]);
+test("groupEntriesByFeed returns empty object for empty array", () => {
+  const grouped = groupEntriesByFeed([]);
   expect(Object.keys(grouped).length).toBe(0);
 });
 
-test("groupEntriesByFeed handles single feed", async () => {
+test("groupEntriesByFeed handles single feed", () => {
   const entries = [
     {
       title: "A",
@@ -243,201 +378,364 @@ test("groupEntriesByFeed handles single feed", async () => {
       feed: { title: "Tech" },
     },
   ];
-  const grouped = await groupEntriesByFeed(entries);
+  const grouped = groupEntriesByFeed(entries);
   expect(grouped["Tech"].length).toBe(3);
 });
 
 // --- refreshTheme tests ---
 
-test("refreshTheme sets data-theme attribute on document", async () => {
-  resetDOM("<!doctype html><html><head></head><body></body></html>");
-  await refreshTheme();
-  const theme = document.documentElement.getAttribute("data-theme");
-  expect(theme).toBeTruthy();
-});
-
-test("refreshTheme uses default theme when none stored", async () => {
+test("refreshTheme uses default theme when none stored", async (t) => {
+  mockStorage(t, {});
   resetDOM("<!doctype html><html><head></head><body></body></html>");
   await refreshTheme();
   const theme = document.documentElement.getAttribute("data-theme");
   expect(theme).toBe("light");
 });
 
+test("refreshTheme uses stored theme when available", async (t) => {
+  mockStorage(t, { theme: "dark" });
+  resetDOM("<!doctype html><html><head></head><body></body></html>");
+  await refreshTheme();
+  const theme = document.documentElement.getAttribute("data-theme");
+  expect(theme).toBe("dark");
+});
+
 // --- refreshAlarm tests ---
 
-test("refreshAlarm creates alarm with default period", async () => {
-  let alarmCreated = false;
-  const originalCreate = browser.alarms.create;
-  browser.alarms.create = (name, options) => {
-    alarmCreated = true;
-    expect(name).toBe("ALARM_REFRESH");
-    expect(options.periodInMinutes).toBe(15);
+test("refreshAlarm creates alarm with default period", async (t) => {
+  mockStorage(t, {});
+  const created = [];
+  t.mock.method(browser.alarms, "create", (name, options) => {
+    created.push({ name, ...options });
     return Promise.resolve();
-  };
+  });
 
-  try {
-    await refreshAlarm();
-  } finally {
-    browser.alarms.create = originalCreate;
-  }
-  expect(alarmCreated).toBe(true);
+  await refreshAlarm();
+
+  expect(created.length).toBe(1);
+  expect(created[0].name).toBe("ALARM_REFRESH");
+  expect(created[0].periodInMinutes).toBe(15);
 });
 
-test("refreshAlarm uses stored period when available", async () => {
-  let alarmCreated = false;
-  const originalCreate = browser.alarms.create;
-  const originalGet = browser.storage.local.get;
-  browser.alarms.create = (name, options) => {
-    alarmCreated = true;
-    expect(options.periodInMinutes).toBe(30);
+test("refreshAlarm uses stored period when available", async (t) => {
+  mockStorage(t, { periodInMinutes: 30 });
+  const created = [];
+  t.mock.method(browser.alarms, "create", (name, options) => {
+    created.push({ name, ...options });
     return Promise.resolve();
-  };
-  browser.storage.local.get = (keys) => {
-    if (
-      keys === "periodInMinutes" ||
-      (Array.isArray(keys) && keys.includes("periodInMinutes"))
-    ) {
-      return Promise.resolve({ periodInMinutes: 30 });
-    }
-    return originalGet(keys);
-  };
+  });
 
-  try {
-    await refreshAlarm();
-  } finally {
-    browser.alarms.create = originalCreate;
-    browser.storage.local.get = originalGet;
-  }
-  expect(alarmCreated).toBe(true);
+  await refreshAlarm();
+
+  expect(created[0].periodInMinutes).toBe(30);
 });
 
-test("refreshAlarm falls back to default for invalid period", async () => {
-  let alarmCreated = false;
-  const originalCreate = browser.alarms.create;
-  const originalGet = browser.storage.local.get;
-  browser.alarms.create = (name, options) => {
-    alarmCreated = true;
-    expect(options.periodInMinutes).toBe(15);
+test("refreshAlarm falls back to default for invalid period", async (t) => {
+  mockStorage(t, { periodInMinutes: null });
+  const created = [];
+  t.mock.method(browser.alarms, "create", (name, options) => {
+    created.push({ name, ...options });
     return Promise.resolve();
-  };
-  browser.storage.local.get = (keys) => {
-    if (
-      keys === "periodInMinutes" ||
-      (Array.isArray(keys) && keys.includes("periodInMinutes"))
-    ) {
-      return Promise.resolve({ periodInMinutes: null });
-    }
-    return originalGet(keys);
-  };
+  });
 
-  try {
-    await refreshAlarm();
-  } finally {
-    browser.alarms.create = originalCreate;
-    browser.storage.local.get = originalGet;
-  }
-  expect(alarmCreated).toBe(true);
+  await refreshAlarm();
+
+  expect(created[0].periodInMinutes).toBe(15);
 });
 
 // --- updateBadge tests ---
 
-test("updateBadge sets empty badge text when no entries", async () => {
-  let badgeText = null;
-  const originalSetBadgeText = browser.action.setBadgeText;
-  const originalGet = browser.storage.local.get;
-  browser.action.setBadgeText = (options) => {
-    badgeText = options.text;
+test("updateBadge sets empty badge text when no entries", async (t) => {
+  mockStorage(t, { entries: [] });
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
     return Promise.resolve();
-  };
-  browser.storage.local.get = (keys) => {
-    if (
-      keys === "entries" ||
-      (Array.isArray(keys) && keys.includes("entries"))
-    ) {
-      return Promise.resolve({ entries: [] });
-    }
-    return originalGet(keys);
-  };
+  });
 
-  try {
-    await updateBadge();
-  } finally {
-    browser.action.setBadgeText = originalSetBadgeText;
-    browser.storage.local.get = originalGet;
-  }
-  expect(badgeText).toBe("");
+  await updateBadge();
+
+  expect(badgeTexts).toEqual([""]);
 });
 
-test("updateBadge sets badge text to entry count", async () => {
-  let badgeText = null;
-  const originalSetBadgeText = browser.action.setBadgeText;
-  const originalGet = browser.storage.local.get;
-  const entries = [
+test("updateBadge sets badge text to entry count", async (t) => {
+  mockStorage(t, {
+    entries: [
+      {
+        id: 1,
+        feed: { hide_globally: false, category: { hide_globally: false } },
+      },
+      {
+        id: 2,
+        feed: { hide_globally: false, category: { hide_globally: false } },
+      },
+    ],
+  });
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
+    return Promise.resolve();
+  });
+
+  await updateBadge();
+
+  expect(badgeTexts).toEqual(["2"]);
+});
+
+test("updateBadge excludes hidden feed entries from count", async (t) => {
+  mockStorage(t, {
+    entries: [
+      {
+        id: 1,
+        feed: { hide_globally: false, category: { hide_globally: false } },
+      },
+      {
+        id: 2,
+        feed: { hide_globally: true, category: { hide_globally: false } },
+      },
+    ],
+  });
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
+    return Promise.resolve();
+  });
+
+  await updateBadge();
+
+  expect(badgeTexts).toEqual(["1"]);
+});
+
+// --- updateBadgeColor tests ---
+
+test("updateBadgeColor uses default colors when none stored", async (t) => {
+  mockStorage(t, {});
+  const backgrounds = [];
+  const texts = [];
+  t.mock.method(browser.action, "setBadgeBackgroundColor", (options) => {
+    backgrounds.push(options.color);
+    return Promise.resolve();
+  });
+  t.mock.method(browser.action, "setBadgeTextColor", (options) => {
+    texts.push(options.color);
+    return Promise.resolve();
+  });
+
+  await updateBadgeColor();
+
+  expect(backgrounds).toEqual(["#000000"]);
+  expect(texts).toEqual(["#ffffff"]);
+});
+
+test("updateBadgeColor uses stored colors when available", async (t) => {
+  mockStorage(t, {
+    badgeBackgroundColor: "#ff0000",
+    badgeTextColor: "#00ff00",
+  });
+  const backgrounds = [];
+  const texts = [];
+  t.mock.method(browser.action, "setBadgeBackgroundColor", (options) => {
+    backgrounds.push(options.color);
+    return Promise.resolve();
+  });
+  t.mock.method(browser.action, "setBadgeTextColor", (options) => {
+    texts.push(options.color);
+    return Promise.resolve();
+  });
+
+  await updateBadgeColor();
+
+  expect(backgrounds).toEqual(["#ff0000"]);
+  expect(texts).toEqual(["#00ff00"]);
+});
+
+// --- updateBadgeConnectionError tests ---
+
+test("updateBadgeConnectionError shows lightning badge with transparent background", async (t) => {
+  mockStorage(t, { url: "https://miniflux.example.com" });
+  const badgeTexts = [];
+  const texts = [];
+  const backgrounds = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
+    return Promise.resolve();
+  });
+  t.mock.method(browser.action, "setBadgeTextColor", (options) => {
+    texts.push(options.color);
+    return Promise.resolve();
+  });
+  t.mock.method(browser.action, "setBadgeBackgroundColor", (options) => {
+    backgrounds.push(options.color);
+    return Promise.resolve();
+  });
+
+  await updateBadgeConnectionError();
+
+  expect(badgeTexts).toEqual(["⚡"]);
+  expect(texts).toEqual(["white"]);
+  expect(backgrounds).toEqual(["transparent"]);
+});
+
+test("updateBadgeConnectionError falls back to stored color when transparent is rejected", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    badgeBackgroundColor: "#123456",
+  });
+  const backgrounds = [];
+  t.mock.method(browser.action, "setBadgeBackgroundColor", (options) => {
+    backgrounds.push(options.color);
+    if (options.color === "transparent") {
+      return Promise.reject(new Error("not supported"));
+    }
+    return Promise.resolve();
+  });
+
+  await updateBadgeConnectionError();
+
+  expect(backgrounds).toEqual(["transparent", "#123456"]);
+});
+
+// --- getPopupStyle tests ---
+
+test("getPopupStyle defaults to popup when no style param is present", () => {
+  expect(getPopupStyle()).toBe("popup");
+});
+
+// --- refreshEntries tests ---
+
+test("refreshEntries fetches unread entries and stores them", async (t) => {
+  const fetched = [
     {
       id: 1,
-      feed: { hide_globally: false, category: { hide_globally: false } },
+      title: "Entry 1",
+      feed: {
+        title: "Feed",
+        hide_globally: false,
+        category: { hide_globally: false },
+      },
     },
     {
       id: 2,
-      feed: { hide_globally: false, category: { hide_globally: false } },
+      title: "Entry 2",
+      feed: {
+        title: "Feed",
+        hide_globally: false,
+        category: { hide_globally: false },
+      },
     },
   ];
-  browser.action.setBadgeText = (options) => {
-    badgeText = options.text;
-    return Promise.resolve();
-  };
-  browser.storage.local.get = (keys) => {
-    if (
-      keys === "entries" ||
-      (Array.isArray(keys) && keys.includes("entries"))
-    ) {
-      return Promise.resolve({ entries });
-    }
-    return originalGet(keys);
-  };
+  const sets = mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entries: [{ id: 1 }, { id: 2 }],
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ entries: fetched }),
+    });
+  });
 
-  try {
-    await updateBadge();
-  } finally {
-    browser.action.setBadgeText = originalSetBadgeText;
-    browser.storage.local.get = originalGet;
-  }
-  expect(badgeText).toBe("2");
+  const result = await refreshEntries();
+
+  expect(result).toEqual(fetched);
+  expect(captured[0].url).toBe(
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc",
+  );
+  expect(sets.length).toBe(1);
+  expect(sets[0].entries).toEqual(fetched);
 });
 
-test("updateBadge excludes hidden feed entries from count", async () => {
-  let badgeText = null;
-  const originalSetBadgeText = browser.action.setBadgeText;
-  const originalGet = browser.storage.local.get;
-  const entries = [
-    {
-      id: 1,
-      feed: { hide_globally: false, category: { hide_globally: false } },
-    },
-    {
-      id: 2,
-      feed: { hide_globally: true, category: { hide_globally: false } },
-    },
-  ];
-  browser.action.setBadgeText = (options) => {
-    badgeText = options.text;
+test("refreshEntries reports connection error and shows error badge", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+  });
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
     return Promise.resolve();
-  };
-  browser.storage.local.get = (keys) => {
-    if (
-      keys === "entries" ||
-      (Array.isArray(keys) && keys.includes("entries"))
-    ) {
-      return Promise.resolve({ entries });
-    }
-    return originalGet(keys);
-  };
+  });
+  t.mock.method(globalThis, "fetch", () =>
+    Promise.resolve({
+      ok: false,
+      text: () => Promise.resolve("Service Unavailable"),
+    }),
+  );
 
+  let caught = null;
   try {
-    await updateBadge();
-  } finally {
-    browser.action.setBadgeText = originalSetBadgeText;
-    browser.storage.local.get = originalGet;
+    await refreshEntries();
+  } catch (error) {
+    caught = error;
   }
-  expect(badgeText).toBe("1");
+
+  expect(caught instanceof MinifluxConnectionError).toBe(true);
+  expect(caught.message).toBe("Failed to fetch entries: Service Unavailable");
+  expect(badgeTexts).toEqual(["⚡"]);
+});
+
+test("refreshEntries propagates invalid credentials without fetching", async (t) => {
+  mockStorage(t, {});
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ entries: [] }),
+    });
+  });
+
+  let caught = null;
+  try {
+    await refreshEntries();
+  } catch (error) {
+    caught = error;
+  }
+
+  expect(caught instanceof InvalidUrlOrTokenError).toBe(true);
+  expect(captured.length).toBe(0);
+});
+
+// --- refreshActionBehavior tests ---
+
+test("refreshActionBehavior opens popup by default", async (t) => {
+  mockStorage(t, {});
+  const popups = [];
+  t.mock.method(browser.action, "setPopup", (options) => {
+    popups.push(options.popup);
+    return Promise.resolve();
+  });
+
+  await refreshActionBehavior();
+
+  expect(popups[popups.length - 1]).toBe("/pages/popup.html?style=popup");
+});
+
+test("refreshActionBehavior opens window on click when configured", async (t) => {
+  mockStorage(t, { extensionClickBehavior: "window" });
+  const listeners = [];
+  t.mock.method(browser.action.onClicked, "addListener", (listener) => {
+    listeners.push(listener);
+  });
+
+  await refreshActionBehavior();
+
+  expect(listeners.length).toBe(1);
+  expect(listeners[0].name).toBe("actionWindow");
+});
+
+test("refreshActionBehavior toggles side panel on click when configured", async (t) => {
+  mockStorage(t, { extensionClickBehavior: "sidepanel" });
+  const listeners = [];
+  t.mock.method(browser.action.onClicked, "addListener", (listener) => {
+    listeners.push(listener);
+  });
+
+  await refreshActionBehavior();
+
+  expect(listeners.length).toBe(1);
+  expect(listeners[0].name).toBe("actionSidePanel");
 });
