@@ -13,7 +13,7 @@ A Manifest V3 browser extension for [Miniflux](https://miniflux.app).
 | `npm run lint` | ESLint (`@eslint/js` recommended config) with `--fix` |
 | `npm run test` | Run tests via Node native `node:test` (no external framework) |
 
-Tests use `node:test` with a minimal `expect` polyfill at `src/test/setup.js`. Test fixtures live in `src/test/fixtures/`. Because `common.js` imports `webextension-polyfill` (which throws outside a browser), tests that need its functions must inline them.
+Tests use `node:test` with a minimal `expect` polyfill at `src/test/setup.js`. Test fixtures live in `src/test/fixtures/`. `setup.js` pre-defines `globalThis.browser` and `globalThis.chrome` mocks (both with `runtime.id`), so `webextension-polyfill` passes `globalThis.browser` through untouched and test files import `common.js` / `background.js` directly. Override browser APIs and `fetch` per test with node:test's `t.mock.method(obj, "name", impl)` — originals auto-restore at test end, so no manual save/restore, `t.after`, or try/finally is needed.
 
 ## Build system (custom, not a framework)
 
