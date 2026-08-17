@@ -1,4 +1,4 @@
-/* global test, expect, browser, resetDOM */
+/* global test, expect, browser, resetDOM, console */
 
 import {
   markEntriesAsRead,
@@ -276,6 +276,7 @@ test("toggleBookmark reverts on API failure", async (t) => {
 // --- handleStartup tests ---
 
 test("handleStartup opens settings silently when credentials are missing", async (t) => {
+  t.mock.method(console, "log", () => {});
   let settingsOpened = false;
   t.mock.method(browser.storage.local, "get", () =>
     Promise.resolve({
@@ -294,6 +295,7 @@ test("handleStartup opens settings silently when credentials are missing", async
 });
 
 test("handleStartup throws non-credential errors", async (t) => {
+  t.mock.method(console, "log", () => {});
   t.mock.method(browser.storage.local, "get", () => Promise.resolve({}));
   t.mock.method(browser.action, "setPopup", () => {
     throw new Error("unexpected action error");

@@ -1,4 +1,4 @@
-/* global test, expect, browser, resetDOM, document, runtimeMessageListeners, setTimeout */
+/* global test, expect, browser, resetDOM, document, runtimeMessageListeners, setTimeout, console */
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -666,12 +666,18 @@ test("addDOMEntry omits feed icon when API request fails", async (t) => {
     token: "test-token",
   });
   mockFetch(t, {}, 404);
+  const errors = [];
+  t.mock.method(console, "error", (...args) => {
+    errors.push(args);
+  });
 
   await addDOMEntry(
     makeEntry({ feed: { icon: { feed_id: 28, icon_id: 40 } } }),
   );
 
   expect(document.querySelector(".feed-icon")).toBeFalsy();
+  expect(errors.length).toBe(1);
+  expect(String(errors[0][0])).toContain("Failed to fetch icon");
   expect(document.querySelector(".feed-title").textContent).toBe(
     "Example Feed",
   );
@@ -758,6 +764,10 @@ test("bookmark click reverts star when message fails", async (t) => {
   t.mock.method(browser.runtime, "sendMessage", () =>
     Promise.reject(new Error("bookmark failed")),
   );
+  const errors = [];
+  t.mock.method(console, "error", (...args) => {
+    errors.push(args);
+  });
 
   await addDOMEntry(makeEntry({ starred: true }));
 
@@ -773,6 +783,8 @@ test("bookmark click reverts star when message fails", async (t) => {
   expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
     svg_path_star_filled,
   );
+  expect(errors.length).toBe(1);
+  expect(String(errors[0][0])).toContain("Failed to toggle bookmark");
 });
 
 test("mark as read click sends message and re-enables button", async (t) => {

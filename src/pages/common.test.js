@@ -1,4 +1,4 @@
-/* global test, expect, browser, resetDOM, document */
+/* global test, expect, browser, resetDOM, document, console */
 
 import {
   filterVisibleEntries,
@@ -637,6 +637,7 @@ test("refreshEntries fetches unread entries and stores them", async (t) => {
       json: () => Promise.resolve({ entries: fetched }),
     });
   });
+  t.mock.method(console, "log", () => {});
 
   const result = await refreshEntries();
 
