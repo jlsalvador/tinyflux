@@ -1,4 +1,4 @@
-/* global document, Element, NodeList */
+/* global document, window, Element, NodeList */
 
 import test from "node:test";
 import { resolve, dirname } from "node:path";
@@ -31,6 +31,12 @@ const dom = new JSDOM(
 );
 globalThis.document = dom.window.document;
 globalThis.window = dom.window;
+
+// Tests run against a single shared jsdom window. Stub window.close() so
+// production code paths that close the popup (openLink, openSettings, ...)
+// cannot destroy it mid-suite; a closed window leaves the internal document
+// null and breaks DOMParser in resetDOM.
+dom.window.close = () => {};
 
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.HTMLDivElement = dom.window.HTMLDivElement;
@@ -274,9 +280,68 @@ before(() => {
   // Setup runs once before all tests
 });
 
-// Helper to reset document body for each test
+// Helper to reset document content for each test. Uses DOMParser instead of
+// document.open/write/close so DOMContentLoaded does not re-fire automatically;
+// tests that need page initialization dispatch it explicitly.
 globalThis.resetDOM = (html = "<!doctype html><body></body>") => {
-  globalThis.document.open();
-  globalThis.document.write(html);
-  globalThis.document.close();
+  const parsed = new window.DOMParser().parseFromString(html, "text/html");
+  while (document.firstChild) {
+    document.firstChild.remove();
+  }
+  for (const node of Array.from(parsed.childNodes)) {
+    document.appendChild(document.adoptNode(node));
+  }
+};
+
+// Minimal fake clock for deterministic timer tests, replacing the
+// experimental t.mock.timers API. Installs setTimeout/clearTimeout mocks for
+// the test (originals auto-restore when the test ends) and returns a tick()
+// helper that advances the clock and fires due callbacks in order. Timers
+// scheduled by callbacks are picked up when they fall within the ticked
+// window; clearing an unknown or already-fired id is a no-op, so stale ids
+// leaking between tests are harmless. Usage:
+//   const clock = fakeClock(t);   // or bare fakeClock(t) when no tick is
+//                                 // needed (timers are just captured)
+//   clock.tick(500);
+globalThis.fakeClock = (t) => {
+  const timers = new Map();
+  let now = 0;
+  let nextId = 1;
+
+  t.mock.method(globalThis, "setTimeout", (callback, delay = 0, ...args) => {
+    const id = nextId++;
+    const wait = Number(delay) > 0 ? Number(delay) : 0;
+    timers.set(id, { callback, due: now + wait, args });
+    return id;
+  });
+
+  t.mock.method(globalThis, "clearTimeout", (id) => {
+    timers.delete(id);
+  });
+
+  return {
+    tick(ms) {
+      const target = now + ms;
+      for (;;) {
+        let dueId = null;
+        let dueTimer = null;
+        for (const [id, timer] of timers) {
+          if (
+            timer.due <= target &&
+            (dueTimer === null ||
+              timer.due < dueTimer.due ||
+              (timer.due === dueTimer.due && id < dueId))
+          ) {
+            dueId = id;
+            dueTimer = timer;
+          }
+        }
+        if (dueTimer === null) break;
+        now = dueTimer.due;
+        timers.delete(dueId);
+        dueTimer.callback(...dueTimer.args);
+      }
+      now = target;
+    },
+  };
 };

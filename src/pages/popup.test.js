@@ -1,4 +1,4 @@
-/* global test, expect, browser, resetDOM, document, runtimeMessageListeners, setTimeout, console */
+/* global test, expect, browser, fakeClock, resetDOM, document, window, runtimeMessageListeners, setTimeout, console */
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   createSvg,
   svg_path_eye,
+  svg_path_question_mark,
   svg_path_star_empty,
   svg_path_star_filled,
   svg_path_toggle_close,
@@ -124,17 +125,22 @@ const setupEntriesDOM = () => {
 };
 
 const mockStorage = (t, data = {}) => {
+  const store = { ...data };
   const sets = [];
   t.mock.method(browser.storage.local, "get", (keys) => {
+    if (keys === null || keys === undefined) {
+      return Promise.resolve({ ...store });
+    }
     const keyList = Array.isArray(keys) ? keys : [keys];
     const result = {};
     for (const key of keyList) {
-      if (key in data) result[key] = data[key];
+      if (key in store) result[key] = store[key];
     }
     return Promise.resolve(result);
   });
   t.mock.method(browser.storage.local, "set", (items) => {
     sets.push(items);
+    Object.assign(store, items);
     return Promise.resolve();
   });
   return sets;
@@ -154,6 +160,22 @@ const mockFetch = (t, body, status = 200) => {
 };
 
 const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+// Drives pending async chains to completion without real timers (works even
+// while a fake clock is active)
+const flushMicrotasks = async () => {
+  for (let i = 0; i < 100; i += 1) {
+    await Promise.resolve();
+  }
+};
+
+// Loads the real popup.html and fires DOMContentLoaded so initializePopup
+// (and localize.js) wire up their handlers exactly once
+const loadPopupPage = async () => {
+  resetDOM(popupHtml);
+  document.dispatchEvent(new window.Event("DOMContentLoaded"));
+  await flushMicrotasks();
+};
 
 // ============================================================================
 // createSvg tests
@@ -953,4 +975,176 @@ test("refresh_view_entries message re-renders entries from storage", async (t) =
 test("message listener ignores unknown actions", () => {
   const handler = runtimeMessageListeners.at(-1);
   expect(handler({ action: "unknown-action" })).toBe(false);
+});
+
+// ============================================================================
+// Mark all as read button tests
+// ============================================================================
+
+test("mark all as read first click shows confirmation state", async (t) => {
+  fakeClock(t);
+  mockStorage(t);
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+  await loadPopupPage();
+
+  const button = document.getElementById("btnMarkEntriesAsRead");
+  const path = button.querySelector(".icon path");
+
+  button.click();
+  await flushMicrotasks();
+
+  expect(button.classList.contains("danger")).toBe(true);
+  expect(path.getAttribute("d")).toBe(svg_path_question_mark);
+  expect(button.title).toBe("pagePopupAreYouSureToMarkAllEntriesAsRead");
+  expect(button.disabled).toBe(false);
+  expect(sent.length).toBe(0);
+});
+
+test("mark all as read second click marks all visible entries as read", async (t) => {
+  fakeClock(t);
+  const older = makeEntry({
+    id: 1,
+    published_at: new Date(Date.now() - 120_000).toISOString(),
+  });
+  const newer = makeEntry({
+    id: 2,
+    url: "https://example.com/2",
+    published_at: new Date(Date.now() - 60_000).toISOString(),
+  });
+  mockStorage(t, { entries: [older, newer] });
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+  await loadPopupPage();
+
+  expect(document.querySelectorAll(".entry").length).toBe(2);
+
+  const button = document.getElementById("btnMarkEntriesAsRead");
+  const path = button.querySelector(".icon path");
+  const previousIconPath = path.getAttribute("d");
+
+  button.click();
+  await flushMicrotasks();
+  button.click();
+  await flushMicrotasks();
+
+  expect(sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+    entryIds: [2, 1],
+  });
+  expect(button.disabled).toBe(false);
+  expect(button.classList.contains("danger")).toBe(false);
+  expect(button.querySelector(".icon").classList.contains("loading")).toBe(
+    false,
+  );
+  expect(path.getAttribute("d")).toBe(previousIconPath);
+});
+
+test("mark all as read confirmation resets after the timeout", async (t) => {
+  const clock = fakeClock(t);
+  mockStorage(t);
+  await loadPopupPage();
+
+  const button = document.getElementById("btnMarkEntriesAsRead");
+  const path = button.querySelector(".icon path");
+  const previousIconPath = path.getAttribute("d");
+
+  button.click();
+  expect(button.classList.contains("danger")).toBe(true);
+  expect(path.getAttribute("d")).toBe(svg_path_question_mark);
+
+  clock.tick(5000);
+
+  expect(button.classList.contains("danger")).toBe(false);
+  expect(path.getAttribute("d")).toBe(previousIconPath);
+  expect(button.title).toBe("pagePopupMarkEntriesAsRead");
+});
+
+test("mark all as read second click without entries sends no message", async (t) => {
+  fakeClock(t);
+  mockStorage(t);
+  const sent = [];
+  t.mock.method(browser.runtime, "sendMessage", (message) => {
+    sent.push(message);
+    return Promise.resolve(true);
+  });
+  await loadPopupPage();
+
+  const button = document.getElementById("btnMarkEntriesAsRead");
+  button.click();
+  await flushMicrotasks();
+  button.click();
+  await flushMicrotasks();
+
+  expect(sent.length).toBe(0);
+  expect(button.disabled).toBe(false);
+  expect(button.classList.contains("danger")).toBe(false);
+});
+
+// ============================================================================
+// Refresh button tests
+// ============================================================================
+
+test("refresh button refetches entries and re-renders the view", async (t) => {
+  const older = makeEntry({
+    id: 1,
+    published_at: new Date(Date.now() - 120_000).toISOString(),
+  });
+  const fetchedEntry = makeEntry({
+    id: 7,
+    url: "https://example.com/7",
+    published_at: new Date(Date.now() - 30_000).toISOString(),
+  });
+  const sets = mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "test-token",
+    entries: [older],
+  });
+  const fetched = mockFetch(t, { entries: [fetchedEntry] });
+  await loadPopupPage();
+
+  expect(document.getElementById("entry-1")).toBeTruthy();
+
+  const button = document.getElementById("btnRefresh");
+  button.click();
+  await flushMicrotasks();
+
+  expect(fetched.length).toBe(1);
+  expect(fetched[0].url).toBe(
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc",
+  );
+  expect(sets.some((saved) => saved.entries?.[0]?.id === 7)).toBe(true);
+  expect(document.getElementById("entry-1")).toBeFalsy();
+  expect(document.getElementById("entry-7")).toBeTruthy();
+  expect(button.disabled).toBe(false);
+  expect(button.querySelector(".icon").classList.contains("loading")).toBe(
+    false,
+  );
+});
+
+test("refresh button opens settings when credentials are invalid", async (t) => {
+  mockStorage(t);
+  const opened = [];
+  t.mock.method(browser.runtime, "openOptionsPage", () => {
+    opened.push(true);
+    return Promise.resolve();
+  });
+  await loadPopupPage();
+
+  const button = document.getElementById("btnRefresh");
+  button.click();
+  await flushMicrotasks();
+
+  expect(opened.length).toBe(1);
+  expect(button.disabled).toBe(false);
+  expect(button.querySelector(".icon").classList.contains("loading")).toBe(
+    false,
+  );
 });

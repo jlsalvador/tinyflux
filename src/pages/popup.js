@@ -584,9 +584,11 @@ const setupMarkAllAsReadButton = () => {
 
       if (state.confirmMarkAllEntriesTimeout) {
         clearTimeout(state.confirmMarkAllEntriesTimeout);
+        state.confirmMarkAllEntriesTimeout = null;
       }
 
       state.confirmMarkAllEntriesTimeout = setTimeout(() => {
+        state.confirmMarkAllEntriesTimeout = null;
         button.classList.remove("danger");
         pathElement.setAttribute("d", previousIconPath); // Restore original icon
         button.title = chrome.i18n.getMessage("pagePopupMarkEntriesAsRead");
@@ -595,6 +597,7 @@ const setupMarkAllAsReadButton = () => {
       // Second click: execute
       if (state.confirmMarkAllEntriesTimeout) {
         clearTimeout(state.confirmMarkAllEntriesTimeout);
+        state.confirmMarkAllEntriesTimeout = null;
       }
 
       const entryIds = Array.from(document.querySelectorAll(".entry"))
