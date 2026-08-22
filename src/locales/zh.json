@@ -50,6 +50,16 @@
     "description": "Help text for the refresh interval input field."
   },
 
+  "pageSettingsMinifluxInstanceMaxEntries": {
+    "message": "最大条目数",
+    "description": "Label for the max entries input field."
+  },
+
+  "pageSettingsMinifluxInstanceMaxEntriesHelp": {
+    "message": "从 Miniflux 获取的未读条目最大数量。超过 100 的值可能会耗尽浏览器中扩展的存储空间。",
+    "description": "Help text for the max entries input field."
+  },
+
   "pageSettingsBrowserBehavior": {
     "message": "浏览器行为",
     "description": "Label for the browser behavior section."

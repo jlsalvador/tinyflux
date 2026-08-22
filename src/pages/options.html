@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title data-localize="__MSG_pageSettingsTitle__">Tinyflux — Settings</title>
@@ -115,6 +115,29 @@
               id="inputMinifluxPeriodInMinutesHelp"
             >
               Update interval for your entries.
+            </p>
+          </div>
+
+          <div class="input-group">
+            <label
+              data-localize="__MSG_pageSettingsMinifluxInstanceMaxEntries__"
+              for="inputMinifluxMaxEntries"
+              >Max entries</label
+            >
+            <input
+              type="number"
+              min="1"
+              max="500"
+              id="inputMinifluxMaxEntries"
+              aria-describedby="inputMinifluxMaxEntriesHelp"
+            />
+            <p
+              class="help-text"
+              data-localize="__MSG_pageSettingsMinifluxInstanceMaxEntriesHelp__"
+              id="inputMinifluxMaxEntriesHelp"
+            >
+              Maximum number of unread entries fetched from Miniflux. Values
+              above 100 may exhaust the browser's extension storage.
             </p>
           </div>
         </section>

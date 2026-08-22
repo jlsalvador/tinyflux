@@ -50,6 +50,16 @@
     "description": "Ayuda para el campo de entrada del periodo para refrescar."
   },
 
+  "pageSettingsMinifluxInstanceMaxEntries": {
+    "message": "Máximo de entradas",
+    "description": "Etiqueta para el campo de entrada del máximo de entradas."
+  },
+
+  "pageSettingsMinifluxInstanceMaxEntriesHelp": {
+    "message": "Número máximo de entradas sin leer que se obtienen de Miniflux. Valores por encima de 100 pueden agotar el almacenamiento de la extensión en el navegador.",
+    "description": "Ayuda para el campo de entrada del máximo de entradas."
+  },
+
   "pageSettingsBrowserBehavior": {
     "message": "Comportamiento del navegador",
     "description": "Etiqueta para la sección del comportamiento del navegador."

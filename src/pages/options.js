@@ -7,6 +7,7 @@ import {
   DEFAULT_BADGE_TEXT_COLOR,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+  DEFAULT_MAX_ENTRIES,
   DEFAULT_PERIOD_REFRESH,
   DEFAULT_THEME,
   DEFAULT_TOKEN,
@@ -41,6 +42,7 @@ const elements = {
   token: () => document.querySelector("#inputMinifluxToken"),
   periodInMinutes: () =>
     document.querySelector("#inputMinifluxPeriodInMinutes"),
+  maxEntries: () => document.querySelector("#inputMinifluxMaxEntries"),
   extensionClickBehavior: () =>
     document.querySelector("#selectExtensionClickBehavior"),
   markEntryAsReadWhenOpenedAsTab: () =>
@@ -65,6 +67,7 @@ async function getStoredValues() {
     "url",
     "token",
     "periodInMinutes",
+    "maxEntries",
     "extensionClickBehavior",
     "markEntryAsReadWhenOpenedAsTab",
     "theme",
@@ -83,6 +86,7 @@ function readFormValues() {
     url: elements.url().value,
     token: elements.token().value,
     periodInMinutes: elements.periodInMinutes().valueAsNumber,
+    maxEntries: elements.maxEntries().valueAsNumber,
     extensionClickBehavior: elements.extensionClickBehavior().value,
     markEntryAsReadWhenOpenedAsTab:
       elements.markEntryAsReadWhenOpenedAsTab().checked,
@@ -113,7 +117,7 @@ async function applyChanges(currentValues, storedValues) {
   await browser.storage.local.set(currentValues);
 
   if (
-    (changes.url || changes.token) &&
+    (changes.url || changes.token || changes.maxEntries) &&
     currentValues.url &&
     currentValues.token
   ) {
@@ -181,6 +185,8 @@ async function restoreOptions() {
   elements.token().value = storedValues.token || DEFAULT_TOKEN;
   elements.periodInMinutes().valueAsNumber =
     storedValues.periodInMinutes || DEFAULT_PERIOD_REFRESH;
+  elements.maxEntries().valueAsNumber =
+    storedValues.maxEntries || DEFAULT_MAX_ENTRIES;
   elements.extensionClickBehavior().value =
     storedValues.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
   elements.markEntryAsReadWhenOpenedAsTab().checked =
@@ -287,6 +293,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     elements.url(),
     elements.token(),
     elements.periodInMinutes(),
+    elements.maxEntries(),
     elements.extensionClickBehavior(),
     elements.markEntryAsReadWhenOpenedAsTab(),
     elements.theme(),

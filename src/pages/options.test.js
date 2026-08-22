@@ -8,6 +8,7 @@ import {
   DEFAULT_BADGE_TEXT_COLOR,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+  DEFAULT_MAX_ENTRIES,
   DEFAULT_PERIOD_REFRESH,
   DEFAULT_THEME,
   DEFAULT_TOKEN,
@@ -26,6 +27,7 @@ const fullDefaults = {
   url: "https://miniflux.example.com",
   token: "test-token",
   periodInMinutes: DEFAULT_PERIOD_REFRESH,
+  maxEntries: DEFAULT_MAX_ENTRIES,
   extensionClickBehavior: DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   markEntryAsReadWhenOpenedAsTab: DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   theme: DEFAULT_THEME,
@@ -96,6 +98,7 @@ test("restoreOptions populates the form from stored values", async (t) => {
   mockStorage(t, {
     ...fullDefaults,
     periodInMinutes: 30,
+    maxEntries: 250,
     extensionClickBehavior: "sidepanel",
     markEntryAsReadWhenOpenedAsTab: true,
     theme: "dark",
@@ -115,6 +118,9 @@ test("restoreOptions populates the form from stored values", async (t) => {
   expect(
     document.getElementById("inputMinifluxPeriodInMinutes").valueAsNumber,
   ).toBe(30);
+  expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
+    250,
+  );
   expect(document.getElementById("selectExtensionClickBehavior").value).toBe(
     "sidepanel",
   );
@@ -142,6 +148,9 @@ test("restoreOptions falls back to defaults when storage is empty", async (t) =>
   expect(
     document.getElementById("inputMinifluxPeriodInMinutes").valueAsNumber,
   ).toBe(DEFAULT_PERIOD_REFRESH);
+  expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
+    DEFAULT_MAX_ENTRIES,
+  );
   expect(document.getElementById("selectExtensionClickBehavior").value).toBe(
     DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   );
@@ -262,7 +271,29 @@ test("autosave persists url change after debounce and refreshes entries", async 
   expect(sets[1].entries).toEqual([]);
   expect(fetched.length).toBe(1);
   expect(fetched[0].url).toBe(
-    "https://new.example.com/v1/entries?status=unread&order=published_at&direction=desc",
+    "https://new.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
+  );
+});
+
+test("autosave refetches entries with the new limit when maxEntries changes", async (t) => {
+  const clock = fakeClock(t);
+  const { sets } = mockStorage(t, { ...fullDefaults });
+  const fetched = mockFetch(t, { entries: [] });
+  await loadOptionsPage();
+
+  const maxInput = document.getElementById("inputMinifluxMaxEntries");
+  maxInput.valueAsNumber = 250;
+  maxInput.dispatchEvent(new window.Event("input"));
+
+  clock.tick(500);
+  await flushMicrotasks();
+
+  expect(sets.length).toBe(2);
+  expect(sets[0].maxEntries).toBe(250);
+  expect(sets[1].entries).toEqual([]);
+  expect(fetched.length).toBe(1);
+  expect(fetched[0].url).toBe(
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=250",
   );
 });
 

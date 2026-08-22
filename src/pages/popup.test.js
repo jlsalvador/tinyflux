@@ -1118,7 +1118,7 @@ test("refresh button refetches entries and re-renders the view", async (t) => {
 
   expect(fetched.length).toBe(1);
   expect(fetched[0].url).toBe(
-    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc",
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
   );
   expect(sets.some((saved) => saved.entries?.[0]?.id === 7)).toBe(true);
   expect(document.getElementById("entry-1")).toBeFalsy();

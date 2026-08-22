@@ -91,7 +91,10 @@ import browser from "webextension-polyfill";
 /**
  * @typedef {Object} Icon
  * @property {number} id 262
- * @property {string} data "image/png;base64,iVBORw0KGgoAAA...."
+ * @property {string} data Data URL **without** the `data:` scheme prefix,
+ *   e.g. "image/png;base64,iVBORw0KGgoAAA....". Miniflux's `Icon.DataURL()`
+ *   returns `"<mime_type>;base64,<payload>"`, so callers must prepend
+ *   `data:` themselves when using it in an `<img src>`.
  * @property {string} mime_type "image/png"
  */
 
@@ -129,6 +132,22 @@ import browser from "webextension-polyfill";
 export const DEFAULT_URL = "";
 export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
+export const DEFAULT_MAX_ENTRIES = 100;
+// Max value accepted by the Miniflux API for the `limit` query parameter.
+export const MAX_ENTRIES_LIMIT = 500;
+
+/**
+ * Resolve a stored max entries value to a number accepted by the Miniflux
+ * API, falling back to the default for invalid values.
+ * @param {unknown} maxEntries
+ * @returns {number}
+ */
+export const resolveMaxEntries = (maxEntries) => {
+  const requested = Number(maxEntries);
+  return Number.isFinite(requested) && requested >= 1
+    ? Math.min(Math.floor(requested), MAX_ENTRIES_LIMIT)
+    : DEFAULT_MAX_ENTRIES;
+};
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
 export const DEFAULT_THEME = "light";
@@ -253,9 +272,16 @@ export async function request(path, options = {}) {
     headers.set("Content-Type", contentType);
   }
 
-  const requestUrl = new URL(
-    url.replace(/\/+$/, "") + (path.startsWith("/") ? path : `/${path}`),
-  );
+  let requestUrl;
+  try {
+    requestUrl = new URL(
+      url.replace(/\/+$/, "") + (path.startsWith("/") ? path : `/${path}`),
+    );
+  } catch (error) {
+    throw new MinifluxConnectionError(`Invalid Miniflux URL: ${url}`, {
+      cause: error,
+    });
+  }
   const requestOptions = {
     method,
     headers,
@@ -324,23 +350,15 @@ export async function updateBadge() {
  * @returns {Promise<void[]>}
  */
 export async function updateBadgeConnectionError() {
-  const { url = "", badgeBackgroundColor } = await browser.storage.local.get([
-    "url",
-    "badgeBackgroundColor",
-  ]);
-
-  const fallbackColor = badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
+  const { url = "" } = await browser.storage.local.get("url");
 
   await browser.action.setTitle({
     title: chrome.i18n.getMessage("connectionMinifluxError", url),
   });
   await browser.action.setBadgeText({ text: "⚡" });
-  await browser.action.setBadgeTextColor({ color: "white" });
-  try {
-    await browser.action.setBadgeBackgroundColor({ color: "transparent" });
-  } catch {
-    await browser.action.setBadgeBackgroundColor({ color: fallbackColor });
-  }
+  // Use the regular badge colors (stored or defaults) so the glyph stays
+  // visible on both light and dark toolbars.
+  await updateBadgeColor();
 }
 
 /**
@@ -471,9 +489,13 @@ async function sendNotification(newEntries) {
 export async function refreshEntries() {
   let fetchedEntries;
 
+  const { maxEntries = DEFAULT_MAX_ENTRIES } =
+    await browser.storage.local.get("maxEntries");
+  const limit = resolveMaxEntries(maxEntries);
+
   try {
     const response = await request(
-      "/v1/entries?status=unread&order=published_at&direction=desc",
+      `/v1/entries?status=unread&order=published_at&direction=desc&limit=${limit}`,
     );
 
     if (!response.ok) {

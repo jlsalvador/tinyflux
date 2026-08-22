@@ -50,6 +50,16 @@
     "description": "Help text for the refresh interval input field."
   },
 
+  "pageSettingsMinifluxInstanceMaxEntries": {
+    "message": "Nombre max. d'articles",
+    "description": "Label for the max entries input field."
+  },
+
+  "pageSettingsMinifluxInstanceMaxEntriesHelp": {
+    "message": "Nombre maximum d'articles non lus à récupérer depuis Miniflux. Des valeurs supérieures à 100 peuvent épuiser l'espace de stockage de l'extension dans le navigateur.",
+    "description": "Help text for the max entries input field."
+  },
+
   "pageSettingsBrowserBehavior": {
     "message": "Comportement du navigateur",
     "description": "Label for the browser behavior section."

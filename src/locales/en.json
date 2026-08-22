@@ -50,6 +50,16 @@
     "description": "Help text for the refresh interval input field."
   },
 
+  "pageSettingsMinifluxInstanceMaxEntries": {
+    "message": "Max entries",
+    "description": "Label for the max entries input field."
+  },
+
+  "pageSettingsMinifluxInstanceMaxEntriesHelp": {
+    "message": "Maximum number of unread entries fetched from Miniflux. Values above 100 may exhaust the browser's extension storage.",
+    "description": "Help text for the max entries input field."
+  },
+
   "pageSettingsBrowserBehavior": {
     "message": "Browser behavior",
     "description": "Label for the browser behavior section."

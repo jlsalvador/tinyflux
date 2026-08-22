@@ -158,6 +158,28 @@ test("request throws InvalidUrlOrTokenError when credentials are missing", async
   expect(caught instanceof InvalidUrlOrTokenError).toBe(true);
 });
 
+test("request throws MinifluxConnectionError for an invalid URL", async (t) => {
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+  });
+
+  let caught = null;
+  try {
+    await request("/v1/me", {
+      url: "reader.miniflux.app",
+      token: "token",
+    });
+  } catch (error) {
+    caught = error;
+  }
+
+  expect(caught instanceof MinifluxConnectionError).toBe(true);
+  expect(caught.message).toContain("Invalid Miniflux URL");
+  expect(captured.length).toBe(0);
+});
+
 // --- notifyRefresh tests ---
 
 test("notifyRefreshEntries sends refresh action", async (t) => {
@@ -551,7 +573,7 @@ test("updateBadgeColor uses stored colors when available", async (t) => {
 
 // --- updateBadgeConnectionError tests ---
 
-test("updateBadgeConnectionError shows lightning badge with transparent background", async (t) => {
+test("updateBadgeConnectionError shows lightning badge with default colors", async (t) => {
   mockStorage(t, { url: "https://miniflux.example.com" });
   const badgeTexts = [];
   const texts = [];
@@ -572,11 +594,11 @@ test("updateBadgeConnectionError shows lightning badge with transparent backgrou
   await updateBadgeConnectionError();
 
   expect(badgeTexts).toEqual(["⚡"]);
-  expect(texts).toEqual(["white"]);
-  expect(backgrounds).toEqual(["transparent"]);
+  expect(texts).toEqual(["#ffffff"]);
+  expect(backgrounds).toEqual(["#000000"]);
 });
 
-test("updateBadgeConnectionError falls back to stored color when transparent is rejected", async (t) => {
+test("updateBadgeConnectionError uses stored badge colors when available", async (t) => {
   mockStorage(t, {
     url: "https://miniflux.example.com",
     badgeBackgroundColor: "#123456",
@@ -584,15 +606,12 @@ test("updateBadgeConnectionError falls back to stored color when transparent is 
   const backgrounds = [];
   t.mock.method(browser.action, "setBadgeBackgroundColor", (options) => {
     backgrounds.push(options.color);
-    if (options.color === "transparent") {
-      return Promise.reject(new Error("not supported"));
-    }
     return Promise.resolve();
   });
 
   await updateBadgeConnectionError();
 
-  expect(backgrounds).toEqual(["transparent", "#123456"]);
+  expect(backgrounds).toEqual(["#123456"]);
 });
 
 // --- getPopupStyle tests ---
@@ -643,10 +662,75 @@ test("refreshEntries fetches unread entries and stores them", async (t) => {
 
   expect(result).toEqual(fetched);
   expect(captured[0].url).toBe(
-    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc",
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
   );
   expect(sets.length).toBe(1);
   expect(sets[0].entries).toEqual(fetched);
+});
+
+test("refreshEntries uses the stored max entries limit", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    maxEntries: 250,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+
+  await refreshEntries();
+
+  expect(captured[0].url).toBe(
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=250",
+  );
+});
+
+test("refreshEntries clamps the max entries limit to the API range", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    maxEntries: 999,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+
+  await refreshEntries();
+
+  expect(captured[0].url).toContain("&limit=500");
+});
+
+test("refreshEntries falls back to the default limit for invalid values", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    maxEntries: null,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+
+  await refreshEntries();
+
+  expect(captured[0].url).toContain("&limit=100");
 });
 
 test("refreshEntries reports connection error and shows error badge", async (t) => {
