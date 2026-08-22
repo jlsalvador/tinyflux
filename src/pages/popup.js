@@ -31,6 +31,7 @@ import {
   refreshEntries,
   refreshTheme,
   request,
+  resolveMaxEntries,
   openSettings,
 } from "./common.js";
 
@@ -45,6 +46,7 @@ import {
 
 const MARK_ENTRIES_AS_READ_TIMEOUT_MS = 5000;
 const ICON_CACHE_KEY_PREFIX = "icon";
+const ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ============================================================================
 // State Management
@@ -62,18 +64,13 @@ const state = {
 // ============================================================================
 
 /**
- * Open a URL in a new tab
+ * Open a URL in a new active tab and close the popup if in popup mode
  * @param {string} url
- * @param {boolean} active
  * @returns {Promise<browser.tabs.Tab>}
  */
-const openLink = async (url, active = true) => {
-  const tab = await browser.tabs.create({ active, url });
+const openLink = async (url) => {
+  const tab = await browser.tabs.create({ active: true, url });
   closeIfPopup();
-
-  if (!active && tab?.id) {
-    await browser.tabs.discard(tab.id);
-  }
 
   return tab;
 };
@@ -81,6 +78,28 @@ const openLink = async (url, active = true) => {
 // ============================================================================
 // Icon Management
 // ============================================================================
+
+/**
+ * Keep the persisted icon cache bounded: drop the oldest cached icons once
+ * the cache exceeds the configured max entries (we never need more cached
+ * icons than the number of entries that can be displayed).
+ * @returns {Promise<void>}
+ */
+const pruneIconCache = async () => {
+  const data = await browser.storage.local.get(null);
+  const maxIcons = resolveMaxEntries(data.maxEntries);
+  const iconEntries = Object.entries(data)
+    .filter(([key]) => /^icon\d+$/.test(key))
+    .map(([key, value]) => ({ key, fetchedAt: value?.fetchedAt ?? 0 }))
+    .sort((a, b) => a.fetchedAt - b.fetchedAt);
+
+  const overflow = iconEntries.length - maxIcons;
+  if (overflow > 0) {
+    await browser.storage.local.remove(
+      iconEntries.slice(0, overflow).map((entry) => entry.key),
+    );
+  }
+};
 
 /**
  * Fetch Icon from cache or API
@@ -104,9 +123,12 @@ const getIcon = async (iconID) => {
       .get(cacheKey)
       .then((data) => data[cacheKey]);
 
-    if (cachedIcon) {
-      state.iconCache.set(iconID, cachedIcon);
-      return cachedIcon;
+    if (
+      cachedIcon?.icon &&
+      Date.now() - (cachedIcon.fetchedAt || 0) < ICON_CACHE_TTL_MS
+    ) {
+      state.iconCache.set(iconID, cachedIcon.icon);
+      return cachedIcon.icon;
     }
 
     // Fetch from API
@@ -120,9 +142,12 @@ const getIcon = async (iconID) => {
 
       const icon = await response.json();
 
-      // Cache the icon
+      // Cache the icon (with a fetch timestamp for TTL and pruning)
       state.iconCache.set(iconID, icon);
-      await browser.storage.local.set({ [cacheKey]: icon });
+      await browser.storage.local.set({
+        [cacheKey]: { icon, fetchedAt: Date.now() },
+      });
+      await pruneIconCache();
 
       return icon;
     } catch (error) {
@@ -262,6 +287,8 @@ const createEntryTitle = async (entry) => {
   if (icon.data) {
     const feedIcon = document.createElement("img");
     feedIcon.className = "feed-icon";
+    // Miniflux's Icon.DataURL() returns the payload without the "data:"
+    // scheme prefix, so it must be prepended here.
     feedIcon.src = `data:${icon.data}`;
     feedIcon.alt = entry.feed?.title ?? "";
     feedInfo.appendChild(feedIcon);
@@ -495,8 +522,12 @@ const handleRefreshViewEntries = async () => {
       .get("entries")
       .then((r) => r.entries || []);
 
-    cleanupOldDOMEntries(entries);
-    await addDOMEntries(entries);
+    // Filter out hidden feeds/categories so entries that became hidden are
+    // removed from the DOM as well (they stay in storage, so they are not
+    // re-notified as new and reappear if the filter is reverted in Miniflux).
+    const visibleEntries = filterVisibleEntries(entries);
+    cleanupOldDOMEntries(visibleEntries);
+    await addDOMEntries(visibleEntries);
     updateEmptyState();
   } catch (error) {
     console.error("Failed to refresh entries:", error);
@@ -546,9 +577,12 @@ const setupDropdown = () => {
     }
   });
 
-  // Close on menu item click
+  // Close on menu item click (prevent the href="#" navigation)
   menu.querySelectorAll(".dropdown-item").forEach((item) => {
-    item.addEventListener("click", closeDropdown);
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeDropdown();
+    });
   });
 
   // Close on Escape

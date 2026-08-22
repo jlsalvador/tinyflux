@@ -647,7 +647,7 @@ test("addDOMEntry does nothing when entries container is missing", async (t) => 
 
 test("addDOMEntry renders feed icon from storage cache", async (t) => {
   setupEntriesDOM();
-  mockStorage(t, { icon20: testIcon });
+  mockStorage(t, { icon20: { icon: testIcon, fetchedAt: Date.now() } });
   const fetched = mockFetch(t, testIcon);
 
   await addDOMEntry(
@@ -678,7 +678,74 @@ test("addDOMEntry fetches feed icon from API and caches it", async (t) => {
   expect(fetched.length).toBe(1);
   expect(fetched[0].url).toBe("https://miniflux.example.com/v1/icons/30");
   expect(sets.length).toBe(1);
-  expect(sets[0].icon30).toEqual(testIcon);
+  expect(sets[0].icon30.icon).toEqual(testIcon);
+  expect(typeof sets[0].icon30.fetchedAt).toBe("number");
+});
+
+test("addDOMEntry refetches feed icon when the cached icon is stale", async (t) => {
+  setupEntriesDOM();
+  const sets = mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "test-token",
+    icon60: {
+      icon: testIcon,
+      fetchedAt: Date.now() - 8 * 24 * 60 * 60 * 1000, // 8 days old
+    },
+  });
+  const fetched = mockFetch(t, testIcon);
+
+  await addDOMEntry(
+    makeEntry({ feed: { icon: { feed_id: 28, icon_id: 60 } } }),
+  );
+
+  expect(fetched.length).toBe(1);
+  expect(sets.length).toBe(1);
+  expect(sets[0].icon60.icon).toEqual(testIcon);
+});
+
+test("icon cache is pruned down to the max entries limit", async (t) => {
+  setupEntriesDOM();
+  const store = {
+    url: "https://miniflux.example.com",
+    token: "test-token",
+    maxEntries: 3,
+    icon1: { icon: testIcon, fetchedAt: 1000 },
+    icon2: { icon: testIcon, fetchedAt: 2000 },
+    icon3: { icon: testIcon, fetchedAt: 3000 },
+    icon4: { icon: testIcon, fetchedAt: 4000 },
+  };
+  const removes = [];
+  t.mock.method(browser.storage.local, "get", (keys) => {
+    if (keys === null || keys === undefined) {
+      return Promise.resolve({ ...store });
+    }
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    const result = {};
+    for (const key of keyList) {
+      if (key in store) result[key] = store[key];
+    }
+    return Promise.resolve(result);
+  });
+  t.mock.method(browser.storage.local, "set", (items) => {
+    Object.assign(store, items);
+    return Promise.resolve();
+  });
+  t.mock.method(browser.storage.local, "remove", (keys) => {
+    removes.push(keys);
+    for (const key of Array.isArray(keys) ? keys : [keys]) {
+      delete store[key];
+    }
+    return Promise.resolve();
+  });
+  const fetched = mockFetch(t, testIcon);
+
+  // icon5 is not cached: it is fetched and stored, then the cache (5 icons)
+  // is pruned back to the maxEntries limit of 3, dropping the 2 oldest.
+  await addDOMEntry(makeEntry({ feed: { icon: { feed_id: 28, icon_id: 5 } } }));
+
+  expect(fetched.length).toBe(1);
+  expect(removes.length).toBe(1);
+  expect(removes[0]).toEqual(["icon1", "icon2"]);
 });
 
 test("addDOMEntry omits feed icon when API request fails", async (t) => {
@@ -975,6 +1042,22 @@ test("refresh_view_entries message re-renders entries from storage", async (t) =
 test("message listener ignores unknown actions", () => {
   const handler = runtimeMessageListeners.at(-1);
   expect(handler({ action: "unknown-action" })).toBe(false);
+});
+
+test("entries from hidden feeds are removed from the DOM on refresh", async (t) => {
+  const container = setupEntriesDOM();
+  mockStorage(t, {
+    entries: [makeEntry({ id: 1, feed: { hide_globally: true } })],
+  });
+
+  await addDOMEntry(makeEntry({ id: 1 }));
+  expect(container.querySelectorAll(".entry").length).toBe(1);
+
+  const handler = runtimeMessageListeners.at(-1);
+  await handler({ action: MESSAGE_REFRESH_VIEW_ENTRIES });
+
+  expect(document.getElementById("entry-1")).toBeFalsy();
+  expect(container.querySelectorAll(".entry").length).toBe(0);
 });
 
 // ============================================================================
