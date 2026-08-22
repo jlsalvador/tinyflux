@@ -50,6 +50,8 @@ async function buildAssets(label, srcdir, resdir) {
     }
   }
 
+  // Copy the remaining assets. The source SVGs are skipped: they are only
+  // rasterization inputs, the manifest and the notifications use the PNGs.
   await fs
     .readdir(resolve(srcdir, "pages/assets"), {
       recursive: true,
@@ -57,7 +59,7 @@ async function buildAssets(label, srcdir, resdir) {
     })
     .then((entries) => {
       return entries
-        .filter((entry) => entry.isFile())
+        .filter((entry) => entry.isFile() && !entry.name.endsWith(".svg"))
         .map((entry) => {
           return relative(srcdir, join(entry.parentPath, entry.name));
         });
@@ -410,6 +412,9 @@ async function buildExtensions(dev) {
   await cleanDist(label, outdir);
   await buildResources(label, pkg, dev, srcdir, resources);
   await buildPack(label, pkg, resources, outdir);
+  // Remove the intermediate resources directory so dist/ only contains the
+  // final artifacts (crx, xpi and the unpacked chromium/firefox folders).
+  await cleanDist(label, resources);
 
   console.timeEnd(label);
 }
