@@ -26,22 +26,71 @@ import {
 // ============================================================================
 
 /**
+ * Build a fingerprint of an entry list from the fields the entry actions
+ * depend on (id and starred), to detect concurrent modifications.
+ * @param {Entry[]} entries
+ * @returns {string}
+ */
+const entriesFingerprint = (entries) =>
+  entries
+    .map((entry) => `${entry.id}:${entry.starred ? 1 : 0}`)
+    .sort()
+    .join(",");
+
+/**
+ * Apply a read-modify-write to the cached entries, retrying when a
+ * concurrent operation (e.g. a refresh coming from the popup) modifies the
+ * cache between the read and the write. The mutator is always applied to the
+ * latest cached state. A mutator returning `null` is a no-op: nothing is
+ * written and `null` is returned.
+ * @param {(entries: Entry[]) => Entry[]|null} mutator
+ * @param {number} [maxAttempts=3]
+ * @returns {Promise<Entry[]|null>} The entries stored after the update, or
+ *   `null` when the mutator was a no-op.
+ * @throws {Error}
+ */
+const updateCachedEntries = async (mutator, maxAttempts = 3) => {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const { entries: previousEntries = [] } =
+      await browser.storage.local.get("entries");
+    const updatedEntries = mutator(previousEntries);
+    if (updatedEntries === null) {
+      return null;
+    }
+    // Re-read to detect concurrent writes between the read and the write.
+    const { entries: latestEntries = [] } =
+      await browser.storage.local.get("entries");
+    if (
+      entriesFingerprint(latestEntries) === entriesFingerprint(previousEntries)
+    ) {
+      await browser.storage.local.set({ entries: updatedEntries });
+      return updatedEntries;
+    }
+  }
+  throw new Error(
+    "Failed to update cached entries after concurrent modifications",
+  );
+};
+
+/**
  * Mark entries as read via Miniflux API with optimistic UI update.
  * Reverts local cache on API failure.
  * @param {number[]} entryIds
- * @returns {Promise<Entry[]>}
+ * @returns {Promise<Entry[]|undefined>}
  * @throws {Error}
  */
 export const markEntriesAsRead = async (entryIds) => {
+  if (!Array.isArray(entryIds) || entryIds.length === 0) {
+    return;
+  }
+
   const { entries: previousEntries = [] } =
     await browser.storage.local.get("entries");
 
-  const updatedEntries = previousEntries.filter(
-    (entry) => !entryIds.includes(entry.id),
-  );
-
   // Optimistic UI update
-  await browser.storage.local.set({ entries: updatedEntries });
+  const updatedEntries = await updateCachedEntries((entries) =>
+    entries.filter((entry) => !entryIds.includes(entry.id)),
+  );
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
   try {
@@ -72,24 +121,29 @@ export const markEntriesAsRead = async (entryIds) => {
  * Toggle entry bookmark status with optimistic UI update.
  * Reverts local cache on API failure.
  * @param {number} entryId
- * @returns {Promise<Entry[]>}
+ * @returns {Promise<Entry[]|undefined>}
  */
 export const toggleBookmark = async (entryId) => {
   const { entries: previousEntries = [] } =
     await browser.storage.local.get("entries");
 
-  const entryIndex = previousEntries.findIndex((entry) => entry.id === entryId);
-  if (entryIndex === -1) return;
+  const updatedEntries = await updateCachedEntries((entries) => {
+    const entryIndex = entries.findIndex((entry) => entry.id === entryId);
+    if (entryIndex === -1) {
+      return null;
+    }
+    const next = [...entries];
+    next[entryIndex] = {
+      ...next[entryIndex],
+      starred: !next[entryIndex].starred,
+    };
+    return next;
+  });
 
-  const isStarred = previousEntries[entryIndex].starred;
+  if (updatedEntries === null) {
+    return;
+  }
 
-  const updatedEntries = [...previousEntries];
-  updatedEntries[entryIndex] = {
-    ...updatedEntries[entryIndex],
-    starred: !isStarred,
-  };
-
-  await browser.storage.local.set({ entries: updatedEntries });
   await notifyRefreshEntries();
 
   try {
@@ -128,7 +182,11 @@ export const handleStartup = async () => {
     if (error instanceof InvalidUrlOrTokenError) {
       await openSettings();
     } else {
-      throw error;
+      // A startup refresh failure is usually transient (e.g. the network is
+      // not up yet). The badge already reflects the error and the scheduled
+      // alarm retries later, so log it instead of leaving an unhandled
+      // rejection in the service worker.
+      console.error("Startup refresh failed:", error);
     }
   }
 };
@@ -141,8 +199,14 @@ export const handleStartup = async () => {
 export const handleMessage = async (message) => {
   switch (message.action) {
     case MESSAGE_MARK_ENTRY_IDS_AS_READ:
+      if (!Array.isArray(message.entryIds)) {
+        return false;
+      }
       return markEntriesAsRead(message.entryIds);
     case MESSAGE_TOGGLE_ENTRY_BOOKMARK:
+      if (typeof message.entryId !== "number") {
+        return false;
+      }
       return toggleBookmark(message.entryId);
     default:
       return false;

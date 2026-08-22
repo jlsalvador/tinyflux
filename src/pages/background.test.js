@@ -102,6 +102,37 @@ test("handleMessage returns false for unknown message", async () => {
   expect(result).toBe(false);
 });
 
+test("handleMessage returns false when entryIds is missing", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
+
+  const result = await handleMessage({
+    action: MESSAGE_MARK_ENTRY_IDS_AS_READ,
+  });
+  expect(result).toBe(false);
+  expect(sets.length).toBe(0);
+});
+
+test("handleMessage returns false when entryId is not a number", async (t) => {
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
+
+  const result = await handleMessage({
+    action: MESSAGE_TOGGLE_ENTRY_BOOKMARK,
+    entryId: "1",
+  });
+  expect(result).toBe(false);
+  expect(sets.length).toBe(0);
+});
+
 // --- markEntriesAsRead tests ---
 
 test("markEntriesAsRead removes entries from storage optimistically", async (t) => {
@@ -139,7 +170,25 @@ test("markEntriesAsRead reverts on API failure", async (t) => {
   expect(sets[1].length).toBe(3);
 });
 
-test("markEntriesAsRead handles empty entry IDs", async (t) => {
+test("markEntriesAsRead is a no-op for empty entry IDs", async (t) => {
+  const sets = [];
+  const fetched = [];
+  mockStorageAndFetch(t, {
+    get: storageGet(testEntries),
+    set: recordingSet(sets),
+    fetch: (req) => {
+      fetched.push(req);
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    },
+  });
+
+  const result = await markEntriesAsRead([]);
+  expect(result).toBe(undefined);
+  expect(sets.length).toBe(0);
+  expect(fetched.length).toBe(0);
+});
+
+test("markEntriesAsRead is a no-op for non-array entry IDs", async (t) => {
   const sets = [];
   mockStorageAndFetch(t, {
     get: storageGet(testEntries),
@@ -147,8 +196,35 @@ test("markEntriesAsRead handles empty entry IDs", async (t) => {
     fetch: okFetch,
   });
 
-  const result = await markEntriesAsRead([]);
-  expect(result.length).toBe(3);
+  const result = await markEntriesAsRead("not-an-array");
+  expect(result).toBe(undefined);
+  expect(sets.length).toBe(0);
+});
+
+test("markEntriesAsRead retries when storage changes concurrently", async (t) => {
+  const base = [
+    { id: 1, title: "A", starred: false },
+    { id: 2, title: "B", starred: false },
+    { id: 3, title: "C", starred: false },
+  ];
+  const concurrent = [...base, { id: 4, title: "D", starred: false }];
+  let getCall = 0;
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: () => {
+      getCall += 1;
+      // Simulate a concurrent refresh that adds entry D just before the
+      // write is validated, forcing a retry on the fresh state.
+      const entries = getCall >= 3 ? concurrent : base;
+      return Promise.resolve({ entries: [...entries], ...credentials });
+    },
+    set: recordingSet(sets),
+    fetch: okFetch,
+  });
+
+  const result = await markEntriesAsRead([1]);
+
+  expect(result.map((e) => e.id)).toEqual([2, 3, 4]);
   expect(sets.length).toBe(1);
 });
 
@@ -294,20 +370,25 @@ test("handleStartup opens settings silently when credentials are missing", async
   expect(settingsOpened).toBe(true);
 });
 
-test("handleStartup throws non-credential errors", async (t) => {
+test("handleStartup logs non-credential errors without throwing", async (t) => {
   t.mock.method(console, "log", () => {});
+  const errors = [];
+  t.mock.method(console, "error", (...args) => {
+    errors.push(args);
+  });
   t.mock.method(browser.storage.local, "get", () => Promise.resolve({}));
   t.mock.method(browser.action, "setPopup", () => {
     throw new Error("unexpected action error");
   });
 
-  let caughtError = null;
+  let threw = false;
   try {
     await handleStartup();
-  } catch (error) {
-    caughtError = error;
+  } catch {
+    threw = true;
   }
 
-  expect(caughtError).toBeTruthy();
-  expect(caughtError.message).toBe("unexpected action error");
+  expect(threw).toBe(false);
+  expect(errors.length).toBe(1);
+  expect(String(errors[0][1])).toContain("unexpected action error");
 });
