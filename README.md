@@ -91,7 +91,7 @@ more details.
 Tinyflux requires a Miniflux API token. You can generate one in your Miniflux
 account settings:
 
-![How to create an API token](assets/snapshots/minyflux-how-to-create-api-token.gif)
+![How to create an API token](assets/snapshots/miniflux-how-to-create-api-token.gif)
 
 ## 🚀 Getting Started
 
@@ -135,7 +135,7 @@ Ideal for developers or advanced users:
      1. Visit `about:debugging`.
      2. Click **"This Firefox"**.
      3. Select **"Load Temporary Add-on…"**.
-     4. Choose the `dist/tinyflux.version.xpi` file.
+     4. Choose the `dist/tinyflux.*.xpi` file.
 
    - **Chromium-based browsers (Chrome, Edge, etc.)**:
      1. Open `chrome://extensions`.

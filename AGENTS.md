@@ -6,9 +6,9 @@ A Manifest V3 browser extension for [Miniflux](https://miniflux.app).
 
 | Command | Description |
 |---|---|
-| `npm ci` | Install dependencies (requires `--allow-scripts` for esbuild/sharp native binaries) |
+| `npm ci` | Install dependencies (the `allowScripts` field whitelists esbuild/sharp postinstall scripts — keep its version pins in sync with the lockfile) |
 | `npm run build` | Full production build → `dist/` |
-| `npm run watch -- --dev` | Watch mode with inline sourcemaps, no minification |
+| `npm run watch` | Watch mode with inline sourcemaps, no minification |
 | `npm run format` | Prettier over `src/` and `package.json` |
 | `npm run lint` | ESLint (`@eslint/js` recommended config) with `--fix` |
 | `npm run test` | Run tests via Node native `node:test` (no external framework) |
@@ -25,7 +25,7 @@ Build pipeline:
 3. **Icons** — `src/pages/assets/icon-{light,dark}.svg` → PNGs at 16/32/48/196 px via sharp, plus Apple-touch variants.
 4. **JS** — `background.js` (bundled standalone), `popup.js` + `options.js` (bundled with code splitting).
 5. **HTML/CSS** — copied verbatim.
-6. **Pack** — produces `dist/tinyflux.{version}.crx` and `dist/tinyflux.{version}.xpi`, plus unpacked `dist/chromium/` and `dist/firefox/` directories.
+6. **Pack** — produces `dist/tinyflux.{version}.crx` and `dist/tinyflux.{version}.xpi` (dots in the version are replaced by underscores, e.g. `dist/tinyflux.0_11_3.crx`), plus unpacked `dist/chromium/` and `dist/firefox/` directories. The intermediate `dist/resources/` directory is removed after packing.
 
 ## Extension architecture
 
@@ -41,7 +41,7 @@ Build pipeline:
 | Fixed ID | — | `{12c2801b-5b88-529c-92bc-3b7a0e3e1ead}` in `manifests/firefox.json` |
 
 **Source layout:**
-- `src/pages/popup.js` — popup/sidebar UI (the main reading view, ~780 lines).
+- `src/pages/popup.js` — popup/sidebar UI (the main reading view).
 - `src/pages/options.js` — settings page (Miniflux endpoint + token configuration).
 - `src/pages/background.js` — service worker (sync, alarms, badge updates).
 - `src/pages/common.js` — shared utilities (API helpers, event bus).
