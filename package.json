@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@eslint/json": "^2.0.1",
     "adm-zip": "^0.6.0",
     "dompurify": "^3.4.13",
     "esbuild": "^0.28.2",
