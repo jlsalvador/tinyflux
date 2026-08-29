@@ -152,19 +152,19 @@ async function applyChanges(currentValues, storedValues) {
   }
 }
 
-/** Hide the "Saved" indicator after a short delay. */
-let saveIndicatorTimeout = null;
+/** Show the floating "Saved" toast, hiding it again after a short delay. */
+let saveToastTimeout = null;
 
-function showSaveIndicator() {
-  const indicator = document.getElementById("saveIndicator");
-  if (!indicator) return;
+function showSaveToast() {
+  const toast = document.getElementById("saveToast");
+  if (!toast) return;
 
-  indicator.classList.add("is-visible");
-  if (saveIndicatorTimeout) {
-    clearTimeout(saveIndicatorTimeout);
+  toast.classList.add("is-visible");
+  if (saveToastTimeout) {
+    clearTimeout(saveToastTimeout);
   }
-  saveIndicatorTimeout = setTimeout(() => {
-    indicator.classList.remove("is-visible");
+  saveToastTimeout = setTimeout(() => {
+    toast.classList.remove("is-visible");
   }, 2000);
 }
 
@@ -189,7 +189,7 @@ async function debouncedSave() {
       const currentValues = readFormValues();
       const storedValues = await getStoredValues();
       await applyChanges(currentValues, storedValues);
-      showSaveIndicator();
+      showSaveToast();
     } catch (error) {
       console.warn("Failed to save options:", error);
     } finally {

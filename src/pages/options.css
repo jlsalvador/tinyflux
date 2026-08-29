@@ -37,29 +37,36 @@ body {
   padding-bottom: 40px;
 }
 
-.settings-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
-}
-
-.settings-header h1 {
+header h1 {
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0;
+  margin-bottom: var(--spacing-lg);
   color: var(--color-text);
 }
 
-.save-indicator {
-  font-size: 0.85rem;
-  color: var(--color-success);
+/* Floating save toast */
+.save-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
+  padding: 0.5rem 1rem;
+  background-color: var(--color-text);
+  color: var(--color-bg);
+  font-size: 0.875rem;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-md);
   opacity: 0;
-  transition: opacity 0.2s;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  z-index: 1000;
 }
 
-.save-indicator.is-visible {
+.save-toast.is-visible {
   opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Card Component */

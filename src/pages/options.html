@@ -30,15 +30,8 @@
 
   <body>
     <main class="settings-container">
-      <header class="settings-header">
+      <header>
         <h1 data-localize="__MSG_pageSettingsTitle__">Tinyflux Settings</h1>
-        <span
-          id="saveIndicator"
-          class="save-indicator"
-          data-localize="__MSG_pageSettingsSaved__"
-          aria-live="polite"
-          >Saved</span
-        >
       </header>
 
       <form>
@@ -321,6 +314,16 @@
         </section>
       </form>
     </main>
+
+    <!-- Floating toast -->
+    <div
+      id="saveToast"
+      class="save-toast"
+      role="status"
+      data-localize="__MSG_pageSettingsSaved__"
+    >
+      Saved
+    </div>
 
     <!-- Scripts -->
     <script type="module" src="options.js"></script>
