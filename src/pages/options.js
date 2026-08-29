@@ -173,8 +173,8 @@ async function debouncedSave() {
       const currentValues = readFormValues();
       const storedValues = await getStoredValues();
       await applyChanges(currentValues, storedValues);
-    } catch {
-      // Silently fail on auto-save
+    } catch (error) {
+      console.warn("Failed to save options:", error);
     } finally {
       isSaving = false;
       if (savePending) {
