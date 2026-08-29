@@ -191,28 +191,30 @@ async function debouncedSave() {
 async function restoreOptions() {
   const storedValues = await getStoredValues();
 
-  elements.url().value = storedValues.url || DEFAULT_URL;
-  elements.token().value = storedValues.token || DEFAULT_TOKEN;
+  // Use nullish coalescing so an explicitly stored falsy value (e.g. `false`)
+  // is honored instead of being replaced by the default.
+  elements.url().value = storedValues.url ?? DEFAULT_URL;
+  elements.token().value = storedValues.token ?? DEFAULT_TOKEN;
   elements.periodInMinutes().valueAsNumber =
-    storedValues.periodInMinutes || DEFAULT_PERIOD_REFRESH;
+    storedValues.periodInMinutes ?? DEFAULT_PERIOD_REFRESH;
   elements.maxEntries().valueAsNumber =
-    storedValues.maxEntries || DEFAULT_MAX_ENTRIES;
+    storedValues.maxEntries ?? DEFAULT_MAX_ENTRIES;
   elements.extensionClickBehavior().value =
-    storedValues.extensionClickBehavior || DEFAULT_EXTENSION_CLICK_BEHAVIOR;
+    storedValues.extensionClickBehavior ?? DEFAULT_EXTENSION_CLICK_BEHAVIOR;
   elements.markEntryAsReadWhenOpenedAsTab().checked =
-    storedValues.markEntryAsReadWhenOpenedAsTab ||
+    storedValues.markEntryAsReadWhenOpenedAsTab ??
     DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
-  elements.theme().value = storedValues.theme || DEFAULT_THEME;
+  elements.theme().value = storedValues.theme ?? DEFAULT_THEME;
   elements.badgeBackgroundColor().value =
-    storedValues.badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
+    storedValues.badgeBackgroundColor ?? DEFAULT_BADGE_BACKGROUND_COLOR;
   elements.badgeTextColor().value =
-    storedValues.badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
+    storedValues.badgeTextColor ?? DEFAULT_BADGE_TEXT_COLOR;
 
   const hasPermission = await browser.permissions.contains({
     permissions: ["notifications"],
   });
   const storedSetting =
-    storedValues.showNotifications || DEFAULT_SHOW_NOTIFICATIONS;
+    storedValues.showNotifications ?? DEFAULT_SHOW_NOTIFICATIONS;
   elements.showNotifications().checked = storedSetting && hasPermission;
 }
 
