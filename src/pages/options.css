@@ -12,7 +12,6 @@
 [data-theme="dark"] {
   --color-input-bg: var(--color-bg-secondary);
   --color-input-border: var(--color-border);
-  --color-primary-text: var(--color-bg);
 }
 
 /* Reset & Base Styles */
@@ -100,7 +99,7 @@ select:focus {
 }
 
 .font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
@@ -188,28 +187,13 @@ input[type="checkbox"] {
   cursor: not-allowed;
 }
 
-.btn-primary {
-  background-color: var(--color-primary);
-  color: var(--color-primary-text);
-  width: 100%;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-}
-
 .btn-outline {
   background-color: transparent;
   border-color: var(--color-border);
   color: var(--color-text);
 }
 
-.btn-outline:hover:not(:disabled) {
-  border-color: var(--color-text-secondary);
-  background-color: rgba(0, 0, 0, 0.03);
-}
-
-.btn-outline:not(.status-success):not(.status-error):hover {
+.btn-outline:hover:not(:disabled):not(.status-success):not(.status-error) {
   border-color: var(--color-text-secondary);
   background-color: rgba(0, 0, 0, 0.03);
 }
