@@ -13,7 +13,7 @@ A Manifest V3 browser extension for [Miniflux](https://miniflux.app).
 | `npm run lint` | ESLint (`@eslint/js` recommended config) with `--fix` |
 | `npm run test` | Run tests via Node native `node:test` (no external framework) |
 
-Tests use `node:test` with a minimal `expect` polyfill at `src/test/setup.js`. Test fixtures live in `src/test/fixtures/`. `setup.js` pre-defines `globalThis.browser` and `globalThis.chrome` mocks (both with `runtime.id`), so `webextension-polyfill` passes `globalThis.browser` through untouched and test files import `common.js` / `background.js` directly. Override browser APIs and `fetch` per test with node:test's `t.mock.method(obj, "name", impl)` — originals auto-restore at test end, so no manual save/restore, `t.after`, or try/finally is needed.
+Tests use `node:test` with a minimal `expect` polyfill at `src/test/setup.js` (shared by all tests via the `--import` flag in the `test` script). Test files are `*.test.js` modules living **next to the code they cover** (e.g. `src/pages/popup.test.js` tests `src/pages/popup.js`) — they are not collected in a `src/test` directory; `src/test/` only holds `setup.js` and the shared fixtures in `src/test/fixtures/`. `setup.js` pre-defines `globalThis.browser` and `globalThis.chrome` mocks (both with `runtime.id`), so `webextension-polyfill` passes `globalThis.browser` through untouched and test files import `common.js` / `background.js` directly. Override browser APIs and `fetch` per test with node:test's `t.mock.method(obj, "name", impl)` — originals auto-restore at test end, so no manual save/restore, `t.after`, or try/finally is needed.
 
 ## Build system (custom, not a framework)
 
@@ -62,9 +62,25 @@ After modifying source files, run in this order:
 3. `npm run test` — verify tests pass
 4. `npm run build` — verify build succeeds
 
+These four steps (lint, format, test, build) are **required before every `git commit`** — never commit code that has not been linted, formatted, and verified to build.
+
+## Git commits
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+type(scope): short imperative summary
+
+Optional body explaining why, not what.
+```
+
+- **Subject**: `<type>(<scope>): <summary>` in lowercase imperative form, no trailing period (e.g. `fix(options): keep fallback text when i18n messages are missing`). Common types: `feat`, `fix`, `refactor`, `chore`, `docs`.
+- **Scope**: the area touched, usually the page/module (e.g. `options`, `popup`, `background`); omit when the change is cross-cutting (e.g. `fix: merge optimistic rollbacks into the latest entries cache`).
+- **Body**: optional; separated from the subject by a blank line. Write it in English as one or more short paragraphs explaining the *reason* for the change (motivation, context, trade-offs), not a restatement of the diff. Wrap at ~72 columns.
+
 ## Other
 
 - All code comments must be written in English.
 - `assets/` is tracked with **Git LFS** (`.gitattributes`).
 - `dist/` is gitignored; always regenerate with `npm run build`.
-- No CI workflows, no pre-commit hooks, no formatter config files (prettier uses defaults).
+- No CI workflows, no pre-commit hooks, no formatter config files (prettier uses defaults). Commit message conventions are therefore enforced manually — see the [Git commits](#git-commits) section.
