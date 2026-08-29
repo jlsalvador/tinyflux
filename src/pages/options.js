@@ -13,6 +13,7 @@ import {
   DEFAULT_TOKEN,
   DEFAULT_URL,
   DEFAULT_SHOW_NOTIFICATIONS,
+  ICON_CACHE_KEY_PATTERN,
   notifyRefreshTheme,
   refreshActionBehavior,
   refreshAlarm,
@@ -267,6 +268,12 @@ async function restoreOptions() {
   const storedSetting =
     storedValues.showNotifications ?? DEFAULT_SHOW_NOTIFICATIONS;
   elements.showNotifications().checked = storedSetting && hasPermission;
+
+  // Persist the effective value so storage, checkbox, and actual behavior
+  // always agree (e.g. after the notifications permission is revoked).
+  if (storedSetting && !hasPermission) {
+    await browser.storage.local.set({ showNotifications: false });
+  }
 }
 
 // ============================================================================
@@ -359,7 +366,9 @@ async function clearIconsCache() {
   if (btn) btn.disabled = true;
 
   const data = await browser.storage.local.get(null);
-  const keysToRemove = Object.keys(data).filter((key) => /^icon\d+$/.test(key));
+  const keysToRemove = Object.keys(data).filter((key) =>
+    ICON_CACHE_KEY_PATTERN.test(key),
+  );
   await browser.storage.local.remove(keysToRemove);
 
   if (btn) {

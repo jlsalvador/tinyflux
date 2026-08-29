@@ -20,6 +20,8 @@ import DOMPurify from "dompurify";
 import {
   DEFAULT_MAX_ENTRIES,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+  ICON_CACHE_KEY_PATTERN,
+  ICON_CACHE_KEY_PREFIX,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_REFRESH_THEME,
   MESSAGE_REFRESH_VIEW_ENTRIES,
@@ -46,7 +48,6 @@ import {
 // ============================================================================
 
 const MARK_ENTRIES_AS_READ_TIMEOUT_MS = 5000;
-const ICON_CACHE_KEY_PREFIX = "icon";
 const ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ============================================================================
@@ -94,7 +95,7 @@ const pruneIconCache = async () => {
   // Resolve the icon keys first and only read their values, so the (large)
   // cached entries are never loaded just to prune a few icons.
   const allKeys = await browser.storage.local.getKeys();
-  const iconKeys = allKeys.filter((key) => /^icon\d+$/.test(key));
+  const iconKeys = allKeys.filter((key) => ICON_CACHE_KEY_PATTERN.test(key));
   const overflow = iconKeys.length - maxIcons;
   if (overflow <= 0) {
     return;
@@ -483,6 +484,11 @@ export const addDOMEntry = async (entry) => {
   if (existing) return;
 
   const entryElement = await createEntry(domId, entry);
+
+  // Re-check after the await: a concurrent refresh may have rendered the
+  // same entry while createEntry was awaiting the icon.
+  if (document.getElementById(domId)) return;
+
   const container = document.querySelector(".entries");
 
   if (container) {

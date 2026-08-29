@@ -635,6 +635,19 @@ test("addDOMEntry skips rendering when entry already exists", async (t) => {
   expect(container.querySelectorAll(".entry").length).toBe(1);
 });
 
+test("addDOMEntry renders the entry once when two refreshes overlap", async (t) => {
+  const container = setupEntriesDOM();
+  mockStorage(t);
+
+  // Both calls pass the initial existence check before either one finishes
+  // creating the entry (createEntry awaits the icon), so the element must
+  // still be rendered exactly once.
+  const entry = makeEntry();
+  await Promise.all([addDOMEntry(entry), addDOMEntry(entry)]);
+
+  expect(container.querySelectorAll(".entry").length).toBe(1);
+});
+
 test("addDOMEntry does nothing when entries container is missing", async (t) => {
   resetDOM("<!doctype html><html><head></head><body></body></html>");
   mockStorage(t);

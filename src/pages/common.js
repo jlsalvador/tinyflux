@@ -135,6 +135,13 @@ export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_MAX_ENTRIES = 100;
 // Max value accepted by the Miniflux API for the `limit` query parameter.
 export const MAX_ENTRIES_LIMIT = 500;
+// Storage key prefix for cached feed icons (see getIcon in popup.js).
+export const ICON_CACHE_KEY_PREFIX = "icon";
+// Storage keys of cached feed icons. Derived from the prefix so both stay
+// in sync if the prefix changes.
+export const ICON_CACHE_KEY_PATTERN = new RegExp(
+  `^${ICON_CACHE_KEY_PREFIX}\\d+$`,
+);
 
 /**
  * Resolve a stored max entries value to a number accepted by the Miniflux
@@ -522,10 +529,15 @@ export async function refreshEntries() {
     throw error;
   }
 
-  const { entries: cachedEntries = [] } =
-    await browser.storage.local.get("entries");
+  const cached = await browser.storage.local.get("entries");
+  const cachedEntries = cached.entries ?? [];
+  // On the very first sync there is no cache yet: the user is already
+  // looking at the freshly rendered entries, so notifying them would be
+  // noise. The `set` below creates the `entries` key, so subsequent syncs
+  // notify normally.
+  const isFirstSync = !("entries" in cached);
 
-  if (fetchedEntries.length > 0) {
+  if (fetchedEntries.length > 0 && !isFirstSync) {
     const cachedIds = new Set(cachedEntries.map((e) => e.id));
     const newArrivals = fetchedEntries.filter((e) => !cachedIds.has(e.id));
 

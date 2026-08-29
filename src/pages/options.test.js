@@ -171,11 +171,13 @@ test("restoreOptions falls back to defaults when storage is empty", async (t) =>
 });
 
 test("restoreOptions keeps notifications unchecked without permission", async (t) => {
-  mockStorage(t, { ...fullDefaults, showNotifications: true });
+  const { sets } = mockStorage(t, { ...fullDefaults, showNotifications: true });
   t.mock.method(browser.permissions, "contains", () => Promise.resolve(false));
   await loadOptionsPage();
 
   expect(document.getElementById("checkShowNotifications").checked).toBe(false);
+  // The effective value is persisted so storage and the UI stay in sync.
+  expect(sets.some((s) => s.showNotifications === false)).toBe(true);
 });
 
 // ============================================================================

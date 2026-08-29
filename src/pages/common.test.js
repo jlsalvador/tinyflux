@@ -1,4 +1,4 @@
-/* global test, expect, browser, resetDOM, document, console */
+/* global test, expect, browser, chrome, resetDOM, document, console */
 
 import {
   filterVisibleEntries,
@@ -679,6 +679,65 @@ test("refreshEntries fetches unread entries and stores them", async (t) => {
   );
   expect(sets.length).toBe(1);
   expect(sets[0].entries).toEqual(fetched);
+});
+
+test("refreshEntries only skips the notification on the first sync", async (t) => {
+  // Mutable store: the first sync must create the `entries` key so the
+  // second sync notifies normally.
+  const store = {
+    url: "https://miniflux.example.com",
+    token: "token",
+    showNotifications: true,
+  };
+  t.mock.method(browser.storage.local, "get", (keys) => {
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    const result = {};
+    for (const key of keyList) {
+      if (key in store) result[key] = store[key];
+    }
+    return Promise.resolve(result);
+  });
+  t.mock.method(browser.storage.local, "set", (items) => {
+    Object.assign(store, items);
+    return Promise.resolve();
+  });
+  let fetchCount = 0;
+  t.mock.method(globalThis, "fetch", () => {
+    fetchCount += 1;
+    return Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          entries: [
+            {
+              id: fetchCount,
+              title: `Entry ${fetchCount}`,
+              feed: {
+                title: "Feed",
+                hide_globally: false,
+                category: { hide_globally: false },
+              },
+            },
+          ],
+        }),
+    });
+  });
+  const created = [];
+  t.mock.method(chrome.notifications, "create", (id, options) => {
+    created.push({ id, options });
+    return Promise.resolve("notification-id");
+  });
+  t.mock.method(browser.permissions, "contains", () => Promise.resolve(true));
+  t.mock.method(console, "log", () => {});
+
+  // First sync: there is no cached `entries` key yet, so no notification.
+  await refreshEntries();
+  expect(created.length).toBe(0);
+
+  // Second sync: the new arrival is a new id compared to the cache written
+  // by the first sync, so it must be notified.
+  await refreshEntries();
+  expect(created.length).toBe(1);
 });
 
 test("refreshEntries uses the stored max entries limit", async (t) => {
