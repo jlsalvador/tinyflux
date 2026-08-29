@@ -30,6 +30,21 @@
     "description": "Label for the Miniflux instance input field."
   },
 
+  "pageSettingsSync": {
+    "message": "同步",
+    "description": "同步设置部分的标签。"
+  },
+
+  "pageSettingsAppearance": {
+    "message": "外观",
+    "description": "外观设置部分的标签。"
+  },
+
+  "pageSettingsStorage": {
+    "message": "存储",
+    "description": "存储维护部分的标签。"
+  },
+
   "pageSettingsMinifluxInstanceUrlHelp": {
     "message": "您的 Miniflux 实例地址，例如：https://reader.miniflux.app/",
     "description": "Help text for the Miniflux instance URL input field."

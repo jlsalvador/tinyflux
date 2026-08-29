@@ -97,6 +97,10 @@
               Test Connection
             </button>
           </div>
+        </section>
+
+        <section class="settings-card">
+          <h2 data-localize="__MSG_pageSettingsSync__">Sync</h2>
 
           <div class="input-group">
             <label
@@ -140,6 +144,59 @@
               Maximum number of unread entries fetched from Miniflux. Values
               above 100 may exhaust the browser's extension storage.
             </p>
+          </div>
+        </section>
+
+        <section class="settings-card">
+          <h2 data-localize="__MSG_pageSettingsAppearance__">Appearance</h2>
+
+          <div class="input-group">
+            <label
+              data-localize="__MSG_pageSettingsBrowserBehaviorTheme__"
+              for="selectTheme"
+            >
+              Select theme
+            </label>
+            <div class="select-wrapper">
+              <select id="selectTheme" aria-describedby="selectThemeHelp">
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorThemeLight__"
+                  value="light"
+                >
+                  Light theme
+                </option>
+                <option
+                  data-localize="__MSG_pageSettingsBrowserBehaviorThemeDark__"
+                  value="dark"
+                >
+                  Dark theme
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="color-settings-row">
+            <div class="input-group">
+              <label
+                data-localize="__MSG_pageSettingsBrowserBehaviorBadgeBackgroundColor__"
+                for="inputBadgeBackgroundColor"
+                >Badge background</label
+              >
+              <div class="color-picker-wrapper">
+                <input id="inputBadgeBackgroundColor" type="color" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label
+                data-localize="__MSG_pageSettingsBrowserBehaviorBadgeTextColor__"
+                for="inputBadgeTextColor"
+                >Badge text</label
+              >
+              <div class="color-picker-wrapper">
+                <input id="inputBadgeTextColor" type="color" />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -189,31 +246,6 @@
             </p>
           </div>
 
-          <div class="input-group">
-            <label
-              data-localize="__MSG_pageSettingsBrowserBehaviorTheme__"
-              for="selectTheme"
-            >
-              Select theme
-            </label>
-            <div class="select-wrapper">
-              <select id="selectTheme" aria-describedby="selectThemeHelp">
-                <option
-                  data-localize="__MSG_pageSettingsBrowserBehaviorThemeLight__"
-                  value="light"
-                >
-                  Light theme
-                </option>
-                <option
-                  data-localize="__MSG_pageSettingsBrowserBehaviorThemeDark__"
-                  value="dark"
-                >
-                  Dark theme
-                </option>
-              </select>
-            </div>
-          </div>
-
           <div class="input-group checkbox-row">
             <input
               id="checkShowNotifications"
@@ -253,42 +285,23 @@
               </label>
             </div>
           </div>
-
-          <div class="color-settings-row">
-            <div class="input-group">
-              <label
-                data-localize="__MSG_pageSettingsBrowserBehaviorBadgeBackgroundColor__"
-                for="inputBadgeBackgroundColor"
-                >Badge background</label
-              >
-              <div class="color-picker-wrapper">
-                <input id="inputBadgeBackgroundColor" type="color" />
-              </div>
-            </div>
-
-            <div class="input-group">
-              <label
-                data-localize="__MSG_pageSettingsBrowserBehaviorBadgeTextColor__"
-                for="inputBadgeTextColor"
-                >Badge text</label
-              >
-              <div class="color-picker-wrapper">
-                <input id="inputBadgeTextColor" type="color" />
-              </div>
-            </div>
-          </div>
         </section>
 
-        <div class="action-bar">
-          <button
-            data-localize="__MSG_pageSettingsMinifluxInstanceClearFaviconsCache__"
-            type="button"
-            id="btnCleanIconsCache"
-            class="btn btn-ghost"
-          >
-            Clear FavIcons Cache
-          </button>
-        </div>
+        <section class="settings-card">
+          <h2 data-localize="__MSG_pageSettingsStorage__">Storage</h2>
+
+          <div class="input-group">
+            <button
+              data-localize="__MSG_pageSettingsMinifluxInstanceClearFaviconsCache__"
+              type="button"
+              id="btnCleanIconsCache"
+              aria-live="polite"
+              class="btn btn-outline"
+            >
+              Clear FavIcons Cache
+            </button>
+          </div>
+        </section>
       </form>
     </main>
 

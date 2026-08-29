@@ -30,6 +30,21 @@
     "description": "Etiqueta para el campo de entrada de la instancia de Miniflux."
   },
 
+  "pageSettingsSync": {
+    "message": "Sincronización",
+    "description": "Etiqueta para la sección de ajustes de sincronización."
+  },
+
+  "pageSettingsAppearance": {
+    "message": "Apariencia",
+    "description": "Etiqueta para la sección de ajustes de apariencia."
+  },
+
+  "pageSettingsStorage": {
+    "message": "Almacenamiento",
+    "description": "Etiqueta para la sección de mantenimiento del almacenamiento."
+  },
+
   "pageSettingsMinifluxInstanceUrlHelp": {
     "message": "Dirección a su instancia de Miniflux, ej: https://reader.miniflux.app/",
     "description": "Ayuda para el campo de entrada de la URL de la instancia de Miniflux."

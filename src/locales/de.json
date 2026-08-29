@@ -30,6 +30,21 @@
     "description": "Label for the Miniflux instance input field."
   },
 
+  "pageSettingsSync": {
+    "message": "Synchronisation",
+    "description": "Label für den Synchronisations-Bereich."
+  },
+
+  "pageSettingsAppearance": {
+    "message": "Erscheinungsbild",
+    "description": "Label für den Aussehensbereich der Einstellungen."
+  },
+
+  "pageSettingsStorage": {
+    "message": "Speicher",
+    "description": "Label für den Bereich Speicherwartung."
+  },
+
   "pageSettingsMinifluxInstanceUrlHelp": {
     "message": "Die Adresse Ihrer Miniflux-Instanz, z. B. https://reader.miniflux.app/",
     "description": "Help text for the Miniflux instance URL input field."
