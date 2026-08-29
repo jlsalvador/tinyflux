@@ -297,6 +297,32 @@ test("autosave refetches entries with the new limit when maxEntries changes", as
   );
 });
 
+test("autosave stores null for an emptied numeric input", async (t) => {
+  const clock = fakeClock(t);
+  const { sets } = mockStorage(t, { ...fullDefaults });
+  const alarms = [];
+  t.mock.method(browser.alarms, "create", (name, info) => {
+    alarms.push([name, info]);
+    return Promise.resolve();
+  });
+  await loadOptionsPage();
+
+  const periodInput = document.getElementById("inputMinifluxPeriodInMinutes");
+  periodInput.value = "";
+  periodInput.dispatchEvent(new window.Event("input"));
+
+  clock.tick(500);
+  await flushMicrotasks();
+
+  // The empty field is stored as null (not NaN) so the value round-trips
+  // through storage and invalid-value resolvers fall back to their defaults.
+  expect(sets.length).toBe(1);
+  expect(sets[0].periodInMinutes).toBe(null);
+  // The (invalid) stored value falls back to the default refresh period.
+  expect(alarms.length).toBe(1);
+  expect(alarms[0][1].periodInMinutes).toBe(DEFAULT_PERIOD_REFRESH);
+});
+
 test("autosave updates badge colors when only badge colors change", async (t) => {
   const clock = fakeClock(t);
   const { sets } = mockStorage(t, { ...fullDefaults });

@@ -78,6 +78,16 @@ async function getStoredValues() {
 }
 
 /**
+ * Read a numeric form field, mapping an empty/invalid value to `null` so it
+ * can be stored safely (downstream resolvers fall back to their defaults)
+ * and does not trigger spurious "changed" comparisons (`NaN !== NaN`).
+ * @param {HTMLInputElement} input
+ * @returns {number|null}
+ */
+const readNumberOrNull = (input) =>
+  Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : null;
+
+/**
  * Read current values from form fields.
  * @returns {object}
  */
@@ -85,8 +95,8 @@ function readFormValues() {
   return {
     url: elements.url().value,
     token: elements.token().value,
-    periodInMinutes: elements.periodInMinutes().valueAsNumber,
-    maxEntries: elements.maxEntries().valueAsNumber,
+    periodInMinutes: readNumberOrNull(elements.periodInMinutes()),
+    maxEntries: readNumberOrNull(elements.maxEntries()),
     extensionClickBehavior: elements.extensionClickBehavior().value,
     markEntryAsReadWhenOpenedAsTab:
       elements.markEntryAsReadWhenOpenedAsTab().checked,
