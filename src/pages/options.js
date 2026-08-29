@@ -295,6 +295,12 @@ async function clearIconsCache() {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Prevent implicit form submission (e.g. pressing Enter in a text field),
+  // which would reload the page and discard unsaved edits.
+  document
+    .querySelector("form")
+    ?.addEventListener("submit", (event) => event.preventDefault());
+
   await Promise.all([refreshTheme(), restoreOptions()]);
   updateTestButtonState();
 
