@@ -399,6 +399,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     debouncedSave();
   });
 
+  // Toggle token visibility
+  const btnToggleToken = document.getElementById("btnToggleToken");
+  btnToggleToken?.addEventListener("click", () => {
+    const tokenInput = elements.token();
+    const isHidden = tokenInput.type === "password";
+    tokenInput.type = isHidden ? "text" : "password";
+    btnToggleToken.innerText = i18n(
+      isHidden ? "pageSettingsHideToken" : "pageSettingsShowToken",
+      isHidden ? "Hide" : "Show",
+    );
+  });
+
   // Action buttons
   document
     .getElementById("btnTest")

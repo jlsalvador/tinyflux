@@ -30,6 +30,16 @@
     "description": "Estado que se muestra cuando los ajustes se han guardado."
   },
 
+  "pageSettingsShowToken": {
+    "message": "Mostrar",
+    "description": "Botón para revelar el valor del token."
+  },
+
+  "pageSettingsHideToken": {
+    "message": "Ocultar",
+    "description": "Botón para ocultar el valor del token."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Instancia de Miniflux",
     "description": "Etiqueta para el campo de entrada de la instancia de Miniflux."

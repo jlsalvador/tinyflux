@@ -30,6 +30,16 @@
     "description": "Status, der angezeigt wird, wenn Einstellungen gespeichert wurden."
   },
 
+  "pageSettingsShowToken": {
+    "message": "Zeigen",
+    "description": "Button, um den Token-Wert anzuzeigen."
+  },
+
+  "pageSettingsHideToken": {
+    "message": "Ausblenden",
+    "description": "Button, um den Token-Wert zu verbergen."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Miniflux-Instanz",
     "description": "Label for the Miniflux instance input field."

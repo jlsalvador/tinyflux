@@ -30,6 +30,16 @@
     "description": "Statut affiché lorsque les réglages ont été enregistrés."
   },
 
+  "pageSettingsShowToken": {
+    "message": "Afficher",
+    "description": "Bouton pour révéler la valeur du jeton."
+  },
+
+  "pageSettingsHideToken": {
+    "message": "Masquer",
+    "description": "Bouton pour masquer la valeur du jeton."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Instance Miniflux",
     "description": "Label for the Miniflux instance input field."

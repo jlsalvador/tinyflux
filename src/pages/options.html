@@ -70,15 +70,25 @@
             <label data-localize="__MSG_msgToken__" for="inputMinifluxToken"
               >Token</label
             >
-            <input
-              type="text"
-              id="inputMinifluxToken"
-              class="font-mono"
-              aria-describedby="inputMinifluxTokenHelp"
-              autocorrect="off"
-              spellcheck="false"
-              autocomplete="off"
-            />
+            <div class="token-row">
+              <input
+                type="password"
+                id="inputMinifluxToken"
+                class="font-mono"
+                aria-describedby="inputMinifluxTokenHelp"
+                autocorrect="off"
+                spellcheck="false"
+                autocomplete="off"
+              />
+              <button
+                data-localize="__MSG_pageSettingsShowToken__"
+                type="button"
+                id="btnToggleToken"
+                class="btn btn-ghost btn-token-toggle"
+              >
+                Show
+              </button>
+            </div>
             <p
               class="help-text"
               data-localize="__MSG_pageSettingsMinifluxInstanceTokenHelp__"

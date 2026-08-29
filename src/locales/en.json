@@ -30,6 +30,16 @@
     "description": "Status shown when settings have been saved."
   },
 
+  "pageSettingsShowToken": {
+    "message": "Show",
+    "description": "Button to reveal the token value."
+  },
+
+  "pageSettingsHideToken": {
+    "message": "Hide",
+    "description": "Button to hide the token value."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Miniflux Instance",
     "description": "Label for the Miniflux instance input field."

@@ -121,6 +121,22 @@ select:focus {
   font-size: 0.9em;
 }
 
+.token-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.token-row input {
+  flex: 1;
+}
+
+.btn-token-toggle {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 .help-text {
   margin-top: 0.4rem;
   font-size: 0.85rem;

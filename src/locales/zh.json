@@ -30,6 +30,16 @@
     "description": "设置已保存时显示的状态。"
   },
 
+  "pageSettingsShowToken": {
+    "message": "显示",
+    "description": "显示 token 值的按钮。"
+  },
+
+  "pageSettingsHideToken": {
+    "message": "隐藏",
+    "description": "隐藏 token 值的按钮。"
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Miniflux 实例",
     "description": "Label for the Miniflux instance input field."
