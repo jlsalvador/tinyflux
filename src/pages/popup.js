@@ -18,6 +18,7 @@ import browser from "webextension-polyfill";
 import { TimeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
 import {
+  DEFAULT_MAX_ENTRIES,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_REFRESH_THEME,
@@ -86,19 +87,27 @@ const openLink = async (url) => {
  * @returns {Promise<void>}
  */
 const pruneIconCache = async () => {
-  const data = await browser.storage.local.get(null);
-  const maxIcons = resolveMaxEntries(data.maxEntries);
-  const iconEntries = Object.entries(data)
-    .filter(([key]) => /^icon\d+$/.test(key))
-    .map(([key, value]) => ({ key, fetchedAt: value?.fetchedAt ?? 0 }))
+  const { maxEntries = DEFAULT_MAX_ENTRIES } =
+    await browser.storage.local.get("maxEntries");
+  const maxIcons = resolveMaxEntries(maxEntries);
+
+  // Resolve the icon keys first and only read their values, so the (large)
+  // cached entries are never loaded just to prune a few icons.
+  const allKeys = await browser.storage.local.getKeys();
+  const iconKeys = allKeys.filter((key) => /^icon\d+$/.test(key));
+  const overflow = iconKeys.length - maxIcons;
+  if (overflow <= 0) {
+    return;
+  }
+
+  const data = await browser.storage.local.get(iconKeys);
+  const iconEntries = iconKeys
+    .map((key) => ({ key, fetchedAt: data[key]?.fetchedAt ?? 0 }))
     .sort((a, b) => a.fetchedAt - b.fetchedAt);
 
-  const overflow = iconEntries.length - maxIcons;
-  if (overflow > 0) {
-    await browser.storage.local.remove(
-      iconEntries.slice(0, overflow).map((entry) => entry.key),
-    );
-  }
+  await browser.storage.local.remove(
+    iconEntries.slice(0, overflow).map((entry) => entry.key),
+  );
 };
 
 /**

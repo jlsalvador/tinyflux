@@ -1,4 +1,4 @@
-/* global test, expect, browser, fakeClock, resetDOM, document, window */
+/* global test, expect, browser, fakeClock, resetDOM, document, window, console */
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -321,6 +321,61 @@ test("autosave stores null for an emptied numeric input", async (t) => {
   // The (invalid) stored value falls back to the default refresh period.
   expect(alarms.length).toBe(1);
   expect(alarms[0][1].periodInMinutes).toBe(DEFAULT_PERIOD_REFRESH);
+});
+
+test("autosave clamps the refresh period to the alarm minimum", async (t) => {
+  const clock = fakeClock(t);
+  const { sets } = mockStorage(t, { ...fullDefaults });
+  const alarms = [];
+  t.mock.method(browser.alarms, "create", (name, info) => {
+    alarms.push([name, info]);
+    return Promise.resolve();
+  });
+  await loadOptionsPage();
+
+  const periodInput = document.getElementById("inputMinifluxPeriodInMinutes");
+  periodInput.valueAsNumber = 0;
+  periodInput.dispatchEvent(new window.Event("input"));
+
+  clock.tick(500);
+  await flushMicrotasks();
+
+  // The sub-minute value is clamped to 1 so the stored setting and the
+  // alarm period always agree.
+  expect(sets.length).toBe(1);
+  expect(sets[0].periodInMinutes).toBe(1);
+  expect(alarms.length).toBe(1);
+  expect(alarms[0][1].periodInMinutes).toBe(1);
+});
+
+test("autosave shows the saved toast even when the refresh fails", async (t) => {
+  const clock = fakeClock(t);
+  const { sets } = mockStorage(t, { ...fullDefaults });
+  t.mock.method(globalThis, "fetch", () =>
+    Promise.reject(new Error("network down")),
+  );
+  const warnings = [];
+  t.mock.method(console, "warn", (...args) => warnings.push(args));
+  const errors = [];
+  t.mock.method(console, "error", (...args) => errors.push(args));
+  await loadOptionsPage();
+
+  const urlInput = document.getElementById("inputMinifluxUrl");
+  urlInput.value = "https://new.example.com";
+  urlInput.dispatchEvent(new window.Event("input"));
+
+  clock.tick(500);
+  await flushMicrotasks();
+
+  // The values were persisted and the toast shown even though the
+  // post-save refresh side effect failed.
+  expect(sets.length).toBe(1);
+  expect(sets[0].url).toBe("https://new.example.com");
+  expect(
+    document.getElementById("saveToast").classList.contains("is-visible"),
+  ).toBe(true);
+  expect(warnings.length > 0).toBe(true);
+  expect(errors.length > 0).toBe(true);
 });
 
 test("autosave updates badge colors when only badge colors change", async (t) => {

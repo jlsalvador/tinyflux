@@ -465,6 +465,19 @@ test("refreshAlarm falls back to default for invalid period", async (t) => {
   expect(created[0].periodInMinutes).toBe(15);
 });
 
+test("refreshAlarm falls back to default for sub-minute period", async (t) => {
+  mockStorage(t, { periodInMinutes: 0 });
+  const created = [];
+  t.mock.method(browser.alarms, "create", (name, options) => {
+    created.push({ name, ...options });
+    return Promise.resolve();
+  });
+
+  await refreshAlarm();
+
+  expect(created[0].periodInMinutes).toBe(15);
+});
+
 // --- updateBadge tests ---
 
 test("updateBadge sets empty badge text when no entries", async (t) => {

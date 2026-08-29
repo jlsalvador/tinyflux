@@ -88,6 +88,18 @@ const readNumberOrNull = (input) =>
   Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : null;
 
 /**
+ * Read the refresh period, clamping to the alarm minimum (1 minute): the
+ * browser alarms API rejects periods below 1, so a 0/negative value would
+ * silently fall back to the default while the field keeps displaying 0.
+ * @param {HTMLInputElement} input
+ * @returns {number|null}
+ */
+const readPeriodInMinutes = (input) => {
+  const value = readNumberOrNull(input);
+  return value === null ? null : Math.max(1, value);
+};
+
+/**
  * Read current values from form fields.
  * @returns {object}
  */
@@ -95,7 +107,7 @@ function readFormValues() {
   return {
     url: elements.url().value,
     token: elements.token().value,
-    periodInMinutes: readNumberOrNull(elements.periodInMinutes()),
+    periodInMinutes: readPeriodInMinutes(elements.periodInMinutes()),
     maxEntries: readNumberOrNull(elements.maxEntries()),
     extensionClickBehavior: elements.extensionClickBehavior().value,
     markEntryAsReadWhenOpenedAsTab:
@@ -112,20 +124,27 @@ function readFormValues() {
 // ============================================================================
 
 /**
- * Save changed settings and trigger side effects (refresh, badge update, etc.).
+ * Compute which settings actually changed.
  * @param {object} currentValues
  * @param {object} storedValues
+ * @returns {object} Map of changed setting keys to `true`.
  */
-async function applyChanges(currentValues, storedValues) {
+function computeChanges(currentValues, storedValues) {
   const changes = {};
   for (const key of Object.keys(currentValues)) {
     if (currentValues[key] !== storedValues[key]) {
       changes[key] = true;
     }
   }
+  return changes;
+}
 
-  await browser.storage.local.set(currentValues);
-
+/**
+ * Trigger side effects (refresh, badge update, etc.) for the changed settings.
+ * @param {object} changes
+ * @param {object} currentValues
+ */
+async function applySideEffects(changes, currentValues) {
   if (
     (changes.url || changes.token || changes.maxEntries) &&
     currentValues.url &&
@@ -185,19 +204,34 @@ async function debouncedSave() {
   saveTimeout = setTimeout(async () => {
     saveTimeout = null;
     isSaving = true;
+
+    let changes;
+    let currentValues;
     try {
-      const currentValues = readFormValues();
+      currentValues = readFormValues();
       const storedValues = await getStoredValues();
-      await applyChanges(currentValues, storedValues);
+      changes = computeChanges(currentValues, storedValues);
+      await browser.storage.local.set(currentValues);
       showSaveToast();
     } catch (error) {
       console.warn("Failed to save options:", error);
-    } finally {
-      isSaving = false;
-      if (savePending) {
-        savePending = false;
-        debouncedSave();
+    }
+
+    // Side effects run (and fail) independently of the save above: the values
+    // are already persisted and the toast already shown, so a transient
+    // refresh failure must not hide the "Saved" feedback.
+    if (changes) {
+      try {
+        await applySideEffects(changes, currentValues);
+      } catch (error) {
+        console.warn("Failed to apply option side effects:", error);
       }
+    }
+
+    isSaving = false;
+    if (savePending) {
+      savePending = false;
+      debouncedSave();
     }
   }, SAVE_DEBOUNCE_MS);
 }

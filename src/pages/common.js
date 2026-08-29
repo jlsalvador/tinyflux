@@ -623,8 +623,10 @@ export async function refreshAlarm() {
     await browser.storage.local.get("periodInMinutes");
 
   const period = Number(periodInMinutes);
+  // The alarms API rejects periods below 1 minute, so treat sub-minute
+  // values as invalid and fall back to the default.
   const safePeriod =
-    Number.isFinite(period) && period > 0 ? period : DEFAULT_PERIOD_REFRESH;
+    Number.isFinite(period) && period >= 1 ? period : DEFAULT_PERIOD_REFRESH;
 
   await browser.alarms.create(ALARM_REFRESH, {
     periodInMinutes: safePeriod,

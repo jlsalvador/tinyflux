@@ -79,6 +79,7 @@ const mockBrowser = {
   storage: {
     local: {
       get: createMockPromise({}),
+      getKeys: createMockPromise([]),
       set: createMockPromise(),
       remove: createMockPromise(),
     },

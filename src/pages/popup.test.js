@@ -138,6 +138,9 @@ const mockStorage = (t, data = {}) => {
     }
     return Promise.resolve(result);
   });
+  t.mock.method(browser.storage.local, "getKeys", () =>
+    Promise.resolve(Object.keys(store)),
+  );
   t.mock.method(browser.storage.local, "set", (items) => {
     sets.push(items);
     Object.assign(store, items);
@@ -715,7 +718,9 @@ test("icon cache is pruned down to the max entries limit", async (t) => {
     icon4: { icon: testIcon, fetchedAt: 4000 },
   };
   const removes = [];
+  const getRequests = [];
   t.mock.method(browser.storage.local, "get", (keys) => {
+    getRequests.push(keys);
     if (keys === null || keys === undefined) {
       return Promise.resolve({ ...store });
     }
@@ -726,6 +731,9 @@ test("icon cache is pruned down to the max entries limit", async (t) => {
     }
     return Promise.resolve(result);
   });
+  t.mock.method(browser.storage.local, "getKeys", () =>
+    Promise.resolve(Object.keys(store)),
+  );
   t.mock.method(browser.storage.local, "set", (items) => {
     Object.assign(store, items);
     return Promise.resolve();
@@ -746,6 +754,11 @@ test("icon cache is pruned down to the max entries limit", async (t) => {
   expect(fetched.length).toBe(1);
   expect(removes.length).toBe(1);
   expect(removes[0]).toEqual(["icon1", "icon2"]);
+  // The prune must never read the whole storage (which would load the
+  // cached entries): no get(null) call is allowed.
+  expect(getRequests.some((keys) => keys === null || keys === undefined)).toBe(
+    false,
+  );
 });
 
 test("addDOMEntry omits feed icon when API request fails", async (t) => {
