@@ -37,39 +37,58 @@ const entriesFingerprint = (entries) =>
     .sort()
     .join(",");
 
+// All cache mutations are serialized through this promise chain: concurrent
+// calls (e.g. two fast "mark as read" clicks) queue up, so the second one
+// reads the state written by the first instead of a stale base state.
+let mutationQueue = Promise.resolve();
+
 /**
  * Apply a read-modify-write to the cached entries, retrying when a
  * concurrent operation (e.g. a refresh coming from the popup) modifies the
  * cache between the read and the write. The mutator is always applied to the
  * latest cached state. A mutator returning `null` is a no-op: nothing is
  * written and `null` is returned.
+ * All mutations are serialized through the module-level promise queue so
+ * concurrent callers never read-modify-write on the same base state.
  * @param {(entries: Entry[]) => Entry[]|null} mutator
  * @param {number} [maxAttempts=3]
  * @returns {Promise<Entry[]|null>} The entries stored after the update, or
  *   `null` when the mutator was a no-op.
  * @throws {Error}
  */
-const updateCachedEntries = async (mutator, maxAttempts = 3) => {
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const { entries: previousEntries = [] } =
-      await browser.storage.local.get("entries");
-    const updatedEntries = mutator(previousEntries);
-    if (updatedEntries === null) {
-      return null;
+const updateCachedEntries = (mutator, maxAttempts = 3) => {
+  const run = async () => {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const { entries: previousEntries = [] } =
+        await browser.storage.local.get("entries");
+      const updatedEntries = mutator(previousEntries);
+      if (updatedEntries === null) {
+        return null;
+      }
+      // Re-read to detect concurrent writes between the read and the write.
+      const { entries: latestEntries = [] } =
+        await browser.storage.local.get("entries");
+      if (
+        entriesFingerprint(latestEntries) ===
+        entriesFingerprint(previousEntries)
+      ) {
+        await browser.storage.local.set({ entries: updatedEntries });
+        return updatedEntries;
+      }
     }
-    // Re-read to detect concurrent writes between the read and the write.
-    const { entries: latestEntries = [] } =
-      await browser.storage.local.get("entries");
-    if (
-      entriesFingerprint(latestEntries) === entriesFingerprint(previousEntries)
-    ) {
-      await browser.storage.local.set({ entries: updatedEntries });
-      return updatedEntries;
-    }
-  }
-  throw new Error(
-    "Failed to update cached entries after concurrent modifications",
+    throw new Error(
+      "Failed to update cached entries after concurrent modifications",
+    );
+  };
+
+  // Chain onto the previous mutation, success or failure, so a failed
+  // update never jams the queue.
+  const result = mutationQueue.then(run, run);
+  mutationQueue = result.then(
+    () => undefined,
+    () => undefined,
   );
+  return result;
 };
 
 /**

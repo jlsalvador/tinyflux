@@ -411,6 +411,38 @@ test("toggleBookmark reverts on API failure", async (t) => {
   expect(revertedEntry.starred).toBe(false);
 });
 
+test("toggleBookmark serializes concurrent mutations on the same base state", async (t) => {
+  // Mutable store: each mutation must build on the state written by the
+  // previous one, so both toggles survive (without serialization, both
+  // callers would read the same base state and the second write would drop
+  // the first mutation).
+  const store = { entries: [...testEntries] };
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: () => Promise.resolve({ ...store, ...credentials }),
+    set: (data) => {
+      if (data.entries) {
+        sets.push(data.entries);
+        store.entries = data.entries;
+      }
+      return Promise.resolve();
+    },
+    fetch: okFetch,
+  });
+
+  const [resultA, resultB] = await Promise.all([
+    toggleBookmark(1),
+    toggleBookmark(2),
+  ]);
+
+  expect(resultA.find((e) => e.id === 1).starred).toBe(true);
+  expect(resultB.find((e) => e.id === 2).starred).toBe(false);
+  expect(sets.length).toBe(2);
+  const finalState = sets[sets.length - 1];
+  expect(finalState.find((e) => e.id === 1).starred).toBe(true);
+  expect(finalState.find((e) => e.id === 2).starred).toBe(false);
+});
+
 // --- handleStartup tests ---
 
 test("handleStartup opens settings silently when credentials are missing", async (t) => {
