@@ -90,7 +90,7 @@ import browser from "webextension-polyfill";
 
 /**
  * @typedef {Object} Icon
- * @property {number} id 262
+ * @property {number} id Icon identifier.
  * @property {string} data Data URL **without** the `data:` scheme prefix,
  *   e.g. "image/png;base64,iVBORw0KGgoAAA....". Miniflux's `Icon.DataURL()`
  *   returns `"<mime_type>;base64,<payload>"`, so callers must prepend
@@ -460,7 +460,9 @@ async function sendNotification(newEntries) {
     const entry = newEntries[0];
     options.type = "basic";
     options.title = entry.feed.title || extensionName;
-    options.message = entry.title;
+    // A basic notification requires a non-empty message; fall back to the
+    // feed title (or the extension name) for entries without a title.
+    options.message = entry.title || entry.feed?.title || extensionName;
   } else {
     options.type = "list";
     options.message = chrome.i18n.getMessage(
