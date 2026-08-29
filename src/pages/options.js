@@ -221,6 +221,15 @@ async function restoreOptions() {
 // ============================================================================
 
 /**
+ * Get an i18n message, falling back to the provided text when the message is
+ * missing (consistent with localize.js, so UI labels never go blank).
+ * @param {string} key
+ * @param {string} fallback
+ * @returns {string}
+ */
+const i18n = (key, fallback) => chrome.i18n.getMessage(key) || fallback;
+
+/**
  * Enable or disable the Test Connection button based on URL and Token values.
  * A previous test result is cleared when the credentials change.
  */
@@ -237,8 +246,9 @@ function updateTestButtonState() {
     btnTest.classList.contains("status-error")
   ) {
     btnTest.classList.remove("status-success", "status-error");
-    btnTest.innerText = chrome.i18n.getMessage(
+    btnTest.innerText = i18n(
       "pageSettingsMinifluxInstanceTestConnection",
+      "Test Connection",
     );
   }
 }
@@ -256,7 +266,7 @@ async function testMinifluxApi() {
   const token = elements.token().value;
 
   const btnTest = document.getElementById("btnTest");
-  btnTest.innerText = chrome.i18n.getMessage("pageSettingsTesting");
+  btnTest.innerText = i18n("pageSettingsTesting", "Testing …");
   btnTest.disabled = true;
   btnTest.classList.remove("status-success", "status-error");
 
@@ -265,15 +275,21 @@ async function testMinifluxApi() {
 
     if (!response.ok) {
       btnTest.classList.add("status-error");
-      btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestError");
+      btnTest.innerText = i18n(
+        "pageSettingsTestError",
+        "Test failed. Try again?",
+      );
       return;
     }
 
     btnTest.classList.add("status-success");
-    btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestOK");
+    btnTest.innerText = i18n("pageSettingsTestOK", "Test OK");
   } catch (error) {
     btnTest.classList.add("status-error");
-    btnTest.innerText = chrome.i18n.getMessage("pageSettingsTestError");
+    btnTest.innerText = i18n(
+      "pageSettingsTestError",
+      "Test failed. Try again?",
+    );
     console.error("Failed to test Miniflux API:", error);
   } finally {
     btnTest.disabled = false;
