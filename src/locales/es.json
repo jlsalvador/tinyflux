@@ -140,6 +140,11 @@
     "description": "Botón para borrar la caché de favicon en la instancia de Miniflux."
   },
 
+  "pageSettingsMinifluxInstanceFaviconsCacheCleared": {
+    "message": "Caché de favicons borrada.",
+    "description": "Mensaje que se muestra tras borrar la caché de favicons."
+  },
+
   "pageSettingsTesting": {
     "message": "Probando …",
     "description": "Texto mostrado mientras se está probando la conexión de la instancia de Miniflux."

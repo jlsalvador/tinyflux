@@ -297,13 +297,28 @@ async function testMinifluxApi() {
 }
 
 /**
- * Remove all cached feed icons from local storage.
+ * Remove all cached feed icons from local storage and show transient feedback.
  * @returns {Promise<void>}
  */
 async function clearIconsCache() {
+  const btn = document.getElementById("btnCleanIconsCache");
+  const originalText = btn?.innerText || "Clear FavIcons Cache";
+  if (btn) btn.disabled = true;
+
   const data = await browser.storage.local.get(null);
   const keysToRemove = Object.keys(data).filter((key) => /^icon\d+$/.test(key));
   await browser.storage.local.remove(keysToRemove);
+
+  if (btn) {
+    btn.innerText = i18n(
+      "pageSettingsMinifluxInstanceFaviconsCacheCleared",
+      "Favicons cache cleared.",
+    );
+    setTimeout(() => {
+      btn.innerText = originalText;
+      btn.disabled = false;
+    }, 2000);
+  }
 }
 
 // ============================================================================

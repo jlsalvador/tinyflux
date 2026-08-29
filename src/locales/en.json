@@ -140,6 +140,11 @@
     "description": "Button to clear the favicon cache in Miniflux instance."
   },
 
+  "pageSettingsMinifluxInstanceFaviconsCacheCleared": {
+    "message": "Favicons cache cleared.",
+    "description": "Message displayed after clearing the favicon cache."
+  },
+
   "pageSettingsTesting": {
     "message": "Testing …",
     "description": "Text displayed while testing Miniflux instance connection."
