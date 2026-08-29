@@ -150,10 +150,17 @@ test("markEntriesAsRead removes entries from storage optimistically", async (t) 
 });
 
 test("markEntriesAsRead reverts on API failure", async (t) => {
+  const store = { entries: [...testEntries] };
   const sets = [];
   mockStorageAndFetch(t, {
-    get: storageGet(testEntries),
-    set: recordingSet(sets),
+    get: () => Promise.resolve({ ...store, ...credentials }),
+    set: (data) => {
+      if (data.entries) {
+        sets.push(data.entries);
+        store.entries = data.entries;
+      }
+      return Promise.resolve();
+    },
     fetch: failFetch,
   });
 
@@ -168,6 +175,54 @@ test("markEntriesAsRead reverts on API failure", async (t) => {
   expect(caughtError.cause.message).toBe("API error");
   expect(sets.length).toBe(2);
   expect(sets[1].length).toBe(3);
+});
+
+test("markEntriesAsRead rollback preserves a concurrent refresh", async (t) => {
+  const base = [
+    { id: 1, title: "A", starred: false },
+    { id: 2, title: "B", starred: false },
+    { id: 3, title: "C", starred: false },
+  ];
+  const refreshed = [...base, { id: 4, title: "D", starred: false }];
+  let getCall = 0;
+  const store = { entries: [...base] };
+  const sets = [];
+  mockStorageAndFetch(t, {
+    get: () => {
+      getCall += 1;
+      // Simulate a concurrent scheduled refresh landing right after the
+      // optimistic read: it re-stores the still-unread entries (entry 1
+      // comes back) plus a brand new entry (4).
+      if (getCall === 2) {
+        store.entries = [...refreshed];
+      }
+      return Promise.resolve({ ...store, ...credentials });
+    },
+    set: (data) => {
+      if (data.entries) {
+        sets.push(data.entries);
+        store.entries = data.entries;
+      }
+      return Promise.resolve();
+    },
+    fetch: failFetch,
+  });
+
+  let caughtError = null;
+  try {
+    await markEntriesAsRead([1]);
+  } catch (error) {
+    caughtError = error;
+  }
+
+  expect(caughtError).toBeTruthy();
+  expect(caughtError.message).toBe("Failed to mark entries as read, reverting");
+  // One optimistic write and one rollback merge.
+  expect(sets.length).toBe(2);
+  expect(sets[0].map((e) => e.id)).toEqual([2, 3, 4]);
+  // Entry 1 is restored and the concurrently refreshed entry 4 is kept:
+  // the rollback must merge into the latest state, not clobber it.
+  expect(sets[1].map((e) => e.id)).toEqual([2, 3, 4, 1]);
 });
 
 test("markEntriesAsRead is a no-op for empty entry IDs", async (t) => {
@@ -215,7 +270,7 @@ test("markEntriesAsRead retries when storage changes concurrently", async (t) =>
       getCall += 1;
       // Simulate a concurrent refresh that adds entry D just before the
       // write is validated, forcing a retry on the fresh state.
-      const entries = getCall >= 3 ? concurrent : base;
+      const entries = getCall >= 2 ? concurrent : base;
       return Promise.resolve({ entries: [...entries], ...credentials });
     },
     set: recordingSet(sets),
@@ -328,10 +383,17 @@ test("toggleBookmark handles missing entries in storage", async (t) => {
 });
 
 test("toggleBookmark reverts on API failure", async (t) => {
+  const store = { entries: [...testEntries] };
   const sets = [];
   mockStorageAndFetch(t, {
-    get: storageGet(testEntries),
-    set: recordingSet(sets),
+    get: () => Promise.resolve({ ...store, ...credentials }),
+    set: (data) => {
+      if (data.entries) {
+        sets.push(data.entries);
+        store.entries = data.entries;
+      }
+      return Promise.resolve();
+    },
     fetch: failFetch,
   });
 

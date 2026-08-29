@@ -84,13 +84,15 @@ export const markEntriesAsRead = async (entryIds) => {
     return;
   }
 
-  const { entries: previousEntries = [] } =
-    await browser.storage.local.get("entries");
+  // Entries removed by the optimistic update, kept so they can be restored
+  // if the API call fails.
+  let removedEntries = [];
 
   // Optimistic UI update
-  const updatedEntries = await updateCachedEntries((entries) =>
-    entries.filter((entry) => !entryIds.includes(entry.id)),
-  );
+  const updatedEntries = await updateCachedEntries((entries) => {
+    removedEntries = entries.filter((entry) => entryIds.includes(entry.id));
+    return entries.filter((entry) => !entryIds.includes(entry.id));
+  });
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
   try {
@@ -109,7 +111,24 @@ export const markEntriesAsRead = async (entryIds) => {
 
     return updatedEntries;
   } catch (error) {
-    await browser.storage.local.set({ entries: previousEntries });
+    // Roll back by re-inserting the removed entries into the *latest* cached
+    // state (via updateCachedEntries), so a concurrent refresh that landed
+    // while the API call was in flight is preserved; entries the refresh
+    // already restored are not duplicated.
+    try {
+      await updateCachedEntries((entries) => {
+        const presentIds = new Set(entries.map((entry) => entry.id));
+        const toRestore = removedEntries.filter(
+          (entry) => !presentIds.has(entry.id),
+        );
+        if (toRestore.length === 0) {
+          return null;
+        }
+        return [...entries, ...toRestore];
+      });
+    } catch (rollbackError) {
+      console.error("Failed to revert the entries cache:", rollbackError);
+    }
     await Promise.all([notifyRefreshEntries(), updateBadge()]);
     throw new Error("Failed to mark entries as read, reverting", {
       cause: error,
@@ -124,14 +143,16 @@ export const markEntriesAsRead = async (entryIds) => {
  * @returns {Promise<Entry[]|undefined>}
  */
 export const toggleBookmark = async (entryId) => {
-  const { entries: previousEntries = [] } =
-    await browser.storage.local.get("entries");
+  // Pre-toggle copy of the entry, kept so it can be restored verbatim if
+  // the API call fails.
+  let previousEntry = null;
 
   const updatedEntries = await updateCachedEntries((entries) => {
     const entryIndex = entries.findIndex((entry) => entry.id === entryId);
     if (entryIndex === -1) {
       return null;
     }
+    previousEntry = entries[entryIndex];
     const next = [...entries];
     next[entryIndex] = {
       ...next[entryIndex],
@@ -161,7 +182,22 @@ export const toggleBookmark = async (entryId) => {
 
     return updatedEntries;
   } catch (error) {
-    await browser.storage.local.set({ entries: previousEntries });
+    // Roll back by restoring the pre-toggle entry into the *latest* cached
+    // state (via updateCachedEntries), so a concurrent refresh that landed
+    // while the API call was in flight is preserved.
+    try {
+      await updateCachedEntries((entries) => {
+        const entryIndex = entries.findIndex((entry) => entry.id === entryId);
+        if (entryIndex === -1) {
+          return null;
+        }
+        const next = [...entries];
+        next[entryIndex] = previousEntry;
+        return next;
+      });
+    } catch (rollbackError) {
+      console.error("Failed to revert the bookmark cache:", rollbackError);
+    }
     await notifyRefreshEntries();
     throw new Error("Failed to toggle bookmark, reverting", { cause: error });
   }
