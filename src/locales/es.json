@@ -140,6 +140,11 @@
     "description": "Opción para marcar una entrada como leída cuando se abre en una nueva pestaña."
   },
 
+  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
+    "message": "Si está activado, abrir una entrada en una nueva pestaña también la marcará como leída en Miniflux.",
+    "description": "Texto de ayuda para la casilla de marcar entrada como leída al abrirla como pestaña."
+  },
+
   "pageSettingsBrowserBehaviorBadgeBackgroundColor": {
     "message": "Color de fondo de la insignia",
     "description": "Opción para establecer el color de fondo de la insignia de la extensión."

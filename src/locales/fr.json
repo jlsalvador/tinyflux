@@ -140,6 +140,11 @@
     "description": "Option to mark an entry as read when it is opened in a new tab."
   },
 
+  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
+    "message": "Lorsqu'il est activé, l'ouverture d'une entrée dans un nouvel onglet la marque également comme lue dans Miniflux.",
+    "description": "Texte d'aide pour la case de marquage comme lu lors de l'ouverture dans un onglet."
+  },
+
   "pageSettingsBrowserBehaviorBadgeBackgroundColor": {
     "message": "Couleur de fond du badge",
     "description": "Option to set the badge background color in the extension."

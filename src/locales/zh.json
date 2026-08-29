@@ -140,6 +140,11 @@
     "description": "Option to mark an entry as read when it is opened in a new tab."
   },
 
+  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
+    "message": "启用后，在新标签页中打开条目时，也会将其在 Miniflux 中标记为已读。",
+    "description": "“打开为标签页时标记为已读”复选框的帮助文本。"
+  },
+
   "pageSettingsBrowserBehaviorBadgeBackgroundColor": {
     "message": "徽章背景颜色",
     "description": "Option to set the badge background color in the extension."
