@@ -25,6 +25,11 @@
     "description": "Page title for the settings page."
   },
 
+  "pageSettingsSaved": {
+    "message": "Saved",
+    "description": "Status shown when settings have been saved."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Miniflux Instance",
     "description": "Label for the Miniflux instance input field."

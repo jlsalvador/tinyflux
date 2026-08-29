@@ -25,6 +25,11 @@
     "description": "Page title for the settings page."
   },
 
+  "pageSettingsSaved": {
+    "message": "已保存",
+    "description": "设置已保存时显示的状态。"
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Miniflux 实例",
     "description": "Label for the Miniflux instance input field."

@@ -25,6 +25,11 @@
     "description": "Page title for the settings page."
   },
 
+  "pageSettingsSaved": {
+    "message": "Enregistré",
+    "description": "Statut affiché lorsque les réglages ont été enregistrés."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Instance Miniflux",
     "description": "Label for the Miniflux instance input field."

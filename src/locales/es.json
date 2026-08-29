@@ -25,6 +25,11 @@
     "description": "Título de la página para la página de configuración."
   },
 
+  "pageSettingsSaved": {
+    "message": "Guardado",
+    "description": "Estado que se muestra cuando los ajustes se han guardado."
+  },
+
   "pageSettingsMinifluxInstance": {
     "message": "Instancia de Miniflux",
     "description": "Etiqueta para el campo de entrada de la instancia de Miniflux."

@@ -37,11 +37,29 @@ body {
   padding-bottom: 40px;
 }
 
-header h1 {
+.settings-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.settings-header h1 {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: var(--spacing-lg);
+  margin: 0;
   color: var(--color-text);
+}
+
+.save-indicator {
+  font-size: 0.85rem;
+  color: var(--color-success);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.save-indicator.is-visible {
+  opacity: 1;
 }
 
 /* Card Component */

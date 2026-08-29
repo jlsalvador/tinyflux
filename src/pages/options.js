@@ -152,6 +152,22 @@ async function applyChanges(currentValues, storedValues) {
   }
 }
 
+/** Hide the "Saved" indicator after a short delay. */
+let saveIndicatorTimeout = null;
+
+function showSaveIndicator() {
+  const indicator = document.getElementById("saveIndicator");
+  if (!indicator) return;
+
+  indicator.classList.add("is-visible");
+  if (saveIndicatorTimeout) {
+    clearTimeout(saveIndicatorTimeout);
+  }
+  saveIndicatorTimeout = setTimeout(() => {
+    indicator.classList.remove("is-visible");
+  }, 2000);
+}
+
 /**
  * Debounced auto-save: saves form values after a short delay.
  * Edits made while a save is in progress are queued and saved once it finishes.
@@ -173,6 +189,7 @@ async function debouncedSave() {
       const currentValues = readFormValues();
       const storedValues = await getStoredValues();
       await applyChanges(currentValues, storedValues);
+      showSaveIndicator();
     } catch (error) {
       console.warn("Failed to save options:", error);
     } finally {
