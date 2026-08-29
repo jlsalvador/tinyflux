@@ -47,9 +47,9 @@ header h1 {
 /* Floating save toast */
 .save-toast {
   position: fixed;
-  bottom: 1.5rem;
+  top: 1.5rem;
   left: 50%;
-  transform: translateX(-50%) translateY(0.5rem);
+  transform: translateX(-50%) translateY(-0.5rem);
   padding: 0.5rem 1rem;
   background-color: var(--color-text);
   color: var(--color-bg);
