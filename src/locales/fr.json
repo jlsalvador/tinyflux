@@ -5,7 +5,7 @@
   },
 
   "extensionDescription": {
-    "message": "Tinyflux est un lecteur Miniflux rapide et minimaliste. Lisez et restez concentré, sans quitter votre onglet. Nécessite une instance Miniflux.",
+    "message": "Tinyflux est un lecteur Miniflux rapide et minimaliste. Lisez et concentrez-vous, sans quitter votre onglet. Nécessite une instance Miniflux.",
     "description": "Description of the extension."
   },
 
@@ -76,7 +76,7 @@
   },
 
   "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux actualisera tous les articles à cet intervalle, par ex. 15",
+    "message": "Tinyflux synchronisera vos articles à cet intervalle, par ex. 15",
     "description": "Help text for the refresh interval input field."
   },
 
@@ -91,12 +91,12 @@
   },
 
   "pageSettingsSyncFullSyncInterval": {
-    "message": "Intervalle de synchro complète (heures)",
+    "message": "Intervalle de synchronisation complète (heures)",
     "description": "Label for the full sync interval input field."
   },
 
   "pageSettingsSyncFullSyncIntervalHelp": {
-    "message": "Fréquence à laquelle Tinyflux télécharge à nouveau la liste complète des articles. Entre deux synchros complètes, seules les modifications sont récupérées. 0 désactive les synchros complètes périodiques.",
+    "message": "Fréquence à laquelle Tinyflux télécharge à nouveau la liste complète des articles. Entre deux synchronisations complètes, seuls les changements sont récupérés. 0 désactive les synchronisations complètes périodiques.",
     "description": "Help text for the full sync interval input field."
   },
 
@@ -151,7 +151,7 @@
   },
 
   "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
-    "message": "Lorsqu'il est activé, l'ouverture d'une entrée dans un nouvel onglet la marque également comme lue dans Miniflux.",
+    "message": "Lorsqu'il est activé, l'ouverture d'un article dans un nouvel onglet le marque également comme lu dans Miniflux.",
     "description": "Texte d'aide pour la case de marquage comme lu lors de l'ouverture dans un onglet."
   },
 
@@ -261,7 +261,7 @@
   },
 
   "pagePopupHideContent": {
-    "message": "Masquer le contenu",
+    "message": "Replier le contenu",
     "description": "Tooltip for collapsing an entry's content in Tinyflux."
   },
 

@@ -76,17 +76,17 @@
   },
 
   "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux 将按照此间隔刷新所有用户文章，例如：15",
+    "message": "Tinyflux 将按照此间隔同步您的文章，例如：15",
     "description": "Help text for the refresh interval input field."
   },
 
   "pageSettingsMinifluxInstanceMaxEntries": {
-    "message": "最大条目数",
+    "message": "最大文章数",
     "description": "Label for the max entries input field."
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "要保留和显示的最大未读条目数。",
+    "message": "要保留和显示的最大未读文章数。",
     "description": "Help text for the max entries input field."
   },
 
@@ -96,7 +96,7 @@
   },
 
   "pageSettingsSyncFullSyncIntervalHelp": {
-    "message": "Tinyflux 重新下载完整条目列表的频率。两次完整同步之间仅获取更改。0 表示禁用定期完整同步。",
+    "message": "Tinyflux 重新下载完整文章列表的频率。两次完整同步之间仅获取更改。0 表示禁用定期完整同步。",
     "description": "Help text for the full sync interval input field."
   },
 
@@ -171,7 +171,7 @@
   },
 
   "pageSettingsBrowserBehaviorShowNotificationsHelp": {
-    "message": "需要浏览器权限。如果同时到达多篇文章，通知将被汇总。",
+    "message": "需要浏览器权限。如果一次收到多篇文章，通知将被汇总。",
     "description": "Help text for the Show Notifications checkbox."
   },
 
@@ -181,12 +181,12 @@
   },
 
   "pageSettingsMinifluxInstanceClearFaviconsCache": {
-    "message": "清除图标缓存",
+    "message": "清除 favicon 缓存",
     "description": "Button to clear the favicon cache in Miniflux instance."
   },
 
   "pageSettingsMinifluxInstanceFaviconsCacheCleared": {
-    "message": "已清除图标缓存。",
+    "message": "已清除 favicon 缓存。",
     "description": "清除图标缓存后显示的消息。"
   },
 

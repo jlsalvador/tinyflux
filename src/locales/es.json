@@ -5,7 +5,7 @@
   },
 
   "extensionDescription": {
-    "message": "Tinyflux es un lector de Miniflux minimalista y rápido. Lee artículos sin salir de tu pestaña. Requiere una instancia de Miniflux.",
+    "message": "Tinyflux es un lector de Miniflux rápido y minimalista. Lee y concéntrate, todo sin salir de tu pestaña. Requiere una instancia de Miniflux.",
     "description": "Descripción de la extensión."
   },
 
@@ -61,22 +61,22 @@
   },
 
   "pageSettingsMinifluxInstanceUrlHelp": {
-    "message": "Dirección a su instancia de Miniflux, ej: https://reader.miniflux.app/",
+    "message": "La dirección de tu instancia de Miniflux, p. ej.: https://reader.miniflux.app/",
     "description": "Ayuda para el campo de entrada de la URL de la instancia de Miniflux."
   },
 
   "pageSettingsMinifluxInstanceTokenHelp": {
-    "message": "Token para acceder a su Miniflux, ej: CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">Documentación</a>.",
+    "message": "Token para acceder a tu instancia de Miniflux, p. ej.: CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">Documentación</a>.",
     "description": "Ayuda para el campo de entrada del token de la instancia de Miniflux."
   },
 
   "pageSettingsMinifluxInstancePeriodToRefresh": {
-    "message": "Periodo de refresco (en minutos)",
+    "message": "Intervalo de actualización (en minutos)",
     "description": "Etiqueta para el campo de entrada del periodo para refrescar."
   },
 
   "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux refrescará todas las entradas del usuario en este período de tiempo, ej: 15",
+    "message": "Tinyflux sincroniza tus entradas a este intervalo, p. ej.: 15",
     "description": "Ayuda para el campo de entrada del periodo para refrescar."
   },
 
@@ -97,7 +97,7 @@
 
   "pageSettingsSyncFullSyncIntervalHelp": {
     "message": "Cada cuánto Tinyflux vuelve a descargar la lista completa de entradas. Entre sincronizaciones completas solo se descargan los cambios. 0 desactiva las sincronizaciones completas periódicas.",
-    "description": "Help text for the full sync interval input field."
+    "description": "Ayuda para el campo de entrada del intervalo de sincronización completa."
   },
 
   "pageSettingsBrowserBehavior": {
@@ -166,22 +166,22 @@
   },
 
   "pageSettingsBrowserBehaviorShowNotifications": {
-    "message": "Mostrar notificaciones al actualizar entradas",
+    "message": "Mostrar notificaciones de nuevas entradas",
     "description": "Opción para mostrar notificaciones cuando se actualicen las entradas."
   },
 
   "pageSettingsBrowserBehaviorShowNotificationsHelp": {
-    "message": "Requiere el permiso del navegador. Resumiremos si llegan al mismo tiempo muchas entradas.",
+    "message": "Requiere permiso del navegador. Las notificaciones se resumirán si llegan muchas entradas a la vez.",
     "description": "Ayuda para el campo de entrada de Mostrar notificaciones."
   },
 
   "pageSettingsMinifluxInstanceTestConnection": {
-    "message": "Probar Conexión",
+    "message": "Probar conexión",
     "description": "Botón para probar la conexión con la instancia de Miniflux."
   },
 
   "pageSettingsMinifluxInstanceClearFaviconsCache": {
-    "message": "Borrar Caché de FavIcons",
+    "message": "Borrar caché de favicons",
     "description": "Botón para borrar la caché de favicon en la instancia de Miniflux."
   },
 
@@ -196,12 +196,12 @@
   },
 
   "pageSettingsTestError": {
-    "message": "Prueba errónea, ¿intentar de nuevo?",
+    "message": "La prueba ha fallado. ¿Reintentar?",
     "description": "Mensaje de error mostrado cuando falla la prueba de la conexión de la instancia de Miniflux."
   },
 
   "pageSettingsTestOK": {
-    "message": "Prueba CORRECTA",
+    "message": "Prueba OK",
     "description": "Texto mostrado cuando se prueba con éxito la conexión a la instancia de Miniflux."
   },
 
@@ -231,7 +231,7 @@
   },
 
   "pagePopupOpenSettings": {
-    "message": "Abrir Configuración",
+    "message": "Abrir configuración",
     "description": "Botón para abrir la configuración de Tinyflux en una nueva pestaña."
   },
 
@@ -266,7 +266,7 @@
   },
 
   "pagePopupAreYouSureToMarkAllEntriesAsRead": {
-    "message": "¿Estás seguro de marcar todas las entradas como leídas?",
+    "message": "¿Seguro que quieres marcar todas las entradas como leídas?",
     "description": "Tooltip para confirmar la acción de marcar todas las entradas como leídas en Tinyflux."
   },
 

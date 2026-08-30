@@ -76,7 +76,7 @@
   },
 
   "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux will refresh all the user's entries at this interval, e.g. 15",
+    "message": "Tinyflux syncs your entries at this interval, e.g. 15",
     "description": "Help text for the refresh interval input field."
   },
 
