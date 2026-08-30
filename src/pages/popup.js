@@ -530,7 +530,7 @@ const handleRefreshViewEntries = async () => {
     const entries = await getEntries();
 
     // Filter out hidden feeds/categories so entries that became hidden are
-    // removed from the DOM as well (they stay in storage, so they are not
+    // removed from the DOM as well (they stay cached, so they are not
     // re-notified as new and reappear if the filter is reverted in Miniflux).
     const visibleEntries = filterVisibleEntries(entries);
     cleanupOldDOMEntries(visibleEntries);

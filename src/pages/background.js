@@ -5,7 +5,6 @@
 import browser from "webextension-polyfill";
 import {
   ALARM_REFRESH,
-  ICON_CACHE_KEY_PATTERN,
   InvalidUrlOrTokenError,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_TOGGLE_ENTRY_BOOKMARK,
@@ -157,9 +156,12 @@ export const toggleBookmark = async (entryId) => {
  * @returns {Promise<void>}
  */
 const cleanupLegacyStorage = async () => {
+  // Matches the legacy per-icon cache keys ("icon123") older versions wrote
+  // to storage.local before icons moved to IndexedDB.
+  const legacyIconKeyPattern = /^icon\d+$/;
   const keys = await browser.storage.local.getKeys();
   const staleKeys = keys.filter(
-    (key) => key === "entries" || ICON_CACHE_KEY_PATTERN.test(key),
+    (key) => key === "entries" || legacyIconKeyPattern.test(key),
   );
   if (staleKeys.length > 0) {
     await browser.storage.local.remove(staleKeys);

@@ -135,14 +135,7 @@ export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_MAX_ENTRIES = 100;
 // Max value accepted by the Miniflux API for the `limit` query parameter.
-export const MAX_ENTRIES_LIMIT = 500;
-// Storage key prefix for cached feed icons (see getIcon in popup.js).
-export const ICON_CACHE_KEY_PREFIX = "icon";
-// Storage keys of cached feed icons. Derived from the prefix so both stay
-// in sync if the prefix changes.
-export const ICON_CACHE_KEY_PATTERN = new RegExp(
-  `^${ICON_CACHE_KEY_PREFIX}\\d+$`,
-);
+const MAX_ENTRIES_LIMIT = 500;
 
 /**
  * Resolve a stored max entries value to a number accepted by the Miniflux
@@ -492,7 +485,7 @@ async function sendNotification(newEntries) {
 }
 
 /**
- * Fetch entries from Miniflux, save to storage, and update UI
+ * Fetch entries from Miniflux, replace the IndexedDB cache, and update UI
  * @returns {Promise<Entry[]>}
  * @throws {Error}
  */
@@ -570,7 +563,7 @@ export async function refreshEntries() {
  * Open extension in window
  * @returns {Promise<browser.windows.Window>}
  */
-export async function actionWindow() {
+async function actionWindow() {
   return browser.windows.create({
     url: "/pages/popup.html?style=window",
     type: "popup",
@@ -583,7 +576,7 @@ export async function actionWindow() {
  * Toggle side panel
  * @returns {Promise<void>}
  */
-export async function actionSidePanel() {
+async function actionSidePanel() {
   return browser.sidebarAction.toggle();
 }
 

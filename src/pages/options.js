@@ -357,7 +357,7 @@ async function testMinifluxApi() {
 }
 
 /**
- * Remove all cached feed icons from local storage and show transient feedback.
+ * Remove all cached feed icons from IndexedDB and show transient feedback.
  * @returns {Promise<void>}
  */
 async function clearIconsCache() {
