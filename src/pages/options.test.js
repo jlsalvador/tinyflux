@@ -15,6 +15,11 @@ import {
   DEFAULT_URL,
 } from "./common.js";
 import "./options.js";
+import { listIcons, setIcon } from "./db.js";
+import { __resetIDB } from "../test/fixtures/indexeddb.js";
+
+// Icons live in IndexedDB now, so clear the in-memory store before every test.
+test.beforeEach(() => __resetIDB());
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const optionsHtml = readFileSync(resolve(__dirname, "options.html"), "utf8");
@@ -270,7 +275,8 @@ test("autosave persists url change after debounce and refreshes entries", async 
   expect(sets[0].url).toBe("https://new.example.com");
   expect(sets[0].token).toBe("test-token");
   expect(sets[0].showNotifications).toBe(false);
-  expect(sets[1].entries).toEqual([]);
+  // refreshEntries writes to IndexedDB; it only persists the entriesSeeded flag.
+  expect(sets[1]).toEqual({ entriesSeeded: true });
   expect(fetched.length).toBe(1);
   expect(fetched[0].url).toBe(
     "https://new.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
@@ -292,7 +298,8 @@ test("autosave refetches entries with the new limit when maxEntries changes", as
 
   expect(sets.length).toBe(2);
   expect(sets[0].maxEntries).toBe(250);
-  expect(sets[1].entries).toEqual([]);
+  // refreshEntries writes to IndexedDB; it only persists the entriesSeeded flag.
+  expect(sets[1]).toEqual({ entriesSeeded: true });
   expect(fetched.length).toBe(1);
   expect(fetched[0].url).toBe(
     "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=250",
@@ -482,17 +489,17 @@ test("show notifications toggle removes permission when unchecked", async (t) =>
 // ============================================================================
 
 test("clear favicons cache removes only icon keys", async (t) => {
-  const { removes } = mockStorage(t, {
-    icon1: { data: "icon1" },
-    icon42: { data: "icon42" },
+  mockStorage(t, {
     url: "https://miniflux.example.com",
     theme: "dark",
   });
+  // Icons are cached in IndexedDB, not storage.local.
+  await setIcon(1, { icon: {}, fetchedAt: Date.now() });
+  await setIcon(42, { icon: {}, fetchedAt: Date.now() });
   await loadOptionsPage();
 
   document.getElementById("btnCleanIconsCache").click();
   await flushMicrotasks();
 
-  expect(removes.length).toBe(1);
-  expect(removes[0]).toEqual(["icon1", "icon42"]);
+  expect((await listIcons()).length).toBe(0);
 });

@@ -20,8 +20,6 @@ import DOMPurify from "dompurify";
 import {
   DEFAULT_MAX_ENTRIES,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
-  ICON_CACHE_KEY_PATTERN,
-  ICON_CACHE_KEY_PREFIX,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_REFRESH_THEME,
   MESSAGE_REFRESH_VIEW_ENTRIES,
@@ -37,6 +35,13 @@ import {
   resolveMaxEntries,
   openSettings,
 } from "./common.js";
+import {
+  deleteIcons,
+  getEntries,
+  getIcon as getStoredIcon,
+  listIcons,
+  setIcon as setStoredIcon,
+} from "./db.js";
 
 /**
  * @typedef {import('./common.js').Entry} Entry
@@ -92,23 +97,17 @@ const pruneIconCache = async () => {
     await browser.storage.local.get("maxEntries");
   const maxIcons = resolveMaxEntries(maxEntries);
 
-  // Resolve the icon keys first and only read their values, so the (large)
-  // cached entries are never loaded just to prune a few icons.
-  const allKeys = await browser.storage.local.getKeys();
-  const iconKeys = allKeys.filter((key) => ICON_CACHE_KEY_PATTERN.test(key));
-  const overflow = iconKeys.length - maxIcons;
+  const icons = await listIcons();
+  const overflow = icons.length - maxIcons;
   if (overflow <= 0) {
     return;
   }
 
-  const data = await browser.storage.local.get(iconKeys);
-  const iconEntries = iconKeys
-    .map((key) => ({ key, fetchedAt: data[key]?.fetchedAt ?? 0 }))
-    .sort((a, b) => a.fetchedAt - b.fetchedAt);
-
-  await browser.storage.local.remove(
-    iconEntries.slice(0, overflow).map((entry) => entry.key),
+  // Drop the oldest icons (by fetch time) until the cache fits under the cap.
+  const oldestFirst = [...icons].sort(
+    (a, b) => (a.fetchedAt ?? 0) - (b.fetchedAt ?? 0),
   );
+  await deleteIcons(oldestFirst.slice(0, overflow).map((icon) => icon.id));
 };
 
 /**
@@ -127,11 +126,8 @@ const getIcon = async (iconID) => {
   }
 
   const fetchIconPromise = (async () => {
-    // Check storage cache
-    const cacheKey = `${ICON_CACHE_KEY_PREFIX}${iconID}`;
-    const cachedIcon = await browser.storage.local
-      .get(cacheKey)
-      .then((data) => data[cacheKey]);
+    // Check the IndexedDB cache
+    const cachedIcon = await getStoredIcon(iconID);
 
     if (
       cachedIcon?.icon &&
@@ -154,9 +150,7 @@ const getIcon = async (iconID) => {
 
       // Cache the icon (with a fetch timestamp for TTL and pruning)
       state.iconCache.set(iconID, icon);
-      await browser.storage.local.set({
-        [cacheKey]: { icon, fetchedAt: Date.now() },
-      });
+      await setStoredIcon(iconID, { icon, fetchedAt: Date.now() });
       await pruneIconCache();
 
       return icon;
@@ -533,9 +527,7 @@ export const cleanupOldDOMEntries = (newEntries) => {
  */
 const handleRefreshViewEntries = async () => {
   try {
-    const entries = await browser.storage.local
-      .get("entries")
-      .then((r) => r.entries || []);
+    const entries = await getEntries();
 
     // Filter out hidden feeds/categories so entries that became hidden are
     // removed from the DOM as well (they stay in storage, so they are not

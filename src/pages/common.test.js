@@ -20,6 +20,13 @@ import {
   updateBadgeConnectionError,
   validateCredentials,
 } from "./common.js";
+import { getEntries, replaceEntries } from "./db.js";
+import { __resetIDB } from "../test/fixtures/indexeddb.js";
+
+// Entries live in IndexedDB now, so clear the in-memory store before every
+// test (node:test runs each file in its own process, so the db.js module cache
+// and the fixture's store registry start fresh per file).
+test.beforeEach(() => __resetIDB());
 
 // Replace browser.storage.local for the duration of a test. `get` answers
 // from the seeded `data` object (absent keys stay absent, like the real API)
@@ -481,7 +488,7 @@ test("refreshAlarm falls back to default for sub-minute period", async (t) => {
 // --- updateBadge tests ---
 
 test("updateBadge sets empty badge text when no entries", async (t) => {
-  mockStorage(t, { entries: [] });
+  mockStorage(t, {});
   const badgeTexts = [];
   t.mock.method(browser.action, "setBadgeText", (options) => {
     badgeTexts.push(options.text);
@@ -494,18 +501,17 @@ test("updateBadge sets empty badge text when no entries", async (t) => {
 });
 
 test("updateBadge sets badge text to entry count", async (t) => {
-  mockStorage(t, {
-    entries: [
-      {
-        id: 1,
-        feed: { hide_globally: false, category: { hide_globally: false } },
-      },
-      {
-        id: 2,
-        feed: { hide_globally: false, category: { hide_globally: false } },
-      },
-    ],
-  });
+  mockStorage(t, {});
+  await replaceEntries([
+    {
+      id: 1,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    {
+      id: 2,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+  ]);
   const badgeTexts = [];
   t.mock.method(browser.action, "setBadgeText", (options) => {
     badgeTexts.push(options.text);
@@ -518,18 +524,17 @@ test("updateBadge sets badge text to entry count", async (t) => {
 });
 
 test("updateBadge excludes hidden feed entries from count", async (t) => {
-  mockStorage(t, {
-    entries: [
-      {
-        id: 1,
-        feed: { hide_globally: false, category: { hide_globally: false } },
-      },
-      {
-        id: 2,
-        feed: { hide_globally: true, category: { hide_globally: false } },
-      },
-    ],
-  });
+  mockStorage(t, {});
+  await replaceEntries([
+    {
+      id: 1,
+      feed: { hide_globally: false, category: { hide_globally: false } },
+    },
+    {
+      id: 2,
+      feed: { hide_globally: true, category: { hide_globally: false } },
+    },
+  ]);
   const badgeTexts = [];
   t.mock.method(browser.action, "setBadgeText", (options) => {
     badgeTexts.push(options.text);
@@ -659,7 +664,6 @@ test("refreshEntries fetches unread entries and stores them", async (t) => {
   const sets = mockStorage(t, {
     url: "https://miniflux.example.com",
     token: "token",
-    entries: [{ id: 1 }, { id: 2 }],
   });
   const captured = [];
   t.mock.method(globalThis, "fetch", (req) => {
@@ -677,12 +681,15 @@ test("refreshEntries fetches unread entries and stores them", async (t) => {
   expect(captured[0].url).toBe(
     "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
   );
+  // Entries are written to IndexedDB, not storage.local.
+  expect((await getEntries()).map((e) => e.id)).toEqual([1, 2]);
+  // The first sync sets the entriesSeeded flag in storage.local.
   expect(sets.length).toBe(1);
-  expect(sets[0].entries).toEqual(fetched);
+  expect(sets[0]).toEqual({ entriesSeeded: true });
 });
 
 test("refreshEntries only skips the notification on the first sync", async (t) => {
-  // Mutable store: the first sync must create the `entries` key so the
+  // Mutable store: the first sync must set the `entriesSeeded` flag so the
   // second sync notifies normally.
   const store = {
     url: "https://miniflux.example.com",
@@ -730,9 +737,12 @@ test("refreshEntries only skips the notification on the first sync", async (t) =
   t.mock.method(browser.permissions, "contains", () => Promise.resolve(true));
   t.mock.method(console, "log", () => {});
 
-  // First sync: there is no cached `entries` key yet, so no notification.
+  // First sync: the entriesSeeded flag is unset, so no notification.
   await refreshEntries();
   expect(created.length).toBe(0);
+  // The first sync set the flag and wrote entry 1 to IndexedDB.
+  expect(store.entriesSeeded).toBe(true);
+  expect((await getEntries()).map((e) => e.id)).toEqual([1]);
 
   // Second sync: the new arrival is a new id compared to the cache written
   // by the first sync, so it must be notified.

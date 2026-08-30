@@ -13,7 +13,6 @@ import {
   DEFAULT_TOKEN,
   DEFAULT_URL,
   DEFAULT_SHOW_NOTIFICATIONS,
-  ICON_CACHE_KEY_PATTERN,
   notifyRefreshTheme,
   refreshActionBehavior,
   refreshAlarm,
@@ -22,6 +21,7 @@ import {
   request,
   updateBadgeColor,
 } from "./common.js";
+import { clearIcons } from "./db.js";
 
 // ============================================================================
 // Constants & State
@@ -365,11 +365,7 @@ async function clearIconsCache() {
   const originalText = btn?.innerText || "Clear FavIcons Cache";
   if (btn) btn.disabled = true;
 
-  const data = await browser.storage.local.get(null);
-  const keysToRemove = Object.keys(data).filter((key) =>
-    ICON_CACHE_KEY_PATTERN.test(key),
-  );
-  await browser.storage.local.remove(keysToRemove);
+  await clearIcons();
 
   if (btn) {
     btn.innerText = i18n(

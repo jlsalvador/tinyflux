@@ -29,6 +29,19 @@ import {
   cleanupOldDOMEntries,
 } from "./popup.js";
 import { testIcon } from "../test/fixtures/entries.js";
+import {
+  getEntries,
+  getIcon,
+  listIcons,
+  replaceEntries,
+  setIcon,
+} from "./db.js";
+import { __resetIDB } from "../test/fixtures/indexeddb.js";
+
+// Entries and icons live in IndexedDB now, so clear the in-memory store before
+// every test (node:test runs each file in its own process, so the db.js module
+// cache and the fixture's store registry start fresh per file).
+test.beforeEach(() => __resetIDB());
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const popupHtml = readFileSync(resolve(__dirname, "popup.html"), "utf8");
@@ -663,7 +676,8 @@ test("addDOMEntry does nothing when entries container is missing", async (t) => 
 
 test("addDOMEntry renders feed icon from storage cache", async (t) => {
   setupEntriesDOM();
-  mockStorage(t, { icon20: { icon: testIcon, fetchedAt: Date.now() } });
+  mockStorage(t);
+  await setIcon(20, { icon: testIcon, fetchedAt: Date.now() });
   const fetched = mockFetch(t, testIcon);
 
   await addDOMEntry(
@@ -679,7 +693,7 @@ test("addDOMEntry renders feed icon from storage cache", async (t) => {
 
 test("addDOMEntry fetches feed icon from API and caches it", async (t) => {
   setupEntriesDOM();
-  const sets = mockStorage(t, {
+  mockStorage(t, {
     url: "https://miniflux.example.com",
     token: "test-token",
   });
@@ -693,20 +707,22 @@ test("addDOMEntry fetches feed icon from API and caches it", async (t) => {
   expect(icon.getAttribute("src")).toBe(`data:${testIcon.data}`);
   expect(fetched.length).toBe(1);
   expect(fetched[0].url).toBe("https://miniflux.example.com/v1/icons/30");
-  expect(sets.length).toBe(1);
-  expect(sets[0].icon30.icon).toEqual(testIcon);
-  expect(typeof sets[0].icon30.fetchedAt).toBe("number");
+  // The icon is stored in IndexedDB with a fetch timestamp.
+  const stored = await getIcon(30);
+  expect(stored.icon).toEqual(testIcon);
+  expect(typeof stored.fetchedAt).toBe("number");
 });
 
 test("addDOMEntry refetches feed icon when the cached icon is stale", async (t) => {
   setupEntriesDOM();
-  const sets = mockStorage(t, {
+  mockStorage(t, {
     url: "https://miniflux.example.com",
     token: "test-token",
-    icon60: {
-      icon: testIcon,
-      fetchedAt: Date.now() - 8 * 24 * 60 * 60 * 1000, // 8 days old
-    },
+  });
+  // A cached icon older than the TTL must be refetched and overwritten.
+  await setIcon(60, {
+    icon: testIcon,
+    fetchedAt: Date.now() - 8 * 24 * 60 * 60 * 1000, // 8 days old
   });
   const fetched = mockFetch(t, testIcon);
 
@@ -715,49 +731,21 @@ test("addDOMEntry refetches feed icon when the cached icon is stale", async (t) 
   );
 
   expect(fetched.length).toBe(1);
-  expect(sets.length).toBe(1);
-  expect(sets[0].icon60.icon).toEqual(testIcon);
+  const stored = await getIcon(60);
+  expect(stored.icon).toEqual(testIcon);
 });
 
 test("icon cache is pruned down to the max entries limit", async (t) => {
   setupEntriesDOM();
-  const store = {
+  mockStorage(t, {
     url: "https://miniflux.example.com",
     token: "test-token",
     maxEntries: 3,
-    icon1: { icon: testIcon, fetchedAt: 1000 },
-    icon2: { icon: testIcon, fetchedAt: 2000 },
-    icon3: { icon: testIcon, fetchedAt: 3000 },
-    icon4: { icon: testIcon, fetchedAt: 4000 },
-  };
-  const removes = [];
-  const getRequests = [];
-  t.mock.method(browser.storage.local, "get", (keys) => {
-    getRequests.push(keys);
-    if (keys === null || keys === undefined) {
-      return Promise.resolve({ ...store });
-    }
-    const keyList = Array.isArray(keys) ? keys : [keys];
-    const result = {};
-    for (const key of keyList) {
-      if (key in store) result[key] = store[key];
-    }
-    return Promise.resolve(result);
   });
-  t.mock.method(browser.storage.local, "getKeys", () =>
-    Promise.resolve(Object.keys(store)),
-  );
-  t.mock.method(browser.storage.local, "set", (items) => {
-    Object.assign(store, items);
-    return Promise.resolve();
-  });
-  t.mock.method(browser.storage.local, "remove", (keys) => {
-    removes.push(keys);
-    for (const key of Array.isArray(keys) ? keys : [keys]) {
-      delete store[key];
-    }
-    return Promise.resolve();
-  });
+  await setIcon(1, { icon: testIcon, fetchedAt: 1000 });
+  await setIcon(2, { icon: testIcon, fetchedAt: 2000 });
+  await setIcon(3, { icon: testIcon, fetchedAt: 3000 });
+  await setIcon(4, { icon: testIcon, fetchedAt: 4000 });
   const fetched = mockFetch(t, testIcon);
 
   // icon5 is not cached: it is fetched and stored, then the cache (5 icons)
@@ -765,13 +753,8 @@ test("icon cache is pruned down to the max entries limit", async (t) => {
   await addDOMEntry(makeEntry({ feed: { icon: { feed_id: 28, icon_id: 5 } } }));
 
   expect(fetched.length).toBe(1);
-  expect(removes.length).toBe(1);
-  expect(removes[0]).toEqual(["icon1", "icon2"]);
-  // The prune must never read the whole storage (which would load the
-  // cached entries): no get(null) call is allowed.
-  expect(getRequests.some((keys) => keys === null || keys === undefined)).toBe(
-    false,
-  );
+  const ids = (await listIcons()).map((i) => i.id).sort((a, b) => a - b);
+  expect(ids).toEqual([3, 4, 5]);
 });
 
 test("addDOMEntry omits feed icon when API request fails", async (t) => {
@@ -800,7 +783,7 @@ test("addDOMEntry omits feed icon when API request fails", async (t) => {
 
 test("addDOMEntry serves repeated icon lookups from memory cache", async (t) => {
   setupEntriesDOM();
-  const sets = mockStorage(t, {
+  mockStorage(t, {
     url: "https://miniflux.example.com",
     token: "test-token",
   });
@@ -810,7 +793,7 @@ test("addDOMEntry serves repeated icon lookups from memory cache", async (t) => 
   await addDOMEntry(makeEntry({ id: 2, feed: { icon: { icon_id: 50 } } }));
 
   expect(fetched.length).toBe(1);
-  expect(sets.length).toBe(1);
+  expect((await listIcons()).length).toBe(1);
   expect(document.querySelectorAll(".feed-icon").length).toBe(2);
 });
 
@@ -1053,7 +1036,8 @@ test("refresh_view_entries message re-renders entries from storage", async (t) =
     url: "https://example.com/2",
     published_at: new Date(Date.now() - 30_000).toISOString(),
   });
-  mockStorage(t, { entries: [nextEntry] });
+  mockStorage(t);
+  await replaceEntries([nextEntry]);
 
   await addDOMEntry(makeEntry({ id: 1 }));
   expect(container.querySelectorAll(".entry").length).toBe(1);
@@ -1072,9 +1056,8 @@ test("message listener ignores unknown actions", () => {
 
 test("entries from hidden feeds are removed from the DOM on refresh", async (t) => {
   const container = setupEntriesDOM();
-  mockStorage(t, {
-    entries: [makeEntry({ id: 1, feed: { hide_globally: true } })],
-  });
+  mockStorage(t);
+  await replaceEntries([makeEntry({ id: 1, feed: { hide_globally: true } })]);
 
   await addDOMEntry(makeEntry({ id: 1 }));
   expect(container.querySelectorAll(".entry").length).toBe(1);
@@ -1124,7 +1107,8 @@ test("mark all as read second click marks all visible entries as read", async (t
     url: "https://example.com/2",
     published_at: new Date(Date.now() - 60_000).toISOString(),
   });
-  mockStorage(t, { entries: [older, newer] });
+  mockStorage(t);
+  await replaceEntries([older, newer]);
   const sent = [];
   t.mock.method(browser.runtime, "sendMessage", (message) => {
     sent.push(message);
@@ -1211,11 +1195,11 @@ test("refresh button refetches entries and re-renders the view", async (t) => {
     url: "https://example.com/7",
     published_at: new Date(Date.now() - 30_000).toISOString(),
   });
-  const sets = mockStorage(t, {
+  mockStorage(t, {
     url: "https://miniflux.example.com",
     token: "test-token",
-    entries: [older],
   });
+  await replaceEntries([older]);
   const fetched = mockFetch(t, { entries: [fetchedEntry] });
   await loadPopupPage();
 
@@ -1229,7 +1213,7 @@ test("refresh button refetches entries and re-renders the view", async (t) => {
   expect(fetched[0].url).toBe(
     "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
   );
-  expect(sets.some((saved) => saved.entries?.[0]?.id === 7)).toBe(true);
+  expect((await getEntries()).map((e) => e.id)).toEqual([7]);
   expect(document.getElementById("entry-1")).toBeFalsy();
   expect(document.getElementById("entry-7")).toBeTruthy();
   expect(button.disabled).toBe(false);

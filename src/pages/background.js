@@ -5,6 +5,7 @@
 import browser from "webextension-polyfill";
 import {
   ALARM_REFRESH,
+  ICON_CACHE_KEY_PATTERN,
   InvalidUrlOrTokenError,
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_TOGGLE_ENTRY_BOOKMARK,
@@ -16,6 +17,7 @@ import {
   request,
   updateBadge,
 } from "./common.js";
+import { deleteEntries, getEntries, updateEntry, upsertEntries } from "./db.js";
 
 /**
  * @typedef {import('./common.js').Entry} Entry
@@ -25,71 +27,12 @@ import {
 // Entry Actions
 // ============================================================================
 
-/**
- * Build a fingerprint of an entry list from the fields the entry actions
- * depend on (id and starred), to detect concurrent modifications.
- * @param {Entry[]} entries
- * @returns {string}
- */
-const entriesFingerprint = (entries) =>
-  entries
-    .map((entry) => `${entry.id}:${entry.starred ? 1 : 0}`)
-    .sort()
-    .join(",");
-
-// All cache mutations are serialized through this promise chain: concurrent
-// calls (e.g. two fast "mark as read" clicks) queue up, so the second one
-// reads the state written by the first instead of a stale base state.
-let mutationQueue = Promise.resolve();
-
-/**
- * Apply a read-modify-write to the cached entries, retrying when a
- * concurrent operation (e.g. a refresh coming from the popup) modifies the
- * cache between the read and the write. The mutator is always applied to the
- * latest cached state. A mutator returning `null` is a no-op: nothing is
- * written and `null` is returned.
- * All mutations are serialized through the module-level promise queue so
- * concurrent callers never read-modify-write on the same base state.
- * @param {(entries: Entry[]) => Entry[]|null} mutator
- * @param {number} [maxAttempts=3]
- * @returns {Promise<Entry[]|null>} The entries stored after the update, or
- *   `null` when the mutator was a no-op.
- * @throws {Error}
- */
-const updateCachedEntries = (mutator, maxAttempts = 3) => {
-  const run = async () => {
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const { entries: previousEntries = [] } =
-        await browser.storage.local.get("entries");
-      const updatedEntries = mutator(previousEntries);
-      if (updatedEntries === null) {
-        return null;
-      }
-      // Re-read to detect concurrent writes between the read and the write.
-      const { entries: latestEntries = [] } =
-        await browser.storage.local.get("entries");
-      if (
-        entriesFingerprint(latestEntries) ===
-        entriesFingerprint(previousEntries)
-      ) {
-        await browser.storage.local.set({ entries: updatedEntries });
-        return updatedEntries;
-      }
-    }
-    throw new Error(
-      "Failed to update cached entries after concurrent modifications",
-    );
-  };
-
-  // Chain onto the previous mutation, success or failure, so a failed
-  // update never jams the queue.
-  const result = mutationQueue.then(run, run);
-  mutationQueue = result.then(
-    () => undefined,
-    () => undefined,
-  );
-  return result;
-};
+// Entry actions read-modify-write the IndexedDB entries store through db.js.
+// Each operation runs inside a single atomic IDB transaction, so the browser's
+// own per-transaction serialization replaces the hand-rolled promise queue and
+// fingerprint retry that used to guard the storage.local cache: two overlapping
+// mutations (e.g. a fast "mark as read" and a scheduled refresh) can no longer
+// clobber each other's writes.
 
 /**
  * Mark entries as read via Miniflux API with optimistic UI update.
@@ -103,15 +46,19 @@ export const markEntriesAsRead = async (entryIds) => {
     return;
   }
 
-  // Entries removed by the optimistic update, kept so they can be restored
-  // if the API call fails.
-  let removedEntries = [];
+  // Optimistic update: read the current entries, keep the ones being marked
+  // read so they can be restored if the API call fails, and atomically delete
+  // them from the store.
+  const allEntries = await getEntries();
+  const removedIds = new Set(entryIds);
+  const removedEntries = allEntries.filter((entry) => removedIds.has(entry.id));
+  const remainingEntries = allEntries.filter(
+    (entry) => !removedIds.has(entry.id),
+  );
 
-  // Optimistic UI update
-  const updatedEntries = await updateCachedEntries((entries) => {
-    removedEntries = entries.filter((entry) => entryIds.includes(entry.id));
-    return entries.filter((entry) => !entryIds.includes(entry.id));
-  });
+  if (removedEntries.length > 0) {
+    await deleteEntries(removedEntries.map((entry) => entry.id));
+  }
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
   try {
@@ -128,25 +75,17 @@ export const markEntriesAsRead = async (entryIds) => {
       );
     }
 
-    return updatedEntries;
+    return remainingEntries;
   } catch (error) {
-    // Roll back by re-inserting the removed entries into the *latest* cached
-    // state (via updateCachedEntries), so a concurrent refresh that landed
-    // while the API call was in flight is preserved; entries the refresh
-    // already restored are not duplicated.
-    try {
-      await updateCachedEntries((entries) => {
-        const presentIds = new Set(entries.map((entry) => entry.id));
-        const toRestore = removedEntries.filter(
-          (entry) => !presentIds.has(entry.id),
-        );
-        if (toRestore.length === 0) {
-          return null;
-        }
-        return [...entries, ...toRestore];
-      });
-    } catch (rollbackError) {
-      console.error("Failed to revert the entries cache:", rollbackError);
+    // Roll back by re-inserting the removed entries. upsertEntries only writes
+    // ids that are absent, so a concurrent refresh that already restored some
+    // of them is not duplicated.
+    if (removedEntries.length > 0) {
+      try {
+        await upsertEntries(removedEntries);
+      } catch (rollbackError) {
+        console.error("Failed to revert the entries cache:", rollbackError);
+      }
     }
     await Promise.all([notifyRefreshEntries(), updateBadge()]);
     throw new Error("Failed to mark entries as read, reverting", {
@@ -162,25 +101,17 @@ export const markEntriesAsRead = async (entryIds) => {
  * @returns {Promise<Entry[]|undefined>}
  */
 export const toggleBookmark = async (entryId) => {
-  // Pre-toggle copy of the entry, kept so it can be restored verbatim if
-  // the API call fails.
+  // Pre-toggle copy of the entry, captured by the updater so it can be
+  // restored verbatim if the API call fails.
   let previousEntry = null;
 
-  const updatedEntries = await updateCachedEntries((entries) => {
-    const entryIndex = entries.findIndex((entry) => entry.id === entryId);
-    if (entryIndex === -1) {
-      return null;
-    }
-    previousEntry = entries[entryIndex];
-    const next = [...entries];
-    next[entryIndex] = {
-      ...next[entryIndex],
-      starred: !next[entryIndex].starred,
-    };
-    return next;
+  // Atomically read-modify-write the single entry, flipping its starred flag.
+  await updateEntry(entryId, (entry) => {
+    previousEntry = entry;
+    return { ...entry, starred: !entry.starred };
   });
 
-  if (updatedEntries === null) {
+  if (!previousEntry) {
     return;
   }
 
@@ -199,23 +130,15 @@ export const toggleBookmark = async (entryId) => {
       );
     }
 
-    return updatedEntries;
+    return await getEntries();
   } catch (error) {
-    // Roll back by restoring the pre-toggle entry into the *latest* cached
-    // state (via updateCachedEntries), so a concurrent refresh that landed
-    // while the API call was in flight is preserved.
-    try {
-      await updateCachedEntries((entries) => {
-        const entryIndex = entries.findIndex((entry) => entry.id === entryId);
-        if (entryIndex === -1) {
-          return null;
-        }
-        const next = [...entries];
-        next[entryIndex] = previousEntry;
-        return next;
-      });
-    } catch (rollbackError) {
-      console.error("Failed to revert the bookmark cache:", rollbackError);
+    // Roll back by restoring the pre-toggle entry atomically.
+    if (previousEntry) {
+      try {
+        await updateEntry(entryId, () => previousEntry);
+      } catch (rollbackError) {
+        console.error("Failed to revert the bookmark cache:", rollbackError);
+      }
     }
     await notifyRefreshEntries();
     throw new Error("Failed to toggle bookmark, reverting", { cause: error });
@@ -227,10 +150,30 @@ export const toggleBookmark = async (entryId) => {
 // ============================================================================
 
 /**
+ * Remove legacy entries and icon records that older versions kept in
+ * storage.local. The migration to IndexedDB does not copy them over (they are
+ * re-downloaded on the next refresh), so we just drop the now-unused keys.
+ * Idempotent: a no-op once the keys are gone.
+ * @returns {Promise<void>}
+ */
+const cleanupLegacyStorage = async () => {
+  const keys = await browser.storage.local.getKeys();
+  const staleKeys = keys.filter(
+    (key) => key === "entries" || ICON_CACHE_KEY_PATTERN.test(key),
+  );
+  if (staleKeys.length > 0) {
+    await browser.storage.local.remove(staleKeys);
+  }
+};
+
+/**
  * Initialize extension on startup or installation.
  */
 export const handleStartup = async () => {
   console.log("Extension started.");
+  cleanupLegacyStorage().catch((error) => {
+    console.error("Failed to clean up legacy storage:", error);
+  });
   try {
     await Promise.all([refreshActionBehavior(), refreshEntries()]);
   } catch (error) {

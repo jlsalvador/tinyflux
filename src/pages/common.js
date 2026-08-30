@@ -3,6 +3,7 @@
 "use strict";
 
 import browser from "webextension-polyfill";
+import { getEntries, replaceEntries } from "./db.js";
 
 /**
  * @typedef {Object} Enclosure
@@ -335,7 +336,7 @@ export const filterVisibleEntries = (entries) => {
  */
 export async function updateBadge() {
   try {
-    const { entries = [] } = await browser.storage.local.get("entries");
+    const entries = await getEntries();
     const visibleEntries = filterVisibleEntries(entries);
     const badgeText =
       visibleEntries.length === 0 ? "" : String(visibleEntries.length);
@@ -529,13 +530,15 @@ export async function refreshEntries() {
     throw error;
   }
 
-  const cached = await browser.storage.local.get("entries");
-  const cachedEntries = cached.entries ?? [];
-  // On the very first sync there is no cache yet: the user is already
-  // looking at the freshly rendered entries, so notifying them would be
-  // noise. The `set` below creates the `entries` key, so subsequent syncs
-  // notify normally.
-  const isFirstSync = !("entries" in cached);
+  const cachedEntries = await getEntries();
+  // The `entriesSeeded` flag in storage.local stands in for the old "entries"
+  // key, which no longer lives there (entries are in IndexedDB now). It marks
+  // that at least one sync has written to the entries store, so the very first
+  // sync (no cache yet, the user is already looking at the freshly rendered
+  // entries) does not notify. It is set below, on the first successful sync,
+  // regardless of whether any entries were fetched.
+  const { entriesSeeded } = await browser.storage.local.get("entriesSeeded");
+  const isFirstSync = !entriesSeeded;
 
   if (fetchedEntries.length > 0 && !isFirstSync) {
     const cachedIds = new Set(cachedEntries.map((e) => e.id));
@@ -548,7 +551,10 @@ export async function refreshEntries() {
     }
   }
 
-  await browser.storage.local.set({ entries: fetchedEntries });
+  await replaceEntries(fetchedEntries);
+  if (!entriesSeeded) {
+    await browser.storage.local.set({ entriesSeeded: true });
+  }
 
   try {
     await Promise.all([updateBadge(), notifyRefreshEntries(), refreshAlarm()]);
