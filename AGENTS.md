@@ -80,6 +80,7 @@ Optional body explaining why, not what.
 
 ## Other
 
+- The main branch is `next` (not `main` or `master`).
 - All code comments must be written in English.
 - `assets/` is tracked with **Git LFS** (`.gitattributes`).
 - `dist/` is gitignored; always regenerate with `npm run build`.
