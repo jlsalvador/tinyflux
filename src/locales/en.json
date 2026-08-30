@@ -86,7 +86,7 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Maximum number of unread entries fetched from Miniflux. Values above 100 may exhaust the browser's extension storage.",
+    "message": "Maximum number of unread entries fetched from Miniflux.",
     "description": "Help text for the max entries input field."
   },
 

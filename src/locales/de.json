@@ -86,7 +86,7 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Maximale Anzahl ungelesener Einträge, die von Miniflux abgerufen werden. Werte über 100 können den Speicherplatz der Erweiterung im Browser erschöpfen.",
+    "message": "Maximale Anzahl ungelesener Einträge, die von Miniflux abgerufen werden.",
     "description": "Help text for the max entries input field."
   },
 

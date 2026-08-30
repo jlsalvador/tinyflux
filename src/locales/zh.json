@@ -86,7 +86,7 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "从 Miniflux 获取的未读条目最大数量。超过 100 的值可能会耗尽浏览器中扩展的存储空间。",
+    "message": "从 Miniflux 获取的未读条目最大数量。",
     "description": "Help text for the max entries input field."
   },
 

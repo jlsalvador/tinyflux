@@ -86,7 +86,7 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Número máximo de entradas sin leer que se obtienen de Miniflux. Valores por encima de 100 pueden agotar el almacenamiento de la extensión en el navegador.",
+    "message": "Número máximo de entradas sin leer que se obtienen de Miniflux.",
     "description": "Ayuda para el campo de entrada del máximo de entradas."
   },
 

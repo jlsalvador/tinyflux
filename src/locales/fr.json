@@ -86,7 +86,7 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Nombre maximum d'articles non lus à récupérer depuis Miniflux. Des valeurs supérieures à 100 peuvent épuiser l'espace de stockage de l'extension dans le navigateur.",
+    "message": "Nombre maximum d'articles non lus à récupérer depuis Miniflux.",
     "description": "Help text for the max entries input field."
   },
 
