@@ -3,7 +3,7 @@
 "use strict";
 
 import browser from "webextension-polyfill";
-import { getEntries, replaceEntries } from "./db.js";
+import { getEntries, replaceEntries, syncEntries } from "./db.js";
 
 /**
  * @typedef {Object} Enclosure
@@ -134,8 +134,20 @@ export const DEFAULT_URL = "";
 export const DEFAULT_TOKEN = "";
 export const DEFAULT_PERIOD_REFRESH = 15;
 export const DEFAULT_MAX_ENTRIES = 100;
+export const DEFAULT_FULL_SYNC_INTERVAL_HOURS = 3;
 // Max value accepted by the Miniflux API for the `limit` query parameter.
 const MAX_ENTRIES_LIMIT = 500;
+// Max `limit` accepted by the Miniflux API (`model.MaxEntryLimit`); used for
+// incremental sync pages so the whole change set is fetched in few requests.
+const INCREMENTAL_FETCH_LIMIT = 1000;
+// The `changed_after` comparison is a strict `>` on a second-granularity
+// column, so the stored watermark is pulled back by this many seconds to
+// re-fetch same-second changes (re-merging them is idempotent).
+const WATERMARK_BUFFER_SECONDS = 1;
+// Fallback watermark when a full sync returns no entries: re-cover the last
+// day of changes on the next incremental sync. Client-clock based, but safe
+// with large skew because it only over-fetches (the merge is idempotent).
+const WATERMARK_FALLBACK_WINDOW_SECONDS = 24 * 60 * 60;
 
 /**
  * Resolve a stored max entries value to a number accepted by the Miniflux
@@ -148,6 +160,25 @@ export const resolveMaxEntries = (maxEntries) => {
   return Number.isFinite(requested) && requested >= 1
     ? Math.min(Math.floor(requested), MAX_ENTRIES_LIMIT)
     : DEFAULT_MAX_ENTRIES;
+};
+
+/**
+ * Resolve the stored full sync interval (in hours). Zero means "never" (full
+ * syncs only on first use and manual refresh); invalid values fall back to
+ * the default.
+ * @param {unknown} hours
+ * @returns {number}
+ */
+export const resolveFullSyncIntervalHours = (hours) => {
+  // null/undefined/"" (an emptied input field) must fall back to the
+  // default, not to Number(null) === 0 ("never").
+  if (hours === null || hours === undefined || hours === "") {
+    return DEFAULT_FULL_SYNC_INTERVAL_HOURS;
+  }
+  const value = Number(hours);
+  return Number.isFinite(value) && value >= 0
+    ? value
+    : DEFAULT_FULL_SYNC_INTERVAL_HOURS;
 };
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
@@ -324,15 +355,26 @@ export const filterVisibleEntries = (entries) => {
 };
 
 /**
- * Update browser extension badge with number of unread entries
+ * Update the browser action badge with the unread entry count.
+ *
+ * When `unreadCount` is provided (the authoritative server-side count of
+ * visible unread entries) it is shown verbatim. Otherwise it falls back to
+ * counting the locally cached entries, which is good enough right after a
+ * local mutation (e.g. marking entries as read) but does not account for
+ * unread entries that are not in the cache yet.
+ * @param {number|null} [unreadCount]
  * @returns {Promise<void[]>}
  */
-export async function updateBadge() {
+export async function updateBadge(unreadCount = null) {
   try {
-    const entries = await getEntries();
-    const visibleEntries = filterVisibleEntries(entries);
-    const badgeText =
-      visibleEntries.length === 0 ? "" : String(visibleEntries.length);
+    let count;
+    if (unreadCount !== null && unreadCount !== undefined) {
+      count = unreadCount;
+    } else {
+      const entries = await getEntries();
+      count = filterVisibleEntries(entries).length;
+    }
+    const badgeText = count === 0 ? "" : String(count);
 
     return Promise.all([
       browser.action.setTitle({
@@ -485,20 +527,20 @@ async function sendNotification(newEntries) {
 }
 
 /**
- * Fetch entries from Miniflux, replace the IndexedDB cache, and update UI
+ * Fetch every entry changed since the given unix timestamp, following the
+ * `total` field of the responses to page through the whole change set.
+ * @param {number} changedAfter Unix timestamp in seconds.
  * @returns {Promise<Entry[]>}
- * @throws {Error}
+ * @throws {MinifluxConnectionError}
  */
-export async function refreshEntries() {
-  let fetchedEntries;
+async function fetchChangedEntries(changedAfter) {
+  const changed = [];
+  let offset = 0;
+  let total;
 
-  const { maxEntries = DEFAULT_MAX_ENTRIES } =
-    await browser.storage.local.get("maxEntries");
-  const limit = resolveMaxEntries(maxEntries);
-
-  try {
+  do {
     const response = await request(
-      `/v1/entries?status=unread&order=published_at&direction=desc&limit=${limit}`,
+      `/v1/entries?changed_after=${changedAfter}&order=id&direction=asc&limit=${INCREMENTAL_FETCH_LIMIT}&offset=${offset}`,
     );
 
     if (!response.ok) {
@@ -510,7 +552,157 @@ export async function refreshEntries() {
     }
 
     const data = await response.json();
-    fetchedEntries = data.entries || [];
+    const page = data.entries || [];
+    if (page.length === 0) {
+      break;
+    }
+    total = data.total ?? page.length;
+    changed.push(...page);
+    offset += page.length;
+  } while (offset < total);
+
+  return changed;
+}
+
+/**
+ * Fetch the server-side count of visible unread entries (entries whose feed
+ * and category are not hidden globally), matching what the badge and the
+ * popup display. The `limit` is irrelevant: `total` counts the whole match.
+ * @returns {Promise<number>}
+ * @throws {MinifluxConnectionError}
+ */
+async function fetchUnreadCount() {
+  const response = await request(
+    "/v1/entries?status=unread&globally_visible=true&limit=1",
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new MinifluxConnectionError(
+      `Failed to fetch unread count: ${errorText}`,
+      { cause: new Error(errorText) },
+    );
+  }
+
+  const data = await response.json();
+  return data.total ?? 0;
+}
+
+/**
+ * Parse an RFC 3339 timestamp into unix seconds. The instant is absolute,
+ * so the timezone offset carried by the value is handled by the parser and
+ * no timezone math is needed on our side.
+ * @param {string} timestamp
+ * @returns {number|null}
+ */
+const toUnixSeconds = (timestamp) => {
+  const ms = Date.parse(timestamp);
+  return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
+};
+
+/**
+ * The newest `changed_at` among the given entries, in unix seconds, or null
+ * when none of them carries a parsable timestamp.
+ * @param {Entry[]} entries
+ * @returns {number|null}
+ */
+const maxChangedAt = (entries) => {
+  let max = null;
+  for (const entry of entries) {
+    const seconds = toUnixSeconds(entry?.changed_at);
+    if (seconds !== null && (max === null || seconds > max)) {
+      max = seconds;
+    }
+  }
+  return max;
+};
+
+/**
+ * Watermark to use when a full sync returns no entries: one day before now
+ * (client clock). Only ever over-fetches given the idempotent merge, so a
+ * skewed local clock is harmless.
+ * @returns {number}
+ */
+const fallbackWatermark = () =>
+  Math.floor(Date.now() / 1000) - WATERMARK_FALLBACK_WINDOW_SECONDS;
+
+/**
+ * Fetch entries from Miniflux, update the IndexedDB cache, and refresh the
+ * UI.
+ *
+ * Chooses between two strategies:
+ * - Full sync: re-downloads the whole unread set and replaces the cache.
+ *   Runs on the first sync (no watermark yet), once the configured full sync
+ *   interval has elapsed (self-heals entries hard-deleted on the server and
+ *   content edits that do not bump `changed_at`), or when forced manually.
+ * - Incremental sync: downloads only the entries changed since the last
+ *   sync (`changed_after`, available since Miniflux 2.0.49) and merges them
+ *   into the cache: still-unread entries are upserted, read/archived ones
+ *   are dropped.
+ *
+ * The watermark is only ever advanced from server-provided `changed_at`
+ * values, never from the client clock, so it is immune to NTP skew.
+ * @param {"auto"|"manual"} [reason="auto"] "manual" forces a full sync
+ *   (the popup refresh button).
+ * @returns {Promise<Entry[]>} The entries fetched from the server.
+ * @throws {Error}
+ */
+export async function refreshEntries(reason = "auto") {
+  const {
+    maxEntries = DEFAULT_MAX_ENTRIES,
+    fullSyncIntervalHours = DEFAULT_FULL_SYNC_INTERVAL_HOURS,
+    entriesSeeded,
+    entriesChangedAfter,
+    entriesLastFullSyncAt,
+  } = await browser.storage.local.get([
+    "maxEntries",
+    "fullSyncIntervalHours",
+    "entriesSeeded",
+    "entriesChangedAfter",
+    "entriesLastFullSyncAt",
+  ]);
+
+  const limit = resolveMaxEntries(maxEntries);
+  const intervalMs =
+    resolveFullSyncIntervalHours(fullSyncIntervalHours) * 60 * 60 * 1000;
+  const dueForFullSync =
+    reason === "manual" ||
+    entriesChangedAfter === undefined ||
+    (intervalMs > 0 &&
+      (entriesLastFullSyncAt === undefined ||
+        Date.now() - entriesLastFullSyncAt >= intervalMs));
+
+  let fetchedEntries;
+  let watermark;
+
+  try {
+    if (dueForFullSync) {
+      const response = await request(
+        `/v1/entries?status=unread&order=published_at&direction=desc&limit=${limit}`,
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new MinifluxConnectionError(
+          `Failed to fetch entries: ${errorText}`,
+          { cause: new Error(errorText) },
+        );
+      }
+
+      const data = await response.json();
+      fetchedEntries = data.entries || [];
+      watermark = maxChangedAt(fetchedEntries) ?? fallbackWatermark();
+    } else {
+      fetchedEntries = await fetchChangedEntries(entriesChangedAfter);
+      const maxChanged = maxChangedAt(fetchedEntries);
+      // Only advance the watermark from server-provided data: with no
+      // changes there is nothing new to anchor on, so keep the previous
+      // watermark (re-querying the same window is cheap and idempotent).
+      watermark =
+        maxChanged === null
+          ? entriesChangedAfter
+          : maxChanged - WATERMARK_BUFFER_SECONDS;
+    }
   } catch (error) {
     if (error instanceof InvalidUrlOrTokenError) {
       throw error;
@@ -530,12 +722,13 @@ export async function refreshEntries() {
   // sync (no cache yet, the user is already looking at the freshly rendered
   // entries) does not notify. It is set below, on the first successful sync,
   // regardless of whether any entries were fetched.
-  const { entriesSeeded } = await browser.storage.local.get("entriesSeeded");
   const isFirstSync = !entriesSeeded;
 
-  if (fetchedEntries.length > 0 && !isFirstSync) {
+  if (!isFirstSync) {
     const cachedIds = new Set(cachedEntries.map((e) => e.id));
-    const newArrivals = fetchedEntries.filter((e) => !cachedIds.has(e.id));
+    const newArrivals = fetchedEntries.filter(
+      (e) => e.status === "unread" && !cachedIds.has(e.id),
+    );
 
     if (newArrivals.length > 0) {
       sendNotification(newArrivals).catch((err) =>
@@ -544,13 +737,32 @@ export async function refreshEntries() {
     }
   }
 
-  await replaceEntries(fetchedEntries);
-  if (!entriesSeeded) {
-    await browser.storage.local.set({ entriesSeeded: true });
+  if (dueForFullSync) {
+    await replaceEntries(fetchedEntries);
+    await browser.storage.local.set({
+      entriesChangedAfter: watermark,
+      entriesLastFullSyncAt: Date.now(),
+      ...(isFirstSync ? { entriesSeeded: true } : {}),
+    });
+  } else {
+    await syncEntries(fetchedEntries, limit);
+    await browser.storage.local.set({ entriesChangedAfter: watermark });
   }
 
   try {
-    await Promise.all([updateBadge(), notifyRefreshEntries(), refreshAlarm()]);
+    let unreadCount;
+    try {
+      unreadCount = await fetchUnreadCount();
+    } catch (countError) {
+      // A failed count must not block the UI update: fall back to counting
+      // the cached entries in the badge.
+      console.error("Failed to fetch unread count:", countError);
+    }
+    await Promise.all([
+      updateBadge(unreadCount),
+      notifyRefreshEntries(),
+      refreshAlarm(),
+    ]);
   } catch (error) {
     console.error("Failed to update UI after refresh:", error);
   }

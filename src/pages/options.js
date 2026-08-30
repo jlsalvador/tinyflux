@@ -6,6 +6,7 @@ import {
   DEFAULT_BADGE_BACKGROUND_COLOR,
   DEFAULT_BADGE_TEXT_COLOR,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
+  DEFAULT_FULL_SYNC_INTERVAL_HOURS,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_MAX_ENTRIES,
   DEFAULT_PERIOD_REFRESH,
@@ -44,6 +45,8 @@ const elements = {
   periodInMinutes: () =>
     document.querySelector("#inputMinifluxPeriodInMinutes"),
   maxEntries: () => document.querySelector("#inputMinifluxMaxEntries"),
+  fullSyncIntervalHours: () =>
+    document.querySelector("#inputMinifluxFullSyncInterval"),
   extensionClickBehavior: () =>
     document.querySelector("#selectExtensionClickBehavior"),
   markEntryAsReadWhenOpenedAsTab: () =>
@@ -69,6 +72,7 @@ async function getStoredValues() {
     "token",
     "periodInMinutes",
     "maxEntries",
+    "fullSyncIntervalHours",
     "extensionClickBehavior",
     "markEntryAsReadWhenOpenedAsTab",
     "theme",
@@ -101,6 +105,18 @@ const readPeriodInMinutes = (input) => {
 };
 
 /**
+ * Read the full sync interval, clamping to the minimum of 0 hours ("never");
+ * negative values would otherwise display as typed but silently resolve to
+ * the default on the refresh side.
+ * @param {HTMLInputElement} input
+ * @returns {number|null}
+ */
+const readFullSyncIntervalHours = (input) => {
+  const value = readNumberOrNull(input);
+  return value === null ? null : Math.max(0, value);
+};
+
+/**
  * Read current values from form fields.
  * @returns {object}
  */
@@ -110,6 +126,9 @@ function readFormValues() {
     token: elements.token().value,
     periodInMinutes: readPeriodInMinutes(elements.periodInMinutes()),
     maxEntries: readNumberOrNull(elements.maxEntries()),
+    fullSyncIntervalHours: readFullSyncIntervalHours(
+      elements.fullSyncIntervalHours(),
+    ),
     extensionClickBehavior: elements.extensionClickBehavior().value,
     markEntryAsReadWhenOpenedAsTab:
       elements.markEntryAsReadWhenOpenedAsTab().checked,
@@ -151,7 +170,12 @@ async function applySideEffects(changes, currentValues) {
     currentValues.url &&
     currentValues.token
   ) {
-    await refreshEntries();
+    // A changed endpoint or token means the stored watermark belongs to
+    // another instance, so force a full resync. A maxEntries change alone is
+    // picked up by the next sync (the incremental merge trims the cache to
+    // the new limit), so it can run in auto mode.
+    const forceFullSync = Boolean(changes.url || changes.token);
+    await refreshEntries(forceFullSync ? "manual" : "auto");
   }
 
   if (changes.extensionClickBehavior) {
@@ -251,6 +275,8 @@ async function restoreOptions() {
     storedValues.periodInMinutes ?? DEFAULT_PERIOD_REFRESH;
   elements.maxEntries().valueAsNumber =
     storedValues.maxEntries ?? DEFAULT_MAX_ENTRIES;
+  elements.fullSyncIntervalHours().valueAsNumber =
+    storedValues.fullSyncIntervalHours ?? DEFAULT_FULL_SYNC_INTERVAL_HOURS;
   elements.extensionClickBehavior().value =
     storedValues.extensionClickBehavior ?? DEFAULT_EXTENSION_CLICK_BEHAVIOR;
   elements.markEntryAsReadWhenOpenedAsTab().checked =
@@ -399,6 +425,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     elements.token(),
     elements.periodInMinutes(),
     elements.maxEntries(),
+    elements.fullSyncIntervalHours(),
     elements.extensionClickBehavior(),
     elements.markEntryAsReadWhenOpenedAsTab(),
     elements.theme(),

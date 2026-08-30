@@ -1,6 +1,7 @@
 /* global test, expect, browser, chrome, resetDOM, document, console */
 
 import {
+  DEFAULT_FULL_SYNC_INTERVAL_HOURS,
   filterVisibleEntries,
   getPopupStyle,
   groupEntriesByFeed,
@@ -15,6 +16,7 @@ import {
   refreshEntries,
   refreshTheme,
   request,
+  resolveFullSyncIntervalHours,
   updateBadge,
   updateBadgeColor,
   updateBadgeConnectionError,
@@ -681,11 +683,18 @@ test("refreshEntries fetches unread entries and stores them", async (t) => {
   expect(captured[0].url).toBe(
     "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
   );
+  // The second request is the badge's unread count.
+  expect(captured[1].url).toBe(
+    "https://miniflux.example.com/v1/entries?status=unread&globally_visible=true&limit=1",
+  );
   // Entries are written to IndexedDB, not storage.local.
   expect((await getEntries()).map((e) => e.id)).toEqual([1, 2]);
-  // The first sync sets the entriesSeeded flag in storage.local.
+  // The first sync persists the seed flag plus the sync state (watermark
+  // and last full sync timestamp) in storage.local.
   expect(sets.length).toBe(1);
-  expect(sets[0]).toEqual({ entriesSeeded: true });
+  expect(sets[0].entriesSeeded).toBe(true);
+  expect(typeof sets[0].entriesChangedAfter).toBe("number");
+  expect(typeof sets[0].entriesLastFullSyncAt).toBe("number");
 });
 
 test("refreshEntries only skips the notification on the first sync", async (t) => {
@@ -719,6 +728,12 @@ test("refreshEntries only skips the notification on the first sync", async (t) =
             {
               id: fetchCount,
               title: `Entry ${fetchCount}`,
+              status: "unread",
+              // The second sync is incremental, so it anchors the new
+              // watermark on these server timestamps.
+              changed_at: new Date(
+                Date.now() + fetchCount * 1000,
+              ).toISOString(),
               feed: {
                 title: "Feed",
                 hide_globally: false,
@@ -864,6 +879,307 @@ test("refreshEntries propagates invalid credentials without fetching", async (t)
 
   expect(caught instanceof InvalidUrlOrTokenError).toBe(true);
   expect(captured.length).toBe(0);
+});
+
+test("resolveFullSyncIntervalHours returns the value when valid", () => {
+  expect(resolveFullSyncIntervalHours(6)).toBe(6);
+  // Zero is a valid value meaning "never" (no periodic full syncs).
+  expect(resolveFullSyncIntervalHours(0)).toBe(0);
+});
+
+test("resolveFullSyncIntervalHours falls back to the default when invalid", () => {
+  expect(resolveFullSyncIntervalHours(null)).toBe(
+    DEFAULT_FULL_SYNC_INTERVAL_HOURS,
+  );
+  expect(resolveFullSyncIntervalHours(-1)).toBe(
+    DEFAULT_FULL_SYNC_INTERVAL_HOURS,
+  );
+  expect(resolveFullSyncIntervalHours("abc")).toBe(
+    DEFAULT_FULL_SYNC_INTERVAL_HOURS,
+  );
+});
+
+test("refreshEntries does an incremental sync when a fresh watermark exists", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: Date.now() - 60 * 1000,
+  });
+  await replaceEntries([
+    { id: 1, status: "unread", title: "Old unread" },
+    { id: 9, status: "unread", title: "Other unread" },
+  ]);
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req.url);
+    return Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          total: 2,
+          entries: [
+            // Read on the server: must be dropped from the cache.
+            {
+              id: 1,
+              status: "read",
+              changed_at: "2025-01-01T00:00:05Z",
+              feed: { title: "Feed", category: {} },
+            },
+            // Still unread: must be upserted into the cache.
+            {
+              id: 2,
+              status: "unread",
+              changed_at: "2025-01-01T00:00:07Z",
+              feed: { title: "Feed", category: {} },
+            },
+          ],
+        }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+  const sets = [];
+  t.mock.method(browser.storage.local, "set", (items) => {
+    sets.push(items);
+    return Promise.resolve();
+  });
+
+  const result = await refreshEntries();
+
+  expect(result.length).toBe(2);
+  // The incremental query filters by changed_after only (no status filter,
+  // so entries that became read come back and can be dropped from the cache).
+  expect(captured[0]).toBe(
+    "https://miniflux.example.com/v1/entries?changed_after=1000000&order=id&direction=asc&limit=1000&offset=0",
+  );
+  // The merge keeps the untouched entry, upserts the new one, and drops the
+  // one that was read on the server.
+  expect((await getEntries()).map((e) => e.id).sort((a, b) => a - b)).toEqual([
+    2, 9,
+  ]);
+  // The watermark advances to the newest changed_at minus the same-second
+  // buffer; the last full sync timestamp is left untouched.
+  // 2025-01-01T00:00:07Z is epoch 1735689607.
+  expect(sets.length).toBe(1);
+  expect(sets[0]).toEqual({ entriesChangedAfter: 1735689606 });
+});
+
+test("refreshEntries keeps the watermark when the incremental sync has no changes", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: Date.now() - 60 * 1000,
+  });
+  t.mock.method(globalThis, "fetch", () =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ total: 0, entries: [] }),
+    }),
+  );
+  t.mock.method(console, "log", () => {});
+  const sets = [];
+  t.mock.method(browser.storage.local, "set", (items) => {
+    sets.push(items);
+    return Promise.resolve();
+  });
+
+  await refreshEntries();
+
+  // No changes means no new server timestamp to anchor on: the watermark is
+  // re-persisted unchanged (never taken from the client clock).
+  expect(sets[0]).toEqual({ entriesChangedAfter: 1000000 });
+});
+
+test("refreshEntries paginates through the whole change set", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: Date.now() - 60 * 1000,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req.url);
+    if (req.url.includes("changed_after")) {
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            total: 3,
+            entries: req.url.endsWith("offset=0")
+              ? [
+                  { id: 1, status: "unread" },
+                  { id: 2, status: "unread" },
+                ]
+              : [{ id: 3, status: "unread" }],
+          }),
+      });
+    }
+    // Unread count request.
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ total: 3, entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+  t.mock.method(browser.storage.local, "set", () => Promise.resolve());
+
+  const result = await refreshEntries();
+
+  expect(result.map((e) => e.id)).toEqual([1, 2, 3]);
+  expect(captured[0].endsWith("offset=0")).toBe(true);
+  expect(captured[1].endsWith("offset=2")).toBe(true);
+  expect((await getEntries()).map((e) => e.id).sort((a, b) => a - b)).toEqual([
+    1, 2, 3,
+  ]);
+});
+
+test("refreshEntries does a full sync when the interval has elapsed", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: Date.now() - 4 * 60 * 60 * 1000,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req.url);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ total: 0, entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+  t.mock.method(browser.storage.local, "set", () => Promise.resolve());
+
+  await refreshEntries();
+
+  expect(captured[0]).toBe(
+    "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
+  );
+});
+
+test("refreshEntries honors a zero full sync interval (never)", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    fullSyncIntervalHours: 0,
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: 0,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req.url);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ total: 0, entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+  t.mock.method(browser.storage.local, "set", () => Promise.resolve());
+
+  await refreshEntries();
+
+  // Even with a stale last full sync, a zero interval keeps the sync
+  // incremental.
+  expect(captured[0]).toContain("changed_after=1000000");
+});
+
+test("refreshEntries forces a full sync on manual reason", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: Date.now() - 60 * 1000,
+  });
+  const captured = [];
+  t.mock.method(globalThis, "fetch", (req) => {
+    captured.push(req.url);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ total: 0, entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+  t.mock.method(browser.storage.local, "set", () => Promise.resolve());
+
+  await refreshEntries("manual");
+
+  expect(captured[0]).toContain("status=unread");
+});
+
+test("refreshEntries shows the server-side unread count on the badge", async (t) => {
+  mockStorage(t, {
+    url: "https://miniflux.example.com",
+    token: "token",
+    entriesSeeded: true,
+    entriesChangedAfter: 1000000,
+    entriesLastFullSyncAt: Date.now() - 60 * 1000,
+  });
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
+    return Promise.resolve();
+  });
+  t.mock.method(globalThis, "fetch", (req) => {
+    if (req.url.includes("changed_after")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ total: 0, entries: [] }),
+      });
+    }
+    // The count request answers with a total that differs from the cache
+    // size on purpose.
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ total: 42, entries: [] }),
+    });
+  });
+  t.mock.method(console, "log", () => {});
+  t.mock.method(browser.storage.local, "set", () => Promise.resolve());
+
+  await refreshEntries();
+
+  expect(badgeTexts).toEqual(["42"]);
+});
+
+test("updateBadge uses the provided count instead of the cache", async (t) => {
+  mockStorage(t, {});
+  await replaceEntries([
+    { id: 1, feed: { hide_globally: false, category: {} } },
+  ]);
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
+    return Promise.resolve();
+  });
+
+  await updateBadge(42);
+
+  expect(badgeTexts).toEqual(["42"]);
+});
+
+test("updateBadge shows an empty badge for an explicit zero count", async (t) => {
+  mockStorage(t, {});
+  await replaceEntries([
+    { id: 1, feed: { hide_globally: false, category: {} } },
+  ]);
+  const badgeTexts = [];
+  t.mock.method(browser.action, "setBadgeText", (options) => {
+    badgeTexts.push(options.text);
+    return Promise.resolve();
+  });
+
+  await updateBadge(0);
+
+  expect(badgeTexts).toEqual([""]);
 });
 
 // --- refreshActionBehavior tests ---

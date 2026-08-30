@@ -86,8 +86,18 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Número máximo de entradas sin leer que se obtienen de Miniflux.",
+    "message": "Número máximo de entradas sin leer que se guardan y se muestran.",
     "description": "Ayuda para el campo de entrada del máximo de entradas."
+  },
+
+  "pageSettingsSyncFullSyncInterval": {
+    "message": "Intervalo de sincronización completa (horas)",
+    "description": "Etiqueta para el campo de entrada del intervalo de sincronización completa."
+  },
+
+  "pageSettingsSyncFullSyncIntervalHelp": {
+    "message": "Cada cuánto Tinyflux vuelve a descargar la lista completa de entradas. Entre sincronizaciones completas solo se descargan los cambios. 0 desactiva las sincronizaciones completas periódicas.",
+    "description": "Help text for the full sync interval input field."
   },
 
   "pageSettingsBrowserBehavior": {

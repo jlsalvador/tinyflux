@@ -7,6 +7,7 @@ import {
   DEFAULT_BADGE_BACKGROUND_COLOR,
   DEFAULT_BADGE_TEXT_COLOR,
   DEFAULT_EXTENSION_CLICK_BEHAVIOR,
+  DEFAULT_FULL_SYNC_INTERVAL_HOURS,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_MAX_ENTRIES,
   DEFAULT_PERIOD_REFRESH,
@@ -104,6 +105,7 @@ test("restoreOptions populates the form from stored values", async (t) => {
     ...fullDefaults,
     periodInMinutes: 30,
     maxEntries: 250,
+    fullSyncIntervalHours: 6,
     extensionClickBehavior: "sidepanel",
     markEntryAsReadWhenOpenedAsTab: true,
     theme: "dark",
@@ -126,6 +128,9 @@ test("restoreOptions populates the form from stored values", async (t) => {
   expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
     250,
   );
+  expect(
+    document.getElementById("inputMinifluxFullSyncInterval").valueAsNumber,
+  ).toBe(6);
   expect(document.getElementById("selectExtensionClickBehavior").value).toBe(
     "sidepanel",
   );
@@ -156,6 +161,9 @@ test("restoreOptions falls back to defaults when storage is empty", async (t) =>
   expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
     DEFAULT_MAX_ENTRIES,
   );
+  expect(
+    document.getElementById("inputMinifluxFullSyncInterval").valueAsNumber,
+  ).toBe(DEFAULT_FULL_SYNC_INTERVAL_HOURS);
   expect(document.getElementById("selectExtensionClickBehavior").value).toBe(
     DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   );
@@ -275,9 +283,13 @@ test("autosave persists url change after debounce and refreshes entries", async 
   expect(sets[0].url).toBe("https://new.example.com");
   expect(sets[0].token).toBe("test-token");
   expect(sets[0].showNotifications).toBe(false);
-  // refreshEntries writes to IndexedDB; it only persists the entriesSeeded flag.
-  expect(sets[1]).toEqual({ entriesSeeded: true });
-  expect(fetched.length).toBe(1);
+  // refreshEntries writes to IndexedDB; it only persists the seed flag and
+  // the sync state (watermark + last full sync timestamp).
+  expect(sets[1].entriesSeeded).toBe(true);
+  expect(typeof sets[1].entriesChangedAfter).toBe("number");
+  expect(typeof sets[1].entriesLastFullSyncAt).toBe("number");
+  // One full sync request plus the badge's unread count request.
+  expect(fetched.length).toBe(2);
   expect(fetched[0].url).toBe(
     "https://new.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=100",
   );
@@ -298,9 +310,13 @@ test("autosave refetches entries with the new limit when maxEntries changes", as
 
   expect(sets.length).toBe(2);
   expect(sets[0].maxEntries).toBe(250);
-  // refreshEntries writes to IndexedDB; it only persists the entriesSeeded flag.
-  expect(sets[1]).toEqual({ entriesSeeded: true });
-  expect(fetched.length).toBe(1);
+  // refreshEntries writes to IndexedDB; it only persists the seed flag and
+  // the sync state (watermark + last full sync timestamp).
+  expect(sets[1].entriesSeeded).toBe(true);
+  expect(typeof sets[1].entriesChangedAfter).toBe("number");
+  expect(typeof sets[1].entriesLastFullSyncAt).toBe("number");
+  // One full sync request plus the badge's unread count request.
+  expect(fetched.length).toBe(2);
   expect(fetched[0].url).toBe(
     "https://miniflux.example.com/v1/entries?status=unread&order=published_at&direction=desc&limit=250",
   );

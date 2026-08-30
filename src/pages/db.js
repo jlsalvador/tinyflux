@@ -68,6 +68,52 @@ export async function replaceEntries(entries) {
   });
 }
 
+// Apply an incremental change set to the entries store: entries still
+// unread are upserted, the ones that were read or archived on the server are
+// dropped, and the store is trimmed to the `maxEntries` newest entries (by
+// published_at) so it never grows past the display limit. Runs in one
+// transaction so the merge and the trim cannot interleave with another
+// context's mutation.
+export async function syncEntries(changedEntries, maxEntries) {
+  const db = await openDB();
+  const txn = db.transaction(STORE_ENTRIES, "readwrite");
+  const store = txn.objectStore(STORE_ENTRIES);
+  return new Promise((resolve, reject) => {
+    txn.onerror = () => reject(txn.error);
+    txn.oncomplete = () => resolve();
+    for (const entry of changedEntries) {
+      if (entry.status === "unread") {
+        store.put(entry);
+      } else {
+        store.delete(entry.id);
+      }
+    }
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const all = req.result;
+      if (all.length <= maxEntries) {
+        return;
+      }
+      const keep = new Set(
+        all
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(b.published_at).getTime() -
+              new Date(a.published_at).getTime(),
+          )
+          .slice(0, maxEntries)
+          .map((entry) => entry.id),
+      );
+      for (const entry of all) {
+        if (!keep.has(entry.id)) {
+          store.delete(entry.id);
+        }
+      }
+    };
+  });
+}
+
 // Delete the entries with the given ids (mark-as-read path).
 export async function deleteEntries(ids) {
   const db = await openDB();

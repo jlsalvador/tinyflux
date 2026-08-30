@@ -86,8 +86,18 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Nombre maximum d'articles non lus à récupérer depuis Miniflux.",
+    "message": "Nombre maximum d'articles non lus à conserver et à afficher.",
     "description": "Help text for the max entries input field."
+  },
+
+  "pageSettingsSyncFullSyncInterval": {
+    "message": "Intervalle de synchro complète (heures)",
+    "description": "Label for the full sync interval input field."
+  },
+
+  "pageSettingsSyncFullSyncIntervalHelp": {
+    "message": "Fréquence à laquelle Tinyflux télécharge à nouveau la liste complète des articles. Entre deux synchros complètes, seules les modifications sont récupérées. 0 désactive les synchros complètes périodiques.",
+    "description": "Help text for the full sync interval input field."
   },
 
   "pageSettingsBrowserBehavior": {

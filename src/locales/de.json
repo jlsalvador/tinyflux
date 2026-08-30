@@ -86,8 +86,18 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Maximale Anzahl ungelesener Einträge, die von Miniflux abgerufen werden.",
+    "message": "Maximale Anzahl ungelesener Einträge, die gespeichert und angezeigt werden.",
     "description": "Help text for the max entries input field."
+  },
+
+  "pageSettingsSyncFullSyncInterval": {
+    "message": "Intervall vollständige Synchronisierung (Stunden)",
+    "description": "Label for the full sync interval input field."
+  },
+
+  "pageSettingsSyncFullSyncIntervalHelp": {
+    "message": "Wie oft Tinyflux die komplette Eintragsliste neu lädt. Zwischen vollständigen Synchronisierungen werden nur die Änderungen abgerufen. 0 deaktiviert regelmäßige vollständige Synchronisierungen.",
+    "description": "Help text for the full sync interval input field."
   },
 
   "pageSettingsBrowserBehavior": {

@@ -86,8 +86,18 @@
   },
 
   "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Maximum number of unread entries fetched from Miniflux.",
+    "message": "Maximum number of unread entries kept and displayed.",
     "description": "Help text for the max entries input field."
+  },
+
+  "pageSettingsSyncFullSyncInterval": {
+    "message": "Full sync interval (hours)",
+    "description": "Label for the full sync interval input field."
+  },
+
+  "pageSettingsSyncFullSyncIntervalHelp": {
+    "message": "How often Tinyflux re-downloads the complete entry list. Between full syncs, only the changes are fetched. 0 disables periodic full syncs.",
+    "description": "Help text for the full sync interval input field."
   },
 
   "pageSettingsBrowserBehavior": {

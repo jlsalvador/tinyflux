@@ -684,7 +684,10 @@ const setupRefreshButton = () => {
       button.disabled = true;
       icon.classList.add("loading");
 
-      await refreshEntries();
+      // A manual refresh always forces a full resync, so the user has an
+      // explicit way to re-download the whole unread set (the incremental
+      // syncs triggered by the alarm only fetch the changes).
+      await refreshEntries("manual");
       await handleRefreshViewEntries();
     } catch (error) {
       if (error instanceof InvalidUrlOrTokenError) {

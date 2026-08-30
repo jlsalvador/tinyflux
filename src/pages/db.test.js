@@ -9,6 +9,7 @@ import {
   listIcons,
   replaceEntries,
   setIcon,
+  syncEntries,
   updateEntry,
   upsertEntries,
 } from "./db.js";
@@ -100,6 +101,65 @@ test("updateEntry is a no-op for an unknown id", async () => {
   await replaceEntries([]);
   await updateEntry(99, (entry) => ({ ...entry, starred: true }));
   expect((await getEntries()).length).toBe(0);
+});
+
+test("syncEntries upserts unread entries and drops read ones", async () => {
+  await replaceEntries([
+    { id: 1, title: "Old unread" },
+    { id: 9, title: "Keep" },
+  ]);
+  await syncEntries(
+    [
+      { id: 1, title: "Now read", status: "read" },
+      { id: 2, title: "New unread", status: "unread" },
+      { id: 9, title: "Keep updated", status: "unread" },
+    ],
+    100,
+  );
+  const all = (await getEntries()).sort((a, b) => a.id - b.id);
+  expect(all.map((e) => e.id)).toEqual([2, 9]);
+  expect(all.find((e) => e.id === 9).title).toBe("Keep updated");
+});
+
+test("syncEntries drops archived entries like read ones", async () => {
+  await replaceEntries([{ id: 1 }, { id: 2 }]);
+  await syncEntries([{ id: 1, status: "archived" }], 100);
+  expect((await getEntries()).map((e) => e.id)).toEqual([2]);
+});
+
+test("syncEntries with an empty change set keeps the store untouched", async () => {
+  await replaceEntries([{ id: 1 }, { id: 2 }]);
+  await syncEntries([], 100);
+  expect((await getEntries()).map((e) => e.id).sort((a, b) => a - b)).toEqual([
+    1, 2,
+  ]);
+});
+
+test("syncEntries trims the store to the newest maxEntries by published_at", async () => {
+  await replaceEntries([
+    { id: 1, published_at: "2025-01-01T00:00:00Z" },
+    { id: 2, published_at: "2025-01-03T00:00:00Z" },
+    { id: 3, published_at: "2025-01-02T00:00:00Z" },
+    { id: 4, published_at: "2025-01-04T00:00:00Z" },
+  ]);
+  await syncEntries(
+    [{ id: 5, status: "unread", published_at: "2025-01-05T00:00:00Z" }],
+    3,
+  );
+  // The three newest survive: 5 (Jan 5), 4 (Jan 4), 2 (Jan 3).
+  const ids = (await getEntries()).map((e) => e.id).sort((a, b) => a - b);
+  expect(ids).toEqual([2, 4, 5]);
+});
+
+test("syncEntries does not trim when the store is within the limit", async () => {
+  await replaceEntries([
+    { id: 1, published_at: "2025-01-01T00:00:00Z" },
+    { id: 2, published_at: "2025-01-02T00:00:00Z" },
+  ]);
+  await syncEntries([], 100);
+  expect((await getEntries()).map((e) => e.id).sort((a, b) => a - b)).toEqual([
+    1, 2,
+  ]);
 });
 
 // --- Feed icons ------------------------------------------------------------
