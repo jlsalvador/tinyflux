@@ -159,11 +159,10 @@ async function buildManifests(label, pkg, srcdir, resdir) {
  * Creates the files `_locales/en/messages.json` and others.
  *
  * @param {string} label
- * @param {object} pkg
  * @param {string} srcdir
  * @param {string} resdir
  */
-async function buildLocales(label, pkg, srcdir, resdir) {
+async function buildLocales(label, srcdir, resdir) {
 	label = `${label}[locales]`;
 	console.time(label);
 
@@ -181,7 +180,7 @@ async function buildLocales(label, pkg, srcdir, resdir) {
 		locales.map(async (locale) => {
 			await fs.mkdir(resolve(resdir, "_locales", locale), { recursive: true });
 			await fs.copyFile(
-				resolve(srcdir, "locales", locale + ".json"),
+				resolve(srcdir, "locales", `${locale}.json`),
 				resolve(resdir, "_locales", locale, "messages.json"),
 			);
 		}),
@@ -208,7 +207,7 @@ async function buildPages(label, dev, srcdir, resdir) {
 		bundle: true,
 		sourcemap: dev ? "inline" : false,
 		outdir: outdir,
-		minify: dev ? false : true,
+		minify: !dev,
 		assetNames: "assets/[name]-[hash]",
 		chunkNames: "[ext]/[name]-[hash]",
 		entryNames: "[name]",
@@ -227,7 +226,7 @@ async function buildPages(label, dev, srcdir, resdir) {
 		format: "esm",
 		loader: { ".png": "file", ".woff": "file", ".woff2": "file" },
 		outdir: outdir,
-		minify: dev ? false : true,
+		minify: !dev,
 		assetNames: "assets/[name]-[hash]",
 		chunkNames: "[ext]/[name]-[hash]",
 		entryNames: "[name]",
@@ -269,7 +268,7 @@ async function buildResources(label, pkg, dev, srcdir, resdir) {
 	await Promise.all([
 		buildAssets(label, srcdir, resdir),
 		buildManifests(label, pkg, srcdir, resdir),
-		buildLocales(label, pkg, srcdir, resdir),
+		buildLocales(label, srcdir, resdir),
 		buildPages(label, dev, srcdir, resdir),
 	]);
 
