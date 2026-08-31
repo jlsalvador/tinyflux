@@ -1,5 +1,3 @@
-/* global indexedDB */
-
 // Tinyflux — IndexedDB storage for entries and feed icons.
 //
 // All reads and writes of entries and icons go through this module so every
@@ -20,52 +18,52 @@ let dbPromise = null;
 // Lazily open (and cache) the database, creating the object stores on first
 // use.
 function openDB() {
-  if (!dbPromise) {
-    dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(STORE_ENTRIES)) {
-          db.createObjectStore(STORE_ENTRIES, { keyPath: "id" });
-        }
-        if (!db.objectStoreNames.contains(STORE_ICONS)) {
-          db.createObjectStore(STORE_ICONS, { keyPath: "id" });
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-  return dbPromise;
+	if (!dbPromise) {
+		dbPromise = new Promise((resolve, reject) => {
+			const req = indexedDB.open(DB_NAME, DB_VERSION);
+			req.onupgradeneeded = () => {
+				const db = req.result;
+				if (!db.objectStoreNames.contains(STORE_ENTRIES)) {
+					db.createObjectStore(STORE_ENTRIES, { keyPath: "id" });
+				}
+				if (!db.objectStoreNames.contains(STORE_ICONS)) {
+					db.createObjectStore(STORE_ICONS, { keyPath: "id" });
+				}
+			};
+			req.onsuccess = () => resolve(req.result);
+			req.onerror = () => reject(req.error);
+		});
+	}
+	return dbPromise;
 }
 
 // --- Entries ---------------------------------------------------------------
 
 // All entries currently stored, as a plain array.
 export async function getEntries() {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ENTRIES, "readonly");
-  const store = txn.objectStore(STORE_ENTRIES);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ENTRIES, "readonly");
+	const store = txn.objectStore(STORE_ENTRIES);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		const req = store.getAll();
+		req.onsuccess = () => resolve(req.result);
+	});
 }
 
 // Replace the whole set of entries with the given list. Used by the refresh
 // path, which always downloads the complete unread set and overwrites the
 // cache so it exactly mirrors the server.
 export async function replaceEntries(entries) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ENTRIES, "readwrite");
-  const store = txn.objectStore(STORE_ENTRIES);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    store.clear();
-    for (const entry of entries) store.put(entry);
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ENTRIES, "readwrite");
+	const store = txn.objectStore(STORE_ENTRIES);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		store.clear();
+		for (const entry of entries) store.put(entry);
+	});
 }
 
 // Apply an incremental change set to the entries store: entries still
@@ -75,74 +73,74 @@ export async function replaceEntries(entries) {
 // transaction so the merge and the trim cannot interleave with another
 // context's mutation.
 export async function syncEntries(changedEntries, maxEntries) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ENTRIES, "readwrite");
-  const store = txn.objectStore(STORE_ENTRIES);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    for (const entry of changedEntries) {
-      if (entry.status === "unread") {
-        store.put(entry);
-      } else {
-        store.delete(entry.id);
-      }
-    }
-    const req = store.getAll();
-    req.onsuccess = () => {
-      const all = req.result;
-      if (all.length <= maxEntries) {
-        return;
-      }
-      const keep = new Set(
-        all
-          .slice()
-          .sort(
-            (a, b) =>
-              new Date(b.published_at).getTime() -
-              new Date(a.published_at).getTime(),
-          )
-          .slice(0, maxEntries)
-          .map((entry) => entry.id),
-      );
-      for (const entry of all) {
-        if (!keep.has(entry.id)) {
-          store.delete(entry.id);
-        }
-      }
-    };
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ENTRIES, "readwrite");
+	const store = txn.objectStore(STORE_ENTRIES);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		for (const entry of changedEntries) {
+			if (entry.status === "unread") {
+				store.put(entry);
+			} else {
+				store.delete(entry.id);
+			}
+		}
+		const req = store.getAll();
+		req.onsuccess = () => {
+			const all = req.result;
+			if (all.length <= maxEntries) {
+				return;
+			}
+			const keep = new Set(
+				all
+					.slice()
+					.sort(
+						(a, b) =>
+							new Date(b.published_at).getTime() -
+							new Date(a.published_at).getTime(),
+					)
+					.slice(0, maxEntries)
+					.map((entry) => entry.id),
+			);
+			for (const entry of all) {
+				if (!keep.has(entry.id)) {
+					store.delete(entry.id);
+				}
+			}
+		};
+	});
 }
 
 // Delete the entries with the given ids (mark-as-read path).
 export async function deleteEntries(ids) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ENTRIES, "readwrite");
-  const store = txn.objectStore(STORE_ENTRIES);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    for (const id of ids) store.delete(id);
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ENTRIES, "readwrite");
+	const store = txn.objectStore(STORE_ENTRIES);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		for (const id of ids) store.delete(id);
+	});
 }
 
 // Insert each entry only if its id is not already present. Used to restore
 // entries that were optimistically removed but could not be confirmed with the
 // server.
 export async function insertEntriesIfAbsent(entries) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ENTRIES, "readwrite");
-  const store = txn.objectStore(STORE_ENTRIES);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    for (const entry of entries) {
-      const existing = store.get(entry.id);
-      existing.onsuccess = () => {
-        if (!existing.result) store.put(entry);
-      };
-    }
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ENTRIES, "readwrite");
+	const store = txn.objectStore(STORE_ENTRIES);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		for (const entry of entries) {
+			const existing = store.get(entry.id);
+			existing.onsuccess = () => {
+				if (!existing.result) store.put(entry);
+			};
+		}
+	});
 }
 
 // Read-modify-write a single entry atomically. `updater` receives the stored
@@ -150,79 +148,79 @@ export async function insertEntriesIfAbsent(entries) {
 // untouched (e.g. it no longer exists). Runs in one transaction, so the read
 // and the write cannot interleave with another context's mutation.
 export async function updateEntry(id, updater) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ENTRIES, "readwrite");
-  const store = txn.objectStore(STORE_ENTRIES);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    const req = store.get(id);
-    req.onsuccess = () => {
-      if (!req.result) return;
-      const updated = updater(req.result);
-      if (updated !== null) store.put(updated);
-    };
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ENTRIES, "readwrite");
+	const store = txn.objectStore(STORE_ENTRIES);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		const req = store.get(id);
+		req.onsuccess = () => {
+			if (!req.result) return;
+			const updated = updater(req.result);
+			if (updated !== null) store.put(updated);
+		};
+	});
 }
 
 // --- Feed icons ------------------------------------------------------------
 
 // The icon record for a feed icon id, or undefined.
 export async function getIcon(id) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ICONS, "readonly");
-  const store = txn.objectStore(STORE_ICONS);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    const req = store.get(id);
-    req.onsuccess = () => resolve(req.result);
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ICONS, "readonly");
+	const store = txn.objectStore(STORE_ICONS);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		const req = store.get(id);
+		req.onsuccess = () => resolve(req.result);
+	});
 }
 
 // Store or replace the icon record for a feed icon id.
 export async function setIcon(id, value) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ICONS, "readwrite");
-  const store = txn.objectStore(STORE_ICONS);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    store.put({ ...value, id });
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ICONS, "readwrite");
+	const store = txn.objectStore(STORE_ICONS);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		store.put({ ...value, id });
+	});
 }
 
 // All stored icon records.
 export async function listIcons() {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ICONS, "readonly");
-  const store = txn.objectStore(STORE_ICONS);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ICONS, "readonly");
+	const store = txn.objectStore(STORE_ICONS);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		const req = store.getAll();
+		req.onsuccess = () => resolve(req.result);
+	});
 }
 
 // Delete the icon records with the given ids.
 export async function deleteIcons(ids) {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ICONS, "readwrite");
-  const store = txn.objectStore(STORE_ICONS);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    for (const id of ids) store.delete(id);
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ICONS, "readwrite");
+	const store = txn.objectStore(STORE_ICONS);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		for (const id of ids) store.delete(id);
+	});
 }
 
 // Remove all stored icons (manual "clear cached icons" action).
 export async function clearIcons() {
-  const db = await openDB();
-  const txn = db.transaction(STORE_ICONS, "readwrite");
-  const store = txn.objectStore(STORE_ICONS);
-  return new Promise((resolve, reject) => {
-    txn.onerror = () => reject(txn.error);
-    txn.oncomplete = () => resolve();
-    store.clear();
-  });
+	const db = await openDB();
+	const txn = db.transaction(STORE_ICONS, "readwrite");
+	const store = txn.objectStore(STORE_ICONS);
+	return new Promise((resolve, reject) => {
+		txn.onerror = () => reject(txn.error);
+		txn.oncomplete = () => resolve();
+		store.clear();
+	});
 }

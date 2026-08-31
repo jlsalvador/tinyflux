@@ -9,8 +9,8 @@ A Manifest V3 browser extension for [Miniflux](https://miniflux.app).
 | `npm ci` | Install dependencies (the `allowScripts` field whitelists esbuild/sharp postinstall scripts — keep its version pins in sync with the lockfile) |
 | `npm run build` | Full production build → `dist/` |
 | `npm run watch` | Watch mode with inline sourcemaps, no minification |
-| `npm run format` | Prettier over `src/` and `package.json` |
-| `npm run lint` | ESLint (`@eslint/js` recommended config) with `--fix` |
+| `npm run format` | Biome: format `src/` and `package.json`, organize imports, apply safe fixes |
+| `npm run lint` | Biome lint over `src/` and `package.json` |
 | `npm run test` | Run tests via Node native `node:test` (no external framework) |
 
 Tests use `node:test` with a minimal `expect` polyfill at `src/test/setup.js` (shared by all tests via the `--import` flag in the `test` script). Test files are `*.test.js` modules living **next to the code they cover** (e.g. `src/pages/popup.test.js` tests `src/pages/popup.js`) — they are not collected in a `src/test` directory; `src/test/` only holds `setup.js` and the shared fixtures in `src/test/fixtures/`. `setup.js` pre-defines `globalThis.browser` and `globalThis.chrome` mocks (both with `runtime.id`), so `webextension-polyfill` passes `globalThis.browser` through untouched and test files import `common.js` / `background.js` directly. Override browser APIs and `fetch` per test with node:test's `t.mock.method(obj, "name", impl)` — originals auto-restore at test end, so no manual save/restore, `t.after`, or try/finally is needed.
@@ -57,12 +57,14 @@ Build pipeline:
 ## After making code changes
 
 After modifying source files, run in this order:
-1. `npm run lint` — ESLint with `--fix`
-2. `npm run format` — Prettier over `src/` and `package.json`
+1. `npm run format` — Biome formats, organizes imports, and applies safe fixes over `src/` and `package.json`
+2. `npm run lint` — Biome lint over `src/` and `package.json`
 3. `npm run test` — verify tests pass
 4. `npm run build` — verify build succeeds
 
-These four steps (lint, format, test, build) are **required before every `git commit`** — never commit code that has not been linted, formatted, and verified to build.
+Format runs **before** lint because it rewrites files (formatting, import order, safe fixes); lint must validate the final state that gets committed. All four steps (format, lint, test, build) are **required before every `git commit`** — never commit code that has not been linted, formatted, and verified to build.
+
+The Biome config lives in `biome.json`: it enables `noUndeclaredVariables` on top of the recommended preset (Biome 2.x does not include it in the preset) and declares the extension/test globals (`chrome`, `browser`, `test`, `expect`, ...). Everything else — formatting, indentation (tabs), import organization — uses Biome's defaults.
 
 ## Git commits
 
@@ -84,4 +86,4 @@ Optional body explaining why, not what.
 - All code comments must be written in English.
 - `assets/` is tracked with **Git LFS** (`.gitattributes`).
 - `dist/` is gitignored; always regenerate with `npm run build`.
-- No CI workflows, no pre-commit hooks, no formatter config files (prettier uses defaults). Commit message conventions are therefore enforced manually — see the [Git commits](#git-commits) section.
+- No CI workflows and no pre-commit hooks. Commit message conventions are therefore enforced manually — see the [Git commits](#git-commits) section.

@@ -1,336 +1,336 @@
 {
-  "extensionName": {
-    "message": "Tinyflux",
-    "description": "Name of the extension."
-  },
+	"extensionName": {
+		"message": "Tinyflux",
+		"description": "Name of the extension."
+	},
 
-  "extensionDescription": {
-    "message": "Tinyflux est un lecteur Miniflux rapide et minimaliste. Lisez et concentrez-vous, sans quitter votre onglet. Nécessite une instance Miniflux.",
-    "description": "Description of the extension."
-  },
+	"extensionDescription": {
+		"message": "Tinyflux est un lecteur Miniflux rapide et minimaliste. Lisez et concentrez-vous, sans quitter votre onglet. Nécessite une instance Miniflux.",
+		"description": "Description of the extension."
+	},
 
-  "connectionMinifluxError": {
-    "message": "Impossible de se connecter à Miniflux : $URL$",
-    "description": "Error message when the extension cannot connect to Miniflux.",
-    "placeholders": {
-      "url": {
-        "content": "$1",
-        "example": "https://reader.miniflux.app/"
-      }
-    }
-  },
+	"connectionMinifluxError": {
+		"message": "Impossible de se connecter à Miniflux : $URL$",
+		"description": "Error message when the extension cannot connect to Miniflux.",
+		"placeholders": {
+			"url": {
+				"content": "$1",
+				"example": "https://reader.miniflux.app/"
+			}
+		}
+	},
 
-  "pageSettingsTitle": {
-    "message": "Tinyflux — Paramètres",
-    "description": "Page title for the settings page."
-  },
+	"pageSettingsTitle": {
+		"message": "Tinyflux — Paramètres",
+		"description": "Page title for the settings page."
+	},
 
-  "pageSettingsSaved": {
-    "message": "Enregistré",
-    "description": "Statut affiché lorsque les réglages ont été enregistrés."
-  },
+	"pageSettingsSaved": {
+		"message": "Enregistré",
+		"description": "Statut affiché lorsque les réglages ont été enregistrés."
+	},
 
-  "pageSettingsShowToken": {
-    "message": "Afficher",
-    "description": "Bouton pour révéler la valeur du jeton."
-  },
+	"pageSettingsShowToken": {
+		"message": "Afficher",
+		"description": "Bouton pour révéler la valeur du jeton."
+	},
 
-  "pageSettingsHideToken": {
-    "message": "Masquer",
-    "description": "Bouton pour masquer la valeur du jeton."
-  },
+	"pageSettingsHideToken": {
+		"message": "Masquer",
+		"description": "Bouton pour masquer la valeur du jeton."
+	},
 
-  "pageSettingsMinifluxInstance": {
-    "message": "Instance Miniflux",
-    "description": "Label for the Miniflux instance input field."
-  },
+	"pageSettingsMinifluxInstance": {
+		"message": "Instance Miniflux",
+		"description": "Label for the Miniflux instance input field."
+	},
 
-  "pageSettingsSync": {
-    "message": "Synchronisation",
-    "description": "Libellé de la section des réglages de synchronisation."
-  },
+	"pageSettingsSync": {
+		"message": "Synchronisation",
+		"description": "Libellé de la section des réglages de synchronisation."
+	},
 
-  "pageSettingsAppearance": {
-    "message": "Apparence",
-    "description": "Libellé de la section des réglages d'apparence."
-  },
+	"pageSettingsAppearance": {
+		"message": "Apparence",
+		"description": "Libellé de la section des réglages d'apparence."
+	},
 
-  "pageSettingsStorage": {
-    "message": "Stockage",
-    "description": "Libellé de la section de maintenance du stockage."
-  },
+	"pageSettingsStorage": {
+		"message": "Stockage",
+		"description": "Libellé de la section de maintenance du stockage."
+	},
 
-  "pageSettingsMinifluxInstanceUrlHelp": {
-    "message": "L'adresse de votre instance Miniflux, par ex. https://reader.miniflux.app/",
-    "description": "Help text for the Miniflux instance URL input field."
-  },
+	"pageSettingsMinifluxInstanceUrlHelp": {
+		"message": "L'adresse de votre instance Miniflux, par ex. https://reader.miniflux.app/",
+		"description": "Help text for the Miniflux instance URL input field."
+	},
 
-  "pageSettingsMinifluxInstanceTokenHelp": {
-    "message": "Jeton d'accès à votre instance Miniflux, par ex. CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">Documentation</a>.",
-    "description": "Help text for the Miniflux instance token input field."
-  },
+	"pageSettingsMinifluxInstanceTokenHelp": {
+		"message": "Jeton d'accès à votre instance Miniflux, par ex. CDVHwyNAi8RZ87zsZRG0zf9UocZI5UGFEB7F5Ce8ixk=<br /><a href=\"https://miniflux.app/docs/api.html#authentication\">Documentation</a>.",
+		"description": "Help text for the Miniflux instance token input field."
+	},
 
-  "pageSettingsMinifluxInstancePeriodToRefresh": {
-    "message": "Intervalle de rafraîchissement (en minutes)",
-    "description": "Label for the refresh interval input field."
-  },
+	"pageSettingsMinifluxInstancePeriodToRefresh": {
+		"message": "Intervalle de rafraîchissement (en minutes)",
+		"description": "Label for the refresh interval input field."
+	},
 
-  "pageSettingsMinifluxInstancePeriodToRefreshHelp": {
-    "message": "Tinyflux synchronisera vos articles à cet intervalle, par ex. 15",
-    "description": "Help text for the refresh interval input field."
-  },
+	"pageSettingsMinifluxInstancePeriodToRefreshHelp": {
+		"message": "Tinyflux synchronisera vos articles à cet intervalle, par ex. 15",
+		"description": "Help text for the refresh interval input field."
+	},
 
-  "pageSettingsMinifluxInstanceMaxEntries": {
-    "message": "Nombre max. d'articles",
-    "description": "Label for the max entries input field."
-  },
+	"pageSettingsMinifluxInstanceMaxEntries": {
+		"message": "Nombre max. d'articles",
+		"description": "Label for the max entries input field."
+	},
 
-  "pageSettingsMinifluxInstanceMaxEntriesHelp": {
-    "message": "Nombre maximum d'articles non lus à conserver et à afficher.",
-    "description": "Help text for the max entries input field."
-  },
+	"pageSettingsMinifluxInstanceMaxEntriesHelp": {
+		"message": "Nombre maximum d'articles non lus à conserver et à afficher.",
+		"description": "Help text for the max entries input field."
+	},
 
-  "pageSettingsSyncFullSyncInterval": {
-    "message": "Intervalle de synchronisation complète (heures)",
-    "description": "Label for the full sync interval input field."
-  },
+	"pageSettingsSyncFullSyncInterval": {
+		"message": "Intervalle de synchronisation complète (heures)",
+		"description": "Label for the full sync interval input field."
+	},
 
-  "pageSettingsSyncFullSyncIntervalHelp": {
-    "message": "Fréquence à laquelle Tinyflux télécharge à nouveau la liste complète des articles. Entre deux synchronisations complètes, seuls les changements sont récupérés. 0 désactive les synchronisations complètes périodiques.",
-    "description": "Help text for the full sync interval input field."
-  },
+	"pageSettingsSyncFullSyncIntervalHelp": {
+		"message": "Fréquence à laquelle Tinyflux télécharge à nouveau la liste complète des articles. Entre deux synchronisations complètes, seuls les changements sont récupérés. 0 désactive les synchronisations complètes périodiques.",
+		"description": "Help text for the full sync interval input field."
+	},
 
-  "pageSettingsBrowserBehavior": {
-    "message": "Comportement du navigateur",
-    "description": "Label for the browser behavior section."
-  },
+	"pageSettingsBrowserBehavior": {
+		"message": "Comportement du navigateur",
+		"description": "Label for the browser behavior section."
+	},
 
-  "pageSettingsBrowserBehaviorClickBehavior": {
-    "message": "Au clic sur l'icône de l'extension",
-    "description": "Label for the on extension icon click select field."
-  },
+	"pageSettingsBrowserBehaviorClickBehavior": {
+		"message": "Au clic sur l'icône de l'extension",
+		"description": "Label for the on extension icon click select field."
+	},
 
-  "pageSettingsBrowserBehaviorClickBehaviorOpenPopup": {
-    "message": "Ouvrir une fenêtre contextuelle",
-    "description": "Option to open a popup when clicking on the extension icon."
-  },
+	"pageSettingsBrowserBehaviorClickBehaviorOpenPopup": {
+		"message": "Ouvrir une fenêtre contextuelle",
+		"description": "Option to open a popup when clicking on the extension icon."
+	},
 
-  "pageSettingsBrowserBehaviorClickBehaviorOpenWindow": {
-    "message": "Ouvrir une nouvelle fenêtre",
-    "description": "Option to open a new window when clicking on the extension icon."
-  },
+	"pageSettingsBrowserBehaviorClickBehaviorOpenWindow": {
+		"message": "Ouvrir une nouvelle fenêtre",
+		"description": "Option to open a new window when clicking on the extension icon."
+	},
 
-  "pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel": {
-    "message": "Ouvrir un panneau latéral",
-    "description": "Option to open a side panel when clicking on the extension icon."
-  },
+	"pageSettingsBrowserBehaviorClickBehaviorOpenSidePanel": {
+		"message": "Ouvrir un panneau latéral",
+		"description": "Option to open a side panel when clicking on the extension icon."
+	},
 
-  "pageSettingsBrowserBehaviorClickBehaviorHelp": {
-    "message": "Définit ce qui se passe lorsque vous cliquez sur l'icône de l'extension.",
-    "description": "Help text for the on extension icon click select field."
-  },
+	"pageSettingsBrowserBehaviorClickBehaviorHelp": {
+		"message": "Définit ce qui se passe lorsque vous cliquez sur l'icône de l'extension.",
+		"description": "Help text for the on extension icon click select field."
+	},
 
-  "pageSettingsBrowserBehaviorTheme": {
-    "message": "Sélection du thème",
-    "description": "Label for the select theme select field."
-  },
+	"pageSettingsBrowserBehaviorTheme": {
+		"message": "Sélection du thème",
+		"description": "Label for the select theme select field."
+	},
 
-  "pageSettingsBrowserBehaviorThemeLight": {
-    "message": "Thème clair",
-    "description": "Option to use a light theme in the extension."
-  },
+	"pageSettingsBrowserBehaviorThemeLight": {
+		"message": "Thème clair",
+		"description": "Option to use a light theme in the extension."
+	},
 
-  "pageSettingsBrowserBehaviorThemeDark": {
-    "message": "Thème sombre",
-    "description": "Option to use a dark theme in the extension."
-  },
+	"pageSettingsBrowserBehaviorThemeDark": {
+		"message": "Thème sombre",
+		"description": "Option to use a dark theme in the extension."
+	},
 
-  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTab": {
-    "message": "Marquer l'article comme lu lors de l'ouverture dans un onglet",
-    "description": "Option to mark an entry as read when it is opened in a new tab."
-  },
+	"pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTab": {
+		"message": "Marquer l'article comme lu lors de l'ouverture dans un onglet",
+		"description": "Option to mark an entry as read when it is opened in a new tab."
+	},
 
-  "pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
-    "message": "Lorsqu'il est activé, l'ouverture d'un article dans un nouvel onglet le marque également comme lu dans Miniflux.",
-    "description": "Texte d'aide pour la case de marquage comme lu lors de l'ouverture dans un onglet."
-  },
+	"pageSettingsBrowserBehaviorMarkEntryAsReadWhenOpenedAsTabHelp": {
+		"message": "Lorsqu'il est activé, l'ouverture d'un article dans un nouvel onglet le marque également comme lu dans Miniflux.",
+		"description": "Texte d'aide pour la case de marquage comme lu lors de l'ouverture dans un onglet."
+	},
 
-  "pageSettingsBrowserBehaviorBadgeBackgroundColor": {
-    "message": "Couleur de fond du badge",
-    "description": "Option to set the badge background color in the extension."
-  },
+	"pageSettingsBrowserBehaviorBadgeBackgroundColor": {
+		"message": "Couleur de fond du badge",
+		"description": "Option to set the badge background color in the extension."
+	},
 
-  "pageSettingsBrowserBehaviorBadgeTextColor": {
-    "message": "Couleur du texte du badge",
-    "description": "Option to set the badge text color in the extension."
-  },
+	"pageSettingsBrowserBehaviorBadgeTextColor": {
+		"message": "Couleur du texte du badge",
+		"description": "Option to set the badge text color in the extension."
+	},
 
-  "pageSettingsBrowserBehaviorShowNotifications": {
-    "message": "Afficher les notifications pour les nouveaux articles",
-    "description": "Option to enable or disable notifications in the extension."
-  },
+	"pageSettingsBrowserBehaviorShowNotifications": {
+		"message": "Afficher les notifications pour les nouveaux articles",
+		"description": "Option to enable or disable notifications in the extension."
+	},
 
-  "pageSettingsBrowserBehaviorShowNotificationsHelp": {
-    "message": "Nécessite une autorisation du navigateur. Les notifications seront résumées si de nombreux articles arrivent en même temps.",
-    "description": "Help text for the Show Notifications checkbox."
-  },
+	"pageSettingsBrowserBehaviorShowNotificationsHelp": {
+		"message": "Nécessite une autorisation du navigateur. Les notifications seront résumées si de nombreux articles arrivent en même temps.",
+		"description": "Help text for the Show Notifications checkbox."
+	},
 
-  "pageSettingsMinifluxInstanceTestConnection": {
-    "message": "Tester la connexion",
-    "description": "Button to test the connection with Miniflux instance."
-  },
+	"pageSettingsMinifluxInstanceTestConnection": {
+		"message": "Tester la connexion",
+		"description": "Button to test the connection with Miniflux instance."
+	},
 
-  "pageSettingsMinifluxInstanceClearFaviconsCache": {
-    "message": "Vider le cache des favicons",
-    "description": "Button to clear the favicon cache in Miniflux instance."
-  },
+	"pageSettingsMinifluxInstanceClearFaviconsCache": {
+		"message": "Vider le cache des favicons",
+		"description": "Button to clear the favicon cache in Miniflux instance."
+	},
 
-  "pageSettingsMinifluxInstanceFaviconsCacheCleared": {
-    "message": "Cache des favicons vidé.",
-    "description": "Message affiché après le vidage du cache des favicons."
-  },
+	"pageSettingsMinifluxInstanceFaviconsCacheCleared": {
+		"message": "Cache des favicons vidé.",
+		"description": "Message affiché après le vidage du cache des favicons."
+	},
 
-  "pageSettingsTesting": {
-    "message": "Test en cours…",
-    "description": "Text displayed while testing Miniflux instance connection."
-  },
+	"pageSettingsTesting": {
+		"message": "Test en cours…",
+		"description": "Text displayed while testing Miniflux instance connection."
+	},
 
-  "pageSettingsTestError": {
-    "message": "Échec du test. Réessayer ?",
-    "description": "Error message displayed when testing Miniflux instance connection fails."
-  },
+	"pageSettingsTestError": {
+		"message": "Échec du test. Réessayer ?",
+		"description": "Error message displayed when testing Miniflux instance connection fails."
+	},
 
-  "pageSettingsTestOK": {
-    "message": "Test réussi",
-    "description": "Text displayed when testing Miniflux instance connection is successful."
-  },
+	"pageSettingsTestOK": {
+		"message": "Test réussi",
+		"description": "Text displayed when testing Miniflux instance connection is successful."
+	},
 
-  "pagePopupTitle": {
-    "message": "Tinyflux",
-    "description": "Title of the popup page."
-  },
+	"pagePopupTitle": {
+		"message": "Tinyflux",
+		"description": "Title of the popup page."
+	},
 
-  "pagePopupOpenInSidePanel": {
-    "message": "Ouvrir dans le panneau latéral",
-    "description": "Button to open Tinyflux in a side panel."
-  },
+	"pagePopupOpenInSidePanel": {
+		"message": "Ouvrir dans le panneau latéral",
+		"description": "Button to open Tinyflux in a side panel."
+	},
 
-  "pagePopupOpenInWindow": {
-    "message": "Ouvrir dans une fenêtre",
-    "description": "Button to open Tinyflux in a new window."
-  },
+	"pagePopupOpenInWindow": {
+		"message": "Ouvrir dans une fenêtre",
+		"description": "Button to open Tinyflux in a new window."
+	},
 
-  "pagePopupToggleTheme": {
-    "message": "Basculer le mode clair/sombre",
-    "description": "Button to toggle between light and dark mode in Tinyflux."
-  },
+	"pagePopupToggleTheme": {
+		"message": "Basculer le mode clair/sombre",
+		"description": "Button to toggle between light and dark mode in Tinyflux."
+	},
 
-  "pagePopupOpenMiniflux": {
-    "message": "Ouvrir Miniflux",
-    "description": "Button to open Miniflux in a new tab."
-  },
+	"pagePopupOpenMiniflux": {
+		"message": "Ouvrir Miniflux",
+		"description": "Button to open Miniflux in a new tab."
+	},
 
-  "pagePopupOpenSettings": {
-    "message": "Ouvrir les paramètres",
-    "description": "Button to open Tinyflux settings in a new tab."
-  },
+	"pagePopupOpenSettings": {
+		"message": "Ouvrir les paramètres",
+		"description": "Button to open Tinyflux settings in a new tab."
+	},
 
-  "pagePopupEmpty": {
-    "message": "Vous avez tout lu !",
-    "description": "Message displayed when there are no unread entries in Tinyflux."
-  },
+	"pagePopupEmpty": {
+		"message": "Vous avez tout lu !",
+		"description": "Message displayed when there are no unread entries in Tinyflux."
+	},
 
-  "pagePopupMarkEntriesAsRead": {
-    "message": "Marquer les articles comme lus",
-    "description": "Button to mark all unread entries as read in Tinyflux."
-  },
+	"pagePopupMarkEntriesAsRead": {
+		"message": "Marquer les articles comme lus",
+		"description": "Button to mark all unread entries as read in Tinyflux."
+	},
 
-  "pagePopupToggleBookmark": {
-    "message": "Basculer le signet",
-    "description": "Tooltip for toggling a bookmark in Tinyflux."
-  },
+	"pagePopupToggleBookmark": {
+		"message": "Basculer le signet",
+		"description": "Tooltip for toggling a bookmark in Tinyflux."
+	},
 
-  "pagePopupMarkAsRead": {
-    "message": "Marquer comme lu",
-    "description": "Tooltip for marking an entry as read in Tinyflux."
-  },
+	"pagePopupMarkAsRead": {
+		"message": "Marquer comme lu",
+		"description": "Tooltip for marking an entry as read in Tinyflux."
+	},
 
-  "pagePopupShowContent": {
-    "message": "Afficher le contenu",
-    "description": "Tooltip for showing an entry's content in Tinyflux."
-  },
+	"pagePopupShowContent": {
+		"message": "Afficher le contenu",
+		"description": "Tooltip for showing an entry's content in Tinyflux."
+	},
 
-  "pagePopupHideContent": {
-    "message": "Replier le contenu",
-    "description": "Tooltip for collapsing an entry's content in Tinyflux."
-  },
+	"pagePopupHideContent": {
+		"message": "Replier le contenu",
+		"description": "Tooltip for collapsing an entry's content in Tinyflux."
+	},
 
-  "pagePopupAreYouSureToMarkAllEntriesAsRead": {
-    "message": "Êtes-vous sûr de vouloir marquer tous les articles comme lus ?",
-    "description": "Tooltip for confirming the action of marking all entries as read in Tinyflux."
-  },
+	"pagePopupAreYouSureToMarkAllEntriesAsRead": {
+		"message": "Êtes-vous sûr de vouloir marquer tous les articles comme lus ?",
+		"description": "Tooltip for confirming the action of marking all entries as read in Tinyflux."
+	},
 
-  "pagePopupReadingTimeSingular": {
-    "message": "$MINUTE$ minute de lecture",
-    "description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
-    "placeholders": {
-      "minute": {
-        "content": "$1",
-        "example": "1"
-      }
-    }
-  },
+	"pagePopupReadingTimeSingular": {
+		"message": "$MINUTE$ minute de lecture",
+		"description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
+		"placeholders": {
+			"minute": {
+				"content": "$1",
+				"example": "1"
+			}
+		}
+	},
 
-  "pagePopupReadingTimePlural": {
-    "message": "$MINUTES$ minutes de lecture",
-    "description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
-    "placeholders": {
-      "minutes": {
-        "content": "$1",
-        "example": "5"
-      }
-    }
-  },
+	"pagePopupReadingTimePlural": {
+		"message": "$MINUTES$ minutes de lecture",
+		"description": "Tooltip for showing how long it takes to read an entry in Tinyflux.",
+		"placeholders": {
+			"minutes": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
 
-  "pagePopupReadingTimeShort": {
-    "message": "$MINUTES$min",
-    "description": "Short tooltip for showing how long it takes to read an entry in Tinyflux.",
-    "placeholders": {
-      "minutes": {
-        "content": "$1",
-        "example": "5"
-      }
-    }
-  },
+	"pagePopupReadingTimeShort": {
+		"message": "$MINUTES$min",
+		"description": "Short tooltip for showing how long it takes to read an entry in Tinyflux.",
+		"placeholders": {
+			"minutes": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
 
-  "msgURL": {
-    "message": "URL",
-    "description": "Label for the URL input field."
-  },
+	"msgURL": {
+		"message": "URL",
+		"description": "Label for the URL input field."
+	},
 
-  "msgToken": {
-    "message": "Jeton",
-    "description": "Label for the Token input field."
-  },
+	"msgToken": {
+		"message": "Jeton",
+		"description": "Label for the Token input field."
+	},
 
-  "msgMenu": {
-    "message": "Menu",
-    "description": "Button to open the menu in Tinyflux."
-  },
+	"msgMenu": {
+		"message": "Menu",
+		"description": "Button to open the menu in Tinyflux."
+	},
 
-  "msgRefresh": {
-    "message": "Actualiser",
-    "description": "Button to refresh Tinyflux."
-  },
+	"msgRefresh": {
+		"message": "Actualiser",
+		"description": "Button to refresh Tinyflux."
+	},
 
-  "notificationNewEntriesAvailable": {
-    "message": "$COUNTER$ nouveaux articles disponibles.",
-    "description": "Notification message when new entries are available in Tinyflux.",
-    "placeholders": {
-      "counter": {
-        "content": "$1",
-        "example": "5"
-      }
-    }
-  }
+	"notificationNewEntriesAvailable": {
+		"message": "$COUNTER$ nouveaux articles disponibles.",
+		"description": "Notification message when new entries are available in Tinyflux.",
+		"placeholders": {
+			"counter": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	}
 }

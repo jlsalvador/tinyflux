@@ -1,77 +1,75 @@
-/* global console, process */
-
 import fs from "node:fs/promises";
-import { basename, dirname, resolve, relative, join, parse } from "node:path";
+import { basename, dirname, join, parse, relative, resolve } from "node:path";
 import AdmZip from "adm-zip";
 import { build } from "esbuild";
-import sharp from "sharp";
 import watch from "node-watch";
+import sharp from "sharp";
 
 async function buildAssets(label, srcdir, resdir) {
-  label = `${label}[assets]`;
-  console.time(label);
+	label = `${label}[assets]`;
+	console.time(label);
 
-  await fs.mkdir(resolve(resdir, "pages/assets"), { recursive: true });
+	await fs.mkdir(resolve(resdir, "pages/assets"), { recursive: true });
 
-  for (const variant of ["light", "dark"]) {
-    const src = resolve(srcdir, `pages/assets/icon-${variant}.svg`);
-    for (const size of [16, 32, 48, 196]) {
-      const output = resolve(
-        resdir,
-        `pages/assets/icon-${variant}-${size}x${size}.png`,
-      );
-      await sharp(src).resize(size, size).toFile(output);
-    }
+	for (const variant of ["light", "dark"]) {
+		const src = resolve(srcdir, `pages/assets/icon-${variant}.svg`);
+		for (const size of [16, 32, 48, 196]) {
+			const output = resolve(
+				resdir,
+				`pages/assets/icon-${variant}-${size}x${size}.png`,
+			);
+			await sharp(src).resize(size, size).toFile(output);
+		}
 
-    // Apple default icon
-    if (variant === "light") {
-      await Promise.all([
-        sharp(src)
-          .resize(137, 137)
-          .extend({
-            top: 15,
-            left: 15,
-            bottom: 15,
-            right: 15,
-            background: { r: 0, g: 0, b: 0, alpha: 0 },
-          })
-          .toFile(resolve(resdir, `pages/assets/apple-touch-icon-ipad.png`)),
-        sharp(src)
-          .resize(150, 150)
-          .extend({
-            top: 15,
-            left: 15,
-            bottom: 15,
-            right: 15,
-            background: { r: 0, g: 0, b: 0, alpha: 0 },
-          })
-          .toFile(resolve(resdir, `pages/assets/apple-touch-icon.png`)),
-      ]);
-    }
-  }
+		// Apple default icon
+		if (variant === "light") {
+			await Promise.all([
+				sharp(src)
+					.resize(137, 137)
+					.extend({
+						top: 15,
+						left: 15,
+						bottom: 15,
+						right: 15,
+						background: { r: 0, g: 0, b: 0, alpha: 0 },
+					})
+					.toFile(resolve(resdir, `pages/assets/apple-touch-icon-ipad.png`)),
+				sharp(src)
+					.resize(150, 150)
+					.extend({
+						top: 15,
+						left: 15,
+						bottom: 15,
+						right: 15,
+						background: { r: 0, g: 0, b: 0, alpha: 0 },
+					})
+					.toFile(resolve(resdir, `pages/assets/apple-touch-icon.png`)),
+			]);
+		}
+	}
 
-  // Copy the remaining assets. The source SVGs are skipped: they are only
-  // rasterization inputs, the manifest and the notifications use the PNGs.
-  await fs
-    .readdir(resolve(srcdir, "pages/assets"), {
-      recursive: true,
-      withFileTypes: true,
-    })
-    .then((entries) => {
-      return entries
-        .filter((entry) => entry.isFile() && !entry.name.endsWith(".svg"))
-        .map((entry) => {
-          return relative(srcdir, join(entry.parentPath, entry.name));
-        });
-    })
-    .then(async (entries) => {
-      for (const entry of entries) {
-        await fs.mkdir(resolve(resdir, dirname(entry)), { recursive: true });
-        await fs.copyFile(resolve(srcdir, entry), resolve(resdir, entry));
-      }
-    });
+	// Copy the remaining assets. The source SVGs are skipped: they are only
+	// rasterization inputs, the manifest and the notifications use the PNGs.
+	await fs
+		.readdir(resolve(srcdir, "pages/assets"), {
+			recursive: true,
+			withFileTypes: true,
+		})
+		.then((entries) => {
+			return entries
+				.filter((entry) => entry.isFile() && !entry.name.endsWith(".svg"))
+				.map((entry) => {
+					return relative(srcdir, join(entry.parentPath, entry.name));
+				});
+		})
+		.then(async (entries) => {
+			for (const entry of entries) {
+				await fs.mkdir(resolve(resdir, dirname(entry)), { recursive: true });
+				await fs.copyFile(resolve(srcdir, entry), resolve(resdir, entry));
+			}
+		});
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 /**
@@ -88,74 +86,73 @@ async function buildAssets(label, srcdir, resdir) {
  * @param {string} resdir
  */
 async function buildManifests(label, pkg, srcdir, resdir) {
-  label = `${label}[manifests]`;
-  console.time(label);
+	label = `${label}[manifests]`;
+	console.time(label);
 
-  const toTitleCase = function (str) {
-    return str.replace(
-      /\w\S*/g,
-      (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase(),
-    );
-  };
+	const toTitleCase = (str) =>
+		str.replace(
+			/\w\S*/g,
+			(text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase(),
+		);
 
-  const replaceByPackage = function (obj) {
-    for (const key in obj) {
-      const value = obj[key];
+	const replaceByPackage = (obj) => {
+		for (const key in obj) {
+			const value = obj[key];
 
-      if (typeof value === "object" && value !== null) {
-        obj[key] = replaceByPackage(value);
-        continue;
-      }
+			if (typeof value === "object" && value !== null) {
+				obj[key] = replaceByPackage(value);
+				continue;
+			}
 
-      if (!(typeof value === "string" || value instanceof String)) {
-        continue;
-      }
+			if (!(typeof value === "string" || value instanceof String)) {
+				continue;
+			}
 
-      obj[key] = value
-        .replaceAll("#name#", toTitleCase(pkg.name))
-        .replaceAll("#description#", pkg.description)
-        .replaceAll("#version#", pkg.version);
-    }
-    return obj;
-  };
+			obj[key] = value
+				.replaceAll("#name#", toTitleCase(pkg.name))
+				.replaceAll("#description#", pkg.description)
+				.replaceAll("#version#", pkg.version);
+		}
+		return obj;
+	};
 
-  const srcCommon = resolve(srcdir, `manifests/common.json`);
-  const srcChromium = resolve(srcdir, `manifests/chromium.json`);
-  const srcFirefox = resolve(srcdir, `manifests/firefox.json`);
-  const outChromium = resolve(resdir, `manifests/chromium.json`);
-  const outFirefox = resolve(resdir, `manifests/firefox.json`);
+	const srcCommon = resolve(srcdir, `manifests/common.json`);
+	const srcChromium = resolve(srcdir, `manifests/chromium.json`);
+	const srcFirefox = resolve(srcdir, `manifests/firefox.json`);
+	const outChromium = resolve(resdir, `manifests/chromium.json`);
+	const outFirefox = resolve(resdir, `manifests/firefox.json`);
 
-  const [jsonCommon, jsonChromium, jsonFirefox] = await Promise.all([
-    fs
-      .readFile(srcCommon)
-      .then((content) => JSON.parse(content))
-      .then((content) => replaceByPackage(content)),
-    fs
-      .readFile(srcChromium)
-      .then((content) => JSON.parse(content))
-      .then((content) => replaceByPackage(content)),
-    fs
-      .readFile(srcFirefox)
-      .then((content) => JSON.parse(content))
-      .then((content) => replaceByPackage(content)),
-  ]);
+	const [jsonCommon, jsonChromium, jsonFirefox] = await Promise.all([
+		fs
+			.readFile(srcCommon)
+			.then((content) => JSON.parse(content))
+			.then((content) => replaceByPackage(content)),
+		fs
+			.readFile(srcChromium)
+			.then((content) => JSON.parse(content))
+			.then((content) => replaceByPackage(content)),
+		fs
+			.readFile(srcFirefox)
+			.then((content) => JSON.parse(content))
+			.then((content) => replaceByPackage(content)),
+	]);
 
-  await Promise.all([
-    fs.mkdir(dirname(outChromium), { recursive: true }),
-    fs.mkdir(dirname(outFirefox), { recursive: true }),
-  ]);
-  await Promise.all([
-    fs.writeFile(
-      outChromium,
-      JSON.stringify({ ...jsonCommon, ...jsonChromium }, null, 2),
-    ),
-    fs.writeFile(
-      outFirefox,
-      JSON.stringify({ ...jsonCommon, ...jsonFirefox }, null, 2),
-    ),
-  ]);
+	await Promise.all([
+		fs.mkdir(dirname(outChromium), { recursive: true }),
+		fs.mkdir(dirname(outFirefox), { recursive: true }),
+	]);
+	await Promise.all([
+		fs.writeFile(
+			outChromium,
+			JSON.stringify({ ...jsonCommon, ...jsonChromium }, null, 2),
+		),
+		fs.writeFile(
+			outFirefox,
+			JSON.stringify({ ...jsonCommon, ...jsonFirefox }, null, 2),
+		),
+	]);
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 /**
@@ -167,30 +164,30 @@ async function buildManifests(label, pkg, srcdir, resdir) {
  * @param {string} resdir
  */
 async function buildLocales(label, pkg, srcdir, resdir) {
-  label = `${label}[locales]`;
-  console.time(label);
+	label = `${label}[locales]`;
+	console.time(label);
 
-  const locales = await fs
-    .readdir(resolve(srcdir, "locales"), {
-      recursive: true,
-      withFileTypes: true,
-    })
-    .then((entries) =>
-      entries
-        .filter((entry) => entry.isFile())
-        .map((entry) => parse(entry.name).name),
-    );
-  await Promise.all(
-    locales.map(async (locale) => {
-      await fs.mkdir(resolve(resdir, "_locales", locale), { recursive: true });
-      await fs.copyFile(
-        resolve(srcdir, "locales", locale + ".json"),
-        resolve(resdir, "_locales", locale, "messages.json"),
-      );
-    }),
-  );
+	const locales = await fs
+		.readdir(resolve(srcdir, "locales"), {
+			recursive: true,
+			withFileTypes: true,
+		})
+		.then((entries) =>
+			entries
+				.filter((entry) => entry.isFile())
+				.map((entry) => parse(entry.name).name),
+		);
+	await Promise.all(
+		locales.map(async (locale) => {
+			await fs.mkdir(resolve(resdir, "_locales", locale), { recursive: true });
+			await fs.copyFile(
+				resolve(srcdir, "locales", locale + ".json"),
+				resolve(resdir, "_locales", locale, "messages.json"),
+			);
+		}),
+	);
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 /**
@@ -200,61 +197,61 @@ async function buildLocales(label, pkg, srcdir, resdir) {
  * @param {string} resdir
  */
 async function buildPages(label, dev, srcdir, resdir) {
-  label = `${label}[pages]`;
-  console.time(label);
+	label = `${label}[pages]`;
+	console.time(label);
 
-  const outdir = resolve(resdir, "pages/");
+	const outdir = resolve(resdir, "pages/");
 
-  // Build background.js (service worker)
-  await build({
-    entryPoints: [resolve(srcdir, "pages/background.js")],
-    bundle: true,
-    sourcemap: dev ? "inline" : false,
-    outdir: outdir,
-    minify: dev ? false : true,
-    assetNames: "assets/[name]-[hash]",
-    chunkNames: "[ext]/[name]-[hash]",
-    entryNames: "[name]",
-    treeShaking: true,
-  });
+	// Build background.js (service worker)
+	await build({
+		entryPoints: [resolve(srcdir, "pages/background.js")],
+		bundle: true,
+		sourcemap: dev ? "inline" : false,
+		outdir: outdir,
+		minify: dev ? false : true,
+		assetNames: "assets/[name]-[hash]",
+		chunkNames: "[ext]/[name]-[hash]",
+		entryNames: "[name]",
+		treeShaking: true,
+	});
 
-  // Build page scripts (options.js, popup.js) with splitting
-  await build({
-    entryPoints: [
-      resolve(srcdir, "pages/options.js"),
-      resolve(srcdir, "pages/popup.js"),
-    ],
-    bundle: true,
-    sourcemap: dev ? "inline" : false,
-    splitting: true,
-    format: "esm",
-    loader: { ".png": "file", ".woff": "file", ".woff2": "file" },
-    outdir: outdir,
-    minify: dev ? false : true,
-    assetNames: "assets/[name]-[hash]",
-    chunkNames: "[ext]/[name]-[hash]",
-    entryNames: "[name]",
-    treeShaking: true,
-  });
+	// Build page scripts (options.js, popup.js) with splitting
+	await build({
+		entryPoints: [
+			resolve(srcdir, "pages/options.js"),
+			resolve(srcdir, "pages/popup.js"),
+		],
+		bundle: true,
+		sourcemap: dev ? "inline" : false,
+		splitting: true,
+		format: "esm",
+		loader: { ".png": "file", ".woff": "file", ".woff2": "file" },
+		outdir: outdir,
+		minify: dev ? false : true,
+		assetNames: "assets/[name]-[hash]",
+		chunkNames: "[ext]/[name]-[hash]",
+		entryNames: "[name]",
+		treeShaking: true,
+	});
 
-  // Copy HTML and CSS files
-  const htmlFiles = ["pages/options.html", "pages/popup.html"];
-  const cssFiles = [
-    "pages/variables.css",
-    "pages/options.css",
-    "pages/popup.css",
-  ];
+	// Copy HTML and CSS files
+	const htmlFiles = ["pages/options.html", "pages/popup.html"];
+	const cssFiles = [
+		"pages/variables.css",
+		"pages/options.css",
+		"pages/popup.css",
+	];
 
-  await Promise.all([
-    ...htmlFiles.map((file) =>
-      fs.copyFile(resolve(srcdir, file), resolve(outdir, basename(file))),
-    ),
-    ...cssFiles.map((file) =>
-      fs.copyFile(resolve(srcdir, file), resolve(outdir, basename(file))),
-    ),
-  ]);
+	await Promise.all([
+		...htmlFiles.map((file) =>
+			fs.copyFile(resolve(srcdir, file), resolve(outdir, basename(file))),
+		),
+		...cssFiles.map((file) =>
+			fs.copyFile(resolve(srcdir, file), resolve(outdir, basename(file))),
+		),
+	]);
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 /**
@@ -265,18 +262,18 @@ async function buildPages(label, dev, srcdir, resdir) {
  * @param {string} resdir
  */
 async function buildResources(label, pkg, dev, srcdir, resdir) {
-  label = `${label}[resources]`;
-  console.time(label);
+	label = `${label}[resources]`;
+	console.time(label);
 
-  await fs.mkdir(resdir, { recursive: true });
-  await Promise.all([
-    buildAssets(label, srcdir, resdir),
-    buildManifests(label, pkg, srcdir, resdir),
-    buildLocales(label, pkg, srcdir, resdir),
-    buildPages(label, dev, srcdir, resdir),
-  ]);
+	await fs.mkdir(resdir, { recursive: true });
+	await Promise.all([
+		buildAssets(label, srcdir, resdir),
+		buildManifests(label, pkg, srcdir, resdir),
+		buildLocales(label, pkg, srcdir, resdir),
+		buildPages(label, dev, srcdir, resdir),
+	]);
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 /**
@@ -286,155 +283,155 @@ async function buildResources(label, pkg, dev, srcdir, resdir) {
  * @param {string} outdir
  */
 async function buildPack(label, pkg, resdir, outdir) {
-  label = `${label}[pack]`;
-  console.time(label);
+	label = `${label}[pack]`;
+	console.time(label);
 
-  const readAndMapFiles = async (dir) => {
-    const entries = await fs.readdir(resolve(resdir, dir), {
-      recursive: true,
-      withFileTypes: true,
-    });
+	const readAndMapFiles = async (dir) => {
+		const entries = await fs.readdir(resolve(resdir, dir), {
+			recursive: true,
+			withFileTypes: true,
+		});
 
-    return entries
-      .filter((entry) => entry.isFile())
-      .map((entry) => {
-        const f = relative(resdir, join(entry.parentPath, entry.name));
-        return { src: f, dst: f };
-      });
-  };
+		return entries
+			.filter((entry) => entry.isFile())
+			.map((entry) => {
+				const f = relative(resdir, join(entry.parentPath, entry.name));
+				return { src: f, dst: f };
+			});
+	};
 
-  const filesCommon = {
-    files: (
-      await Promise.all([readAndMapFiles("pages"), readAndMapFiles("_locales")])
-    ).flat(),
-  };
+	const filesCommon = {
+		files: (
+			await Promise.all([readAndMapFiles("pages"), readAndMapFiles("_locales")])
+		).flat(),
+	};
 
-  const packFor = async function (label, name, output, files) {
-    label = `${label}[${name}]{${basename(output)}}`;
-    console.time(label);
+	const packFor = async (label, name, output, files) => {
+		label = `${label}[${name}]{${basename(output)}}`;
+		console.time(label);
 
-    const copyFilesToDirectory = async function (label, tdir, files) {
-      console.time(label);
+		const copyFilesToDirectory = async (label, tdir, files) => {
+			console.time(label);
 
-      for (const file of files) {
-        const src = resolve(resdir, file.src);
-        const dst = resolve(tdir, file.dst);
-        await fs.mkdir(dirname(dst), { recursive: true });
-        await fs.copyFile(src, dst);
-      }
+			for (const file of files) {
+				const src = resolve(resdir, file.src);
+				const dst = resolve(tdir, file.dst);
+				await fs.mkdir(dirname(dst), { recursive: true });
+				await fs.copyFile(src, dst);
+			}
 
-      console.timeEnd(label);
-    };
+			console.timeEnd(label);
+		};
 
-    const compressDirectory = async function (label, filename, directory) {
-      console.time(label);
+		const compressDirectory = async (label, filename, directory) => {
+			console.time(label);
 
-      const zip = new AdmZip();
-      zip.addLocalFolder(directory);
-      zip.writeZip(filename);
+			const zip = new AdmZip();
+			zip.addLocalFolder(directory);
+			zip.writeZip(filename);
 
-      console.timeEnd(label);
-    };
+			console.timeEnd(label);
+		};
 
-    const stagingDir = resolve(dirname(output), name);
-    await fs.mkdir(stagingDir, {
-      recursive: true,
-    });
-    await copyFilesToDirectory(`${label}[cp_resources]`, stagingDir, files);
-    await compressDirectory(
-      `${label}[compress]{${stagingDir}}`,
-      output,
-      stagingDir,
-    );
+		const stagingDir = resolve(dirname(output), name);
+		await fs.mkdir(stagingDir, {
+			recursive: true,
+		});
+		await copyFilesToDirectory(`${label}[cp_resources]`, stagingDir, files);
+		await compressDirectory(
+			`${label}[compress]{${stagingDir}}`,
+			output,
+			stagingDir,
+		);
 
-    console.timeEnd(label);
-  };
+		console.timeEnd(label);
+	};
 
-  await Promise.all([
-    packFor(
-      label,
-      "chromium",
-      resolve(outdir, `${pkg.name}.${pkg.version.replaceAll(".", "_")}.crx`),
-      [
-        ...filesCommon.files,
-        { src: "manifests/chromium.json", dst: "manifest.json" },
-      ],
-    ),
-    packFor(
-      label,
-      "firefox",
-      resolve(outdir, `${pkg.name}.${pkg.version.replaceAll(".", "_")}.xpi`),
-      [
-        ...filesCommon.files,
-        { src: "manifests/firefox.json", dst: "manifest.json" },
-      ],
-    ),
-  ]);
+	await Promise.all([
+		packFor(
+			label,
+			"chromium",
+			resolve(outdir, `${pkg.name}.${pkg.version.replaceAll(".", "_")}.crx`),
+			[
+				...filesCommon.files,
+				{ src: "manifests/chromium.json", dst: "manifest.json" },
+			],
+		),
+		packFor(
+			label,
+			"firefox",
+			resolve(outdir, `${pkg.name}.${pkg.version.replaceAll(".", "_")}.xpi`),
+			[
+				...filesCommon.files,
+				{ src: "manifests/firefox.json", dst: "manifest.json" },
+			],
+		),
+	]);
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 async function removeDirectory(label, resources) {
-  label = `${label}[clean]`;
-  console.time(label);
+	label = `${label}[clean]`;
+	console.time(label);
 
-  try {
-    await fs.rm(resources, { recursive: true });
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      throw error;
-    }
-  }
+	try {
+		await fs.rm(resources, { recursive: true });
+	} catch (error) {
+		if (error.code !== "ENOENT") {
+			throw error;
+		}
+	}
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 async function buildExtensions(dev) {
-  const label = "[build]";
-  console.time(label);
+	const label = "[build]";
+	console.time(label);
 
-  const srcdir = resolve(import.meta.dirname, "..");
-  const outdir = resolve(import.meta.dirname, "../../dist");
-  const resources = resolve(outdir, "resources");
+	const srcdir = resolve(import.meta.dirname, "..");
+	const outdir = resolve(import.meta.dirname, "../../dist");
+	const resources = resolve(outdir, "resources");
 
-  const pkg = await fs
-    .readFile(resolve(import.meta.dirname, "../../package.json"))
-    .then((content) => JSON.parse(content));
+	const pkg = await fs
+		.readFile(resolve(import.meta.dirname, "../../package.json"))
+		.then((content) => JSON.parse(content));
 
-  await removeDirectory(label, outdir);
-  await buildResources(label, pkg, dev, srcdir, resources);
-  await buildPack(label, pkg, resources, outdir);
-  // Remove the intermediate resources directory so dist/ only contains the
-  // final artifacts (crx, xpi and the unpacked chromium/firefox folders).
-  await removeDirectory(label, resources);
+	await removeDirectory(label, outdir);
+	await buildResources(label, pkg, dev, srcdir, resources);
+	await buildPack(label, pkg, resources, outdir);
+	// Remove the intermediate resources directory so dist/ only contains the
+	// final artifacts (crx, xpi and the unpacked chromium/firefox folders).
+	await removeDirectory(label, resources);
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 async function watchExtensions(dev) {
-  const label = "[watch]";
-  console.time(label);
+	const label = "[watch]";
+	console.time(label);
 
-  const srcdir = resolve(import.meta.dirname, "..");
+	const srcdir = resolve(import.meta.dirname, "..");
 
-  await fs
-    .readFile(resolve(import.meta.dirname, "../../package.json"))
-    .then((content) => JSON.parse(content));
+	await fs
+		.readFile(resolve(import.meta.dirname, "../../package.json"))
+		.then((content) => JSON.parse(content));
 
-  await buildExtensions(dev);
-  watch(srcdir, { recursive: true }, async () => {
-    try {
-      await buildExtensions(dev);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+	await buildExtensions(dev);
+	watch(srcdir, { recursive: true }, async () => {
+		try {
+			await buildExtensions(dev);
+		} catch (err) {
+			console.error(err);
+		}
+	});
 
-  console.timeEnd(label);
+	console.timeEnd(label);
 }
 
 function showHelp() {
-  console.log(`Usage:
+	console.log(`Usage:
 \t${process.argv[0]} ${process.argv[1]} <command> [flags]
 
 Commands:
@@ -446,39 +443,39 @@ Flags:
 }
 
 async function main() {
-  let argDev = false;
-  let argBuild = false;
-  let argWatch = false;
-  let argHelp = false;
+	let argDev = false;
+	let argBuild = false;
+	let argWatch = false;
+	let argHelp = false;
 
-  for (const arg of process.argv.slice(2)) {
-    switch (arg) {
-      case "--help":
-      case "-h":
-        argHelp = true;
-        break;
-      case "--dev":
-      case "-d":
-        argDev = true;
-        break;
-      case "build":
-        argBuild = true;
-        break;
-      case "watch":
-        argWatch = true;
-        break;
-    }
-  }
+	for (const arg of process.argv.slice(2)) {
+		switch (arg) {
+			case "--help":
+			case "-h":
+				argHelp = true;
+				break;
+			case "--dev":
+			case "-d":
+				argDev = true;
+				break;
+			case "build":
+				argBuild = true;
+				break;
+			case "watch":
+				argWatch = true;
+				break;
+		}
+	}
 
-  if (argHelp) {
-    showHelp();
-  } else if (argBuild) {
-    await buildExtensions(argDev);
-  } else if (argWatch) {
-    await watchExtensions(argDev);
-  } else {
-    showHelp();
-  }
+	if (argHelp) {
+		showHelp();
+	} else if (argBuild) {
+		await buildExtensions(argDev);
+	} else if (argWatch) {
+		await watchExtensions(argDev);
+	} else {
+		showHelp();
+	}
 }
 
 await main();

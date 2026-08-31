@@ -1,10 +1,10 @@
 {
-  "minimum_chrome_version": "116",
-  "background": {
-    "service_worker": "pages/background.js"
-  },
-  "side_panel": {
-    "default_path": "pages/popup.html?style=sidebar"
-  },
-  "permissions": ["storage", "alarms", "sidePanel"]
+	"minimum_chrome_version": "116",
+	"background": {
+		"service_worker": "pages/background.js"
+	},
+	"side_panel": {
+		"default_path": "pages/popup.html?style=sidebar"
+	},
+	"permissions": ["storage", "alarms", "sidePanel"]
 }

@@ -1,7 +1,3 @@
-/* global document, window, URLSearchParams, fetch, Request, URL, Headers, console, chrome */
-
-"use strict";
-
 import browser from "webextension-polyfill";
 import { getEntries, replaceEntries, syncEntries } from "./db.js";
 
@@ -157,10 +153,10 @@ const WATERMARK_FALLBACK_WINDOW_SECONDS = 24 * 60 * 60;
  * @returns {number}
  */
 export const resolveMaxEntries = (maxEntries) => {
-  const requested = Number(maxEntries);
-  return Number.isFinite(requested) && requested >= 1
-    ? Math.min(Math.floor(requested), MAX_ENTRIES_CAP)
-    : DEFAULT_MAX_ENTRIES;
+	const requested = Number(maxEntries);
+	return Number.isFinite(requested) && requested >= 1
+		? Math.min(Math.floor(requested), MAX_ENTRIES_CAP)
+		: DEFAULT_MAX_ENTRIES;
 };
 
 /**
@@ -171,15 +167,15 @@ export const resolveMaxEntries = (maxEntries) => {
  * @returns {number}
  */
 export const resolveFullSyncIntervalHours = (hours) => {
-  // null/undefined/"" (an emptied input field) must fall back to the
-  // default, not to Number(null) === 0 ("never").
-  if (hours === null || hours === undefined || hours === "") {
-    return DEFAULT_FULL_SYNC_INTERVAL_HOURS;
-  }
-  const value = Number(hours);
-  return Number.isFinite(value) && value >= 0
-    ? value
-    : DEFAULT_FULL_SYNC_INTERVAL_HOURS;
+	// null/undefined/"" (an emptied input field) must fall back to the
+	// default, not to Number(null) === 0 ("never").
+	if (hours === null || hours === undefined || hours === "") {
+		return DEFAULT_FULL_SYNC_INTERVAL_HOURS;
+	}
+	const value = Number(hours);
+	return Number.isFinite(value) && value >= 0
+		? value
+		: DEFAULT_FULL_SYNC_INTERVAL_HOURS;
 };
 export const DEFAULT_EXTENSION_CLICK_BEHAVIOR = "popup";
 export const DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB = false;
@@ -199,18 +195,18 @@ export const MESSAGE_TOGGLE_ENTRY_BOOKMARK = "toggle_bookmark";
 
 // Custom error types
 export class InvalidUrlOrTokenError extends Error {
-  constructor(message = "You must configure your Miniflux URL and token") {
-    super(message);
-    this.name = "InvalidUrlOrTokenError";
-  }
+	constructor(message = "You must configure your Miniflux URL and token") {
+		super(message);
+		this.name = "InvalidUrlOrTokenError";
+	}
 }
 
 export class MinifluxConnectionError extends Error {
-  constructor(message, { cause } = {}) {
-    super(message);
-    this.name = "MinifluxConnectionError";
-    this.cause = cause;
-  }
+	constructor(message, { cause } = {}) {
+		super(message);
+		this.name = "MinifluxConnectionError";
+		this.cause = cause;
+	}
 }
 
 /**
@@ -218,26 +214,26 @@ export class MinifluxConnectionError extends Error {
  * @returns {string} The style ('popup' or 'window')
  */
 export const getPopupStyle = () => {
-  if (typeof window === "undefined") {
-    return "popup";
-  }
-  return new URLSearchParams(window.location.search).get("style") || "popup";
+	if (typeof window === "undefined") {
+		return "popup";
+	}
+	return new URLSearchParams(window.location.search).get("style") || "popup";
 };
 
 /**
  * Close window if in popup mode
  */
 export const closeIfPopup = () => {
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    if (getPopupStyle() === "popup") {
-      window.close();
-    }
-  } catch {
-    // window.location may be unavailable in certain environments
-  }
+	if (typeof window === "undefined") {
+		return;
+	}
+	try {
+		if (getPopupStyle() === "popup") {
+			window.close();
+		}
+	} catch {
+		// window.location may be unavailable in certain environments
+	}
 };
 
 /**
@@ -245,8 +241,8 @@ export const closeIfPopup = () => {
  * @returns {Promise<void>}
  */
 export async function openSettings() {
-  await browser.runtime.openOptionsPage();
-  closeIfPopup();
+	await browser.runtime.openOptionsPage();
+	closeIfPopup();
 }
 
 /**
@@ -256,9 +252,9 @@ export async function openSettings() {
  * @throws {InvalidUrlOrTokenError}
  */
 export const validateCredentials = (url, token) => {
-  if (!url || !token) {
-    throw new InvalidUrlOrTokenError();
-  }
+	if (!url || !token) {
+		throw new InvalidUrlOrTokenError();
+	}
 };
 
 /**
@@ -277,51 +273,51 @@ export const validateCredentials = (url, token) => {
  * @throws {InvalidUrlOrTokenError|TypeError}
  */
 export async function minifluxRequest(path, options = {}) {
-  const {
-    url: providedUrl = "",
-    token: providedToken = "",
-    method = "GET",
-    body = undefined,
-    contentType = "application/json",
-  } = options;
+	const {
+		url: providedUrl = "",
+		token: providedToken = "",
+		method = "GET",
+		body = undefined,
+		contentType = "application/json",
+	} = options;
 
-  let url = providedUrl;
-  let token = providedToken;
+	let url = providedUrl;
+	let token = providedToken;
 
-  // Fetch credentials from storage if not provided
-  if (!url || !token) {
-    const stored = await browser.storage.local.get(["url", "token"]);
-    url = url || stored.url || "";
-    token = token || stored.token || "";
-  }
+	// Fetch credentials from storage if not provided
+	if (!url || !token) {
+		const stored = await browser.storage.local.get(["url", "token"]);
+		url = url || stored.url || "";
+		token = token || stored.token || "";
+	}
 
-  validateCredentials(url, token);
+	validateCredentials(url, token);
 
-  const headers = new Headers({
-    "X-Auth-Token": token,
-  });
+	const headers = new Headers({
+		"X-Auth-Token": token,
+	});
 
-  if (body !== undefined) {
-    headers.set("Content-Type", contentType);
-  }
+	if (body !== undefined) {
+		headers.set("Content-Type", contentType);
+	}
 
-  let requestUrl;
-  try {
-    requestUrl = new URL(
-      url.replace(/\/+$/, "") + (path.startsWith("/") ? path : `/${path}`),
-    );
-  } catch (error) {
-    throw new MinifluxConnectionError(`Invalid Miniflux URL: ${url}`, {
-      cause: error,
-    });
-  }
-  const requestOptions = {
-    method,
-    headers,
-    body,
-  };
+	let requestUrl;
+	try {
+		requestUrl = new URL(
+			url.replace(/\/+$/, "") + (path.startsWith("/") ? path : `/${path}`),
+		);
+	} catch (error) {
+		throw new MinifluxConnectionError(`Invalid Miniflux URL: ${url}`, {
+			cause: error,
+		});
+	}
+	const requestOptions = {
+		method,
+		headers,
+		body,
+	};
 
-  return fetch(new Request(requestUrl, requestOptions));
+	return fetch(new Request(requestUrl, requestOptions));
 }
 
 /**
@@ -329,17 +325,17 @@ export async function minifluxRequest(path, options = {}) {
  * @returns {Promise<void[]>}
  */
 export async function updateBadgeColor() {
-  const { badgeBackgroundColor, badgeTextColor } =
-    await browser.storage.local.get(["badgeBackgroundColor", "badgeTextColor"]);
+	const { badgeBackgroundColor, badgeTextColor } =
+		await browser.storage.local.get(["badgeBackgroundColor", "badgeTextColor"]);
 
-  const backgroundColor =
-    badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
-  const textColor = badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
+	const backgroundColor =
+		badgeBackgroundColor || DEFAULT_BADGE_BACKGROUND_COLOR;
+	const textColor = badgeTextColor || DEFAULT_BADGE_TEXT_COLOR;
 
-  return Promise.all([
-    browser.action.setBadgeBackgroundColor({ color: backgroundColor }),
-    browser.action.setBadgeTextColor({ color: textColor }),
-  ]);
+	return Promise.all([
+		browser.action.setBadgeBackgroundColor({ color: backgroundColor }),
+		browser.action.setBadgeTextColor({ color: textColor }),
+	]);
 }
 
 /**
@@ -348,11 +344,11 @@ export async function updateBadgeColor() {
  * @returns {Entry[]} Filtered entries
  */
 export const filterVisibleEntries = (entries) => {
-  return entries
-    .filter((entry) => entry?.feed && !entry.feed.hide_globally)
-    .filter(
-      (entry) => entry?.feed?.category && !entry.feed.category.hide_globally,
-    );
+	return entries
+		.filter((entry) => entry?.feed && !entry.feed.hide_globally)
+		.filter(
+			(entry) => entry?.feed?.category && !entry.feed.category.hide_globally,
+		);
 };
 
 /**
@@ -367,26 +363,26 @@ export const filterVisibleEntries = (entries) => {
  * @returns {Promise<void[]>}
  */
 export async function updateBadge(unreadCount = null) {
-  try {
-    let count;
-    if (unreadCount !== null && unreadCount !== undefined) {
-      count = unreadCount;
-    } else {
-      const entries = await getEntries();
-      count = filterVisibleEntries(entries).length;
-    }
-    const badgeText = count === 0 ? "" : String(count);
+	try {
+		let count;
+		if (unreadCount !== null && unreadCount !== undefined) {
+			count = unreadCount;
+		} else {
+			const entries = await getEntries();
+			count = filterVisibleEntries(entries).length;
+		}
+		const badgeText = count === 0 ? "" : String(count);
 
-    return Promise.all([
-      browser.action.setTitle({
-        title: chrome.i18n.getMessage("extensionName"),
-      }),
-      browser.action.setBadgeText({ text: badgeText }),
-      updateBadgeColor(),
-    ]);
-  } catch (error) {
-    throw new Error("Failed to update badge", { cause: error });
-  }
+		return Promise.all([
+			browser.action.setTitle({
+				title: chrome.i18n.getMessage("extensionName"),
+			}),
+			browser.action.setBadgeText({ text: badgeText }),
+			updateBadgeColor(),
+		]);
+	} catch (error) {
+		throw new Error("Failed to update badge", { cause: error });
+	}
 }
 
 /**
@@ -394,15 +390,15 @@ export async function updateBadge(unreadCount = null) {
  * @returns {Promise<void[]>}
  */
 export async function updateBadgeConnectionError() {
-  const { url = "" } = await browser.storage.local.get("url");
+	const { url = "" } = await browser.storage.local.get("url");
 
-  await browser.action.setTitle({
-    title: chrome.i18n.getMessage("connectionMinifluxError", url),
-  });
-  await browser.action.setBadgeText({ text: "⚡" });
-  // Use the regular badge colors (stored or defaults) so the glyph stays
-  // visible on both light and dark toolbars.
-  await updateBadgeColor();
+	await browser.action.setTitle({
+		title: chrome.i18n.getMessage("connectionMinifluxError", url),
+	});
+	await browser.action.setBadgeText({ text: "⚡" });
+	// Use the regular badge colors (stored or defaults) so the glyph stays
+	// visible on both light and dark toolbars.
+	await updateBadgeColor();
 }
 
 /**
@@ -411,11 +407,11 @@ export async function updateBadgeConnectionError() {
  * @returns {boolean}
  */
 const isIgnorableError = (error) => {
-  const message = error?.message ?? "";
-  return (
-    message.includes("Could not establish connection") ||
-    message.includes("No matching handler found")
-  );
+	const message = error?.message ?? "";
+	return (
+		message.includes("Could not establish connection") ||
+		message.includes("No matching handler found")
+	);
 };
 
 /**
@@ -423,15 +419,15 @@ const isIgnorableError = (error) => {
  * @returns {Promise<void>}
  */
 export const notifyRefreshEntries = async () => {
-  try {
-    await browser.runtime.sendMessage({
-      action: MESSAGE_REFRESH_VIEW_ENTRIES,
-    });
-  } catch (error) {
-    if (!isIgnorableError(error)) {
-      throw error;
-    }
-  }
+	try {
+		await browser.runtime.sendMessage({
+			action: MESSAGE_REFRESH_VIEW_ENTRIES,
+		});
+	} catch (error) {
+		if (!isIgnorableError(error)) {
+			throw error;
+		}
+	}
 };
 
 /**
@@ -439,15 +435,15 @@ export const notifyRefreshEntries = async () => {
  * @returns {Promise<void>}
  */
 export async function notifyRefreshTheme() {
-  try {
-    await browser.runtime.sendMessage({
-      action: MESSAGE_REFRESH_THEME,
-    });
-  } catch (error) {
-    if (!isIgnorableError(error)) {
-      throw error;
-    }
-  }
+	try {
+		await browser.runtime.sendMessage({
+			action: MESSAGE_REFRESH_THEME,
+		});
+	} catch (error) {
+		if (!isIgnorableError(error)) {
+			throw error;
+		}
+	}
 }
 
 /**
@@ -456,17 +452,17 @@ export async function notifyRefreshTheme() {
  * @returns {Object} - Object with feed title as key and array of entry titles as value
  */
 export function groupEntriesByFeed(entries) {
-  return entries.reduce((groups, entry) => {
-    const feedTitle =
-      entry.feed.title || chrome.i18n.getMessage("extensionName");
+	return entries.reduce((groups, entry) => {
+		const feedTitle =
+			entry.feed.title || chrome.i18n.getMessage("extensionName");
 
-    if (!groups[feedTitle]) {
-      groups[feedTitle] = [];
-    }
+		if (!groups[feedTitle]) {
+			groups[feedTitle] = [];
+		}
 
-    groups[feedTitle].push(entry.title);
-    return groups;
-  }, {});
+		groups[feedTitle].push(entry.title);
+		return groups;
+	}, {});
 }
 
 /**
@@ -474,57 +470,57 @@ export function groupEntriesByFeed(entries) {
  * @param {Entry[]} newEntries
  */
 async function sendNotification(newEntries) {
-  // Check if notifications is enabled
-  const { showNotifications = DEFAULT_SHOW_NOTIFICATIONS } =
-    await browser.storage.local.get("showNotifications");
+	// Check if notifications is enabled
+	const { showNotifications = DEFAULT_SHOW_NOTIFICATIONS } =
+		await browser.storage.local.get("showNotifications");
 
-  if (!showNotifications || newEntries.length === 0) {
-    return;
-  }
+	if (!showNotifications || newEntries.length === 0) {
+		return;
+	}
 
-  // Check browser permissions for notifications
-  const hasPermission = await browser.permissions.contains({
-    permissions: ["notifications"],
-  });
+	// Check browser permissions for notifications
+	const hasPermission = await browser.permissions.contains({
+		permissions: ["notifications"],
+	});
 
-  if (!hasPermission) {
-    console.warn("The notification option is on, but permission is missing.");
-    return;
-  }
+	if (!hasPermission) {
+		console.warn("The notification option is on, but permission is missing.");
+		return;
+	}
 
-  // Build notification
-  let extensionName = chrome.i18n.getMessage("extensionName");
-  let options = {
-    iconUrl: chrome.runtime.getURL("/pages/assets/icon-dark-196x196.png"),
-    title: extensionName,
-    message: "",
-  };
+	// Build notification
+	const extensionName = chrome.i18n.getMessage("extensionName");
+	const options = {
+		iconUrl: chrome.runtime.getURL("/pages/assets/icon-dark-196x196.png"),
+		title: extensionName,
+		message: "",
+	};
 
-  if (newEntries.length === 1) {
-    const entry = newEntries[0];
-    options.type = "basic";
-    options.title = entry.feed.title || extensionName;
-    // A basic notification requires a non-empty message; fall back to the
-    // feed title (or the extension name) for entries without a title.
-    options.message = entry.title || entry.feed?.title || extensionName;
-  } else {
-    options.type = "list";
-    options.message = chrome.i18n.getMessage(
-      "notificationNewEntriesAvailable",
-      String(newEntries.length),
-    );
+	if (newEntries.length === 1) {
+		const entry = newEntries[0];
+		options.type = "basic";
+		options.title = entry.feed.title || extensionName;
+		// A basic notification requires a non-empty message; fall back to the
+		// feed title (or the extension name) for entries without a title.
+		options.message = entry.title || entry.feed?.title || extensionName;
+	} else {
+		options.type = "list";
+		options.message = chrome.i18n.getMessage(
+			"notificationNewEntriesAvailable",
+			String(newEntries.length),
+		);
 
-    const groupedEntries = groupEntriesByFeed(newEntries);
-    options.items = Object.entries(groupedEntries).map(
-      ([feedTitle, titles]) => ({
-        title: feedTitle,
-        message: titles.join("\n"),
-      }),
-    );
-  }
+		const groupedEntries = groupEntriesByFeed(newEntries);
+		options.items = Object.entries(groupedEntries).map(
+			([feedTitle, titles]) => ({
+				title: feedTitle,
+				message: titles.join("\n"),
+			}),
+		);
+	}
 
-  // Send notification
-  await chrome.notifications.create("tinyflux-update", options);
+	// Send notification
+	await chrome.notifications.create("tinyflux-update", options);
 }
 
 /**
@@ -535,34 +531,34 @@ async function sendNotification(newEntries) {
  * @throws {MinifluxConnectionError}
  */
 async function fetchChangedEntries(changedAfter) {
-  const changed = [];
-  let offset = 0;
-  let total;
+	const changed = [];
+	let offset = 0;
+	let total;
 
-  do {
-    const response = await minifluxRequest(
-      `/v1/entries?changed_after=${changedAfter}&order=id&direction=asc&limit=${INCREMENTAL_FETCH_LIMIT}&offset=${offset}`,
-    );
+	do {
+		const response = await minifluxRequest(
+			`/v1/entries?changed_after=${changedAfter}&order=id&direction=asc&limit=${INCREMENTAL_FETCH_LIMIT}&offset=${offset}`,
+		);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new MinifluxConnectionError(
-        `Failed to fetch entries: ${errorText}`,
-        { cause: new Error(errorText) },
-      );
-    }
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new MinifluxConnectionError(
+				`Failed to fetch entries: ${errorText}`,
+				{ cause: new Error(errorText) },
+			);
+		}
 
-    const data = await response.json();
-    const page = data.entries || [];
-    if (page.length === 0) {
-      break;
-    }
-    total = data.total ?? page.length;
-    changed.push(...page);
-    offset += page.length;
-  } while (offset < total);
+		const data = await response.json();
+		const page = data.entries || [];
+		if (page.length === 0) {
+			break;
+		}
+		total = data.total ?? page.length;
+		changed.push(...page);
+		offset += page.length;
+	} while (offset < total);
 
-  return changed;
+	return changed;
 }
 
 /**
@@ -573,20 +569,20 @@ async function fetchChangedEntries(changedAfter) {
  * @throws {MinifluxConnectionError}
  */
 async function fetchUnreadCount() {
-  const response = await minifluxRequest(
-    "/v1/entries?status=unread&globally_visible=true&limit=1",
-  );
+	const response = await minifluxRequest(
+		"/v1/entries?status=unread&globally_visible=true&limit=1",
+	);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new MinifluxConnectionError(
-      `Failed to fetch unread count: ${errorText}`,
-      { cause: new Error(errorText) },
-    );
-  }
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new MinifluxConnectionError(
+			`Failed to fetch unread count: ${errorText}`,
+			{ cause: new Error(errorText) },
+		);
+	}
 
-  const data = await response.json();
-  return data.total ?? 0;
+	const data = await response.json();
+	return data.total ?? 0;
 }
 
 /**
@@ -597,8 +593,8 @@ async function fetchUnreadCount() {
  * @returns {number|null}
  */
 const toUnixSeconds = (timestamp) => {
-  const ms = Date.parse(timestamp);
-  return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
+	const ms = Date.parse(timestamp);
+	return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
 };
 
 /**
@@ -608,14 +604,14 @@ const toUnixSeconds = (timestamp) => {
  * @returns {number|null}
  */
 const maxChangedAt = (entries) => {
-  let max = null;
-  for (const entry of entries) {
-    const seconds = toUnixSeconds(entry?.changed_at);
-    if (seconds !== null && (max === null || seconds > max)) {
-      max = seconds;
-    }
-  }
-  return max;
+	let max = null;
+	for (const entry of entries) {
+		const seconds = toUnixSeconds(entry?.changed_at);
+		if (seconds !== null && (max === null || seconds > max)) {
+			max = seconds;
+		}
+	}
+	return max;
 };
 
 /**
@@ -625,7 +621,7 @@ const maxChangedAt = (entries) => {
  * @returns {number}
  */
 const fallbackWatermark = () =>
-  Math.floor(Date.now() / 1000) - WATERMARK_FALLBACK_WINDOW_SECONDS;
+	Math.floor(Date.now() / 1000) - WATERMARK_FALLBACK_WINDOW_SECONDS;
 
 /**
  * Fetch entries from Miniflux, update the IndexedDB cache, and refresh the
@@ -649,127 +645,127 @@ const fallbackWatermark = () =>
  * @throws {Error}
  */
 export async function refreshEntries(reason = "auto") {
-  const {
-    maxEntries: storedMaxEntries = DEFAULT_MAX_ENTRIES,
-    fullSyncIntervalHours = DEFAULT_FULL_SYNC_INTERVAL_HOURS,
-    entriesSeeded,
-    entriesChangedAfter,
-    entriesLastFullSyncAt,
-  } = await browser.storage.local.get([
-    "maxEntries",
-    "fullSyncIntervalHours",
-    "entriesSeeded",
-    "entriesChangedAfter",
-    "entriesLastFullSyncAt",
-  ]);
+	const {
+		maxEntries: storedMaxEntries = DEFAULT_MAX_ENTRIES,
+		fullSyncIntervalHours = DEFAULT_FULL_SYNC_INTERVAL_HOURS,
+		entriesSeeded,
+		entriesChangedAfter,
+		entriesLastFullSyncAt,
+	} = await browser.storage.local.get([
+		"maxEntries",
+		"fullSyncIntervalHours",
+		"entriesSeeded",
+		"entriesChangedAfter",
+		"entriesLastFullSyncAt",
+	]);
 
-  const maxEntries = resolveMaxEntries(storedMaxEntries);
-  const intervalMs =
-    resolveFullSyncIntervalHours(fullSyncIntervalHours) * 60 * 60 * 1000;
-  const dueForFullSync =
-    reason === "manual" ||
-    entriesChangedAfter === undefined ||
-    (intervalMs > 0 &&
-      (entriesLastFullSyncAt === undefined ||
-        Date.now() - entriesLastFullSyncAt >= intervalMs));
+	const maxEntries = resolveMaxEntries(storedMaxEntries);
+	const intervalMs =
+		resolveFullSyncIntervalHours(fullSyncIntervalHours) * 60 * 60 * 1000;
+	const dueForFullSync =
+		reason === "manual" ||
+		entriesChangedAfter === undefined ||
+		(intervalMs > 0 &&
+			(entriesLastFullSyncAt === undefined ||
+				Date.now() - entriesLastFullSyncAt >= intervalMs));
 
-  let fetchedEntries;
-  let watermark;
+	let fetchedEntries;
+	let watermark;
 
-  try {
-    if (dueForFullSync) {
-      const response = await minifluxRequest(
-        `/v1/entries?status=unread&order=published_at&direction=desc&limit=${maxEntries}`,
-      );
+	try {
+		if (dueForFullSync) {
+			const response = await minifluxRequest(
+				`/v1/entries?status=unread&order=published_at&direction=desc&limit=${maxEntries}`,
+			);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new MinifluxConnectionError(
-          `Failed to fetch entries: ${errorText}`,
-          { cause: new Error(errorText) },
-        );
-      }
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new MinifluxConnectionError(
+					`Failed to fetch entries: ${errorText}`,
+					{ cause: new Error(errorText) },
+				);
+			}
 
-      const data = await response.json();
-      fetchedEntries = data.entries || [];
-      watermark = maxChangedAt(fetchedEntries) ?? fallbackWatermark();
-    } else {
-      fetchedEntries = await fetchChangedEntries(entriesChangedAfter);
-      const maxChanged = maxChangedAt(fetchedEntries);
-      // Only advance the watermark from server-provided data: with no
-      // changes there is nothing new to anchor on, so keep the previous
-      // watermark (re-querying the same window is cheap and idempotent).
-      watermark =
-        maxChanged === null
-          ? entriesChangedAfter
-          : maxChanged - WATERMARK_BUFFER_SECONDS;
-    }
-  } catch (error) {
-    if (error instanceof InvalidUrlOrTokenError) {
-      throw error;
-    }
-    if (error instanceof MinifluxConnectionError) {
-      await updateBadgeConnectionError();
-      throw error;
-    }
-    console.error("Unexpected error during refresh:", error);
-    throw error;
-  }
+			const data = await response.json();
+			fetchedEntries = data.entries || [];
+			watermark = maxChangedAt(fetchedEntries) ?? fallbackWatermark();
+		} else {
+			fetchedEntries = await fetchChangedEntries(entriesChangedAfter);
+			const maxChanged = maxChangedAt(fetchedEntries);
+			// Only advance the watermark from server-provided data: with no
+			// changes there is nothing new to anchor on, so keep the previous
+			// watermark (re-querying the same window is cheap and idempotent).
+			watermark =
+				maxChanged === null
+					? entriesChangedAfter
+					: maxChanged - WATERMARK_BUFFER_SECONDS;
+		}
+	} catch (error) {
+		if (error instanceof InvalidUrlOrTokenError) {
+			throw error;
+		}
+		if (error instanceof MinifluxConnectionError) {
+			await updateBadgeConnectionError();
+			throw error;
+		}
+		console.error("Unexpected error during refresh:", error);
+		throw error;
+	}
 
-  const cachedEntries = await getEntries();
-  // The `entriesSeeded` flag in storage.local stands in for the old "entries"
-  // key, which no longer lives there (entries are in IndexedDB now). It marks
-  // that at least one sync has written to the entries store, so the very first
-  // sync (no cache yet, the user is already looking at the freshly rendered
-  // entries) does not notify. It is set below, on the first successful sync,
-  // regardless of whether any entries were fetched.
-  const isFirstSync = !entriesSeeded;
+	const cachedEntries = await getEntries();
+	// The `entriesSeeded` flag in storage.local stands in for the old "entries"
+	// key, which no longer lives there (entries are in IndexedDB now). It marks
+	// that at least one sync has written to the entries store, so the very first
+	// sync (no cache yet, the user is already looking at the freshly rendered
+	// entries) does not notify. It is set below, on the first successful sync,
+	// regardless of whether any entries were fetched.
+	const isFirstSync = !entriesSeeded;
 
-  if (!isFirstSync) {
-    const cachedIds = new Set(cachedEntries.map((e) => e.id));
-    const newArrivals = fetchedEntries.filter(
-      (e) => e.status === "unread" && !cachedIds.has(e.id),
-    );
+	if (!isFirstSync) {
+		const cachedIds = new Set(cachedEntries.map((e) => e.id));
+		const newArrivals = fetchedEntries.filter(
+			(e) => e.status === "unread" && !cachedIds.has(e.id),
+		);
 
-    if (newArrivals.length > 0) {
-      sendNotification(newArrivals).catch((err) =>
-        console.error("Notification error:", err),
-      );
-    }
-  }
+		if (newArrivals.length > 0) {
+			sendNotification(newArrivals).catch((err) =>
+				console.error("Notification error:", err),
+			);
+		}
+	}
 
-  if (dueForFullSync) {
-    await replaceEntries(fetchedEntries);
-    await browser.storage.local.set({
-      entriesChangedAfter: watermark,
-      entriesLastFullSyncAt: Date.now(),
-      ...(isFirstSync ? { entriesSeeded: true } : {}),
-    });
-  } else {
-    await syncEntries(fetchedEntries, maxEntries);
-    await browser.storage.local.set({ entriesChangedAfter: watermark });
-  }
+	if (dueForFullSync) {
+		await replaceEntries(fetchedEntries);
+		await browser.storage.local.set({
+			entriesChangedAfter: watermark,
+			entriesLastFullSyncAt: Date.now(),
+			...(isFirstSync ? { entriesSeeded: true } : {}),
+		});
+	} else {
+		await syncEntries(fetchedEntries, maxEntries);
+		await browser.storage.local.set({ entriesChangedAfter: watermark });
+	}
 
-  try {
-    let unreadCount;
-    try {
-      unreadCount = await fetchUnreadCount();
-    } catch (countError) {
-      // A failed count must not block the UI update: fall back to counting
-      // the cached entries in the badge.
-      console.error("Failed to fetch unread count:", countError);
-    }
-    await Promise.all([
-      updateBadge(unreadCount),
-      notifyRefreshEntries(),
-      refreshAlarm(),
-    ]);
-  } catch (error) {
-    console.error("Failed to update UI after refresh:", error);
-  }
+	try {
+		let unreadCount;
+		try {
+			unreadCount = await fetchUnreadCount();
+		} catch (countError) {
+			// A failed count must not block the UI update: fall back to counting
+			// the cached entries in the badge.
+			console.error("Failed to fetch unread count:", countError);
+		}
+		await Promise.all([
+			updateBadge(unreadCount),
+			notifyRefreshEntries(),
+			refreshAlarm(),
+		]);
+	} catch (error) {
+		console.error("Failed to update UI after refresh:", error);
+	}
 
-  console.log(`${fetchedEntries.length} entries fetched.`);
-  return fetchedEntries;
+	console.log(`${fetchedEntries.length} entries fetched.`);
+	return fetchedEntries;
 }
 
 /**
@@ -777,12 +773,12 @@ export async function refreshEntries(reason = "auto") {
  * @returns {Promise<browser.windows.Window>}
  */
 export async function openPopupWindow() {
-  return browser.windows.create({
-    url: "/pages/popup.html?style=window",
-    type: "popup",
-    width: 360,
-    height: 600,
-  });
+	return browser.windows.create({
+		url: "/pages/popup.html?style=window",
+		type: "popup",
+		width: 360,
+		height: 600,
+	});
 }
 
 /**
@@ -790,15 +786,15 @@ export async function openPopupWindow() {
  * @returns {Promise<void>}
  */
 async function toggleSidePanel() {
-  return browser.sidebarAction.toggle();
+	return browser.sidebarAction.toggle();
 }
 
 /**
  * Remove action listeners
  */
 const removeActionListeners = () => {
-  browser.action.onClicked.removeListener(openPopupWindow);
-  browser.action.onClicked.removeListener(toggleSidePanel);
+	browser.action.onClicked.removeListener(openPopupWindow);
+	browser.action.onClicked.removeListener(toggleSidePanel);
 };
 
 /**
@@ -806,36 +802,36 @@ const removeActionListeners = () => {
  * @returns {Promise<void>}
  */
 export async function refreshActionBehavior() {
-  await browser.action.setPopup({ popup: "" });
-  removeActionListeners();
+	await browser.action.setPopup({ popup: "" });
+	removeActionListeners();
 
-  if (!browser.sidebarAction && chrome?.sidePanel) {
-    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
-  }
+	if (!browser.sidebarAction && chrome?.sidePanel) {
+		chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+	}
 
-  const { extensionClickBehavior = DEFAULT_EXTENSION_CLICK_BEHAVIOR } =
-    await browser.storage.local.get("extensionClickBehavior");
+	const { extensionClickBehavior = DEFAULT_EXTENSION_CLICK_BEHAVIOR } =
+		await browser.storage.local.get("extensionClickBehavior");
 
-  switch (extensionClickBehavior) {
-    case "window":
-      browser.action.onClicked.addListener(openPopupWindow);
-      break;
+	switch (extensionClickBehavior) {
+		case "window":
+			browser.action.onClicked.addListener(openPopupWindow);
+			break;
 
-    case "sidepanel":
-      if (!browser.sidebarAction && chrome?.sidePanel) {
-        chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-      } else if (browser.sidebarAction) {
-        browser.action.onClicked.addListener(toggleSidePanel);
-      }
-      break;
+		case "sidepanel":
+			if (!browser.sidebarAction && chrome?.sidePanel) {
+				chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+			} else if (browser.sidebarAction) {
+				browser.action.onClicked.addListener(toggleSidePanel);
+			}
+			break;
 
-    case "popup":
-    default:
-      await browser.action.setPopup({
-        popup: "/pages/popup.html?style=popup",
-      });
-      break;
-  }
+		case "popup":
+		default:
+			await browser.action.setPopup({
+				popup: "/pages/popup.html?style=popup",
+			});
+			break;
+	}
 }
 
 /**
@@ -843,20 +839,20 @@ export async function refreshActionBehavior() {
  * @returns {Promise<void>}
  */
 export async function refreshAlarm() {
-  const { periodInMinutes = DEFAULT_REFRESH_PERIOD_MINUTES } =
-    await browser.storage.local.get("periodInMinutes");
+	const { periodInMinutes = DEFAULT_REFRESH_PERIOD_MINUTES } =
+		await browser.storage.local.get("periodInMinutes");
 
-  const period = Number(periodInMinutes);
-  // The alarms API rejects periods below 1 minute, so treat sub-minute
-  // values as invalid and fall back to the default.
-  const safePeriod =
-    Number.isFinite(period) && period >= 1
-      ? period
-      : DEFAULT_REFRESH_PERIOD_MINUTES;
+	const period = Number(periodInMinutes);
+	// The alarms API rejects periods below 1 minute, so treat sub-minute
+	// values as invalid and fall back to the default.
+	const safePeriod =
+		Number.isFinite(period) && period >= 1
+			? period
+			: DEFAULT_REFRESH_PERIOD_MINUTES;
 
-  await browser.alarms.create(ALARM_REFRESH, {
-    periodInMinutes: safePeriod,
-  });
+	await browser.alarms.create(ALARM_REFRESH, {
+		periodInMinutes: safePeriod,
+	});
 }
 
 /**
@@ -864,10 +860,10 @@ export async function refreshAlarm() {
  * @returns {Promise<void>}
  */
 export async function refreshTheme() {
-  if (typeof document === "undefined") {
-    return;
-  }
+	if (typeof document === "undefined") {
+		return;
+	}
 
-  const { theme = DEFAULT_THEME } = await browser.storage.local.get("theme");
-  document.documentElement.setAttribute("data-theme", theme);
+	const { theme = DEFAULT_THEME } = await browser.storage.local.get("theme");
+	document.documentElement.setAttribute("data-theme", theme);
 }

@@ -1,26 +1,24 @@
-/* global document, chrome, console, setTimeout, clearTimeout */
-
 import "./localize.js";
 import browser from "webextension-polyfill";
 import {
-  DEFAULT_BADGE_BACKGROUND_COLOR,
-  DEFAULT_BADGE_TEXT_COLOR,
-  DEFAULT_EXTENSION_CLICK_BEHAVIOR,
-  DEFAULT_FULL_SYNC_INTERVAL_HOURS,
-  DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
-  DEFAULT_MAX_ENTRIES,
-  DEFAULT_REFRESH_PERIOD_MINUTES,
-  DEFAULT_THEME,
-  DEFAULT_TOKEN,
-  DEFAULT_URL,
-  DEFAULT_SHOW_NOTIFICATIONS,
-  notifyRefreshTheme,
-  refreshActionBehavior,
-  refreshAlarm,
-  refreshEntries,
-  refreshTheme,
-  minifluxRequest,
-  updateBadgeColor,
+	DEFAULT_BADGE_BACKGROUND_COLOR,
+	DEFAULT_BADGE_TEXT_COLOR,
+	DEFAULT_EXTENSION_CLICK_BEHAVIOR,
+	DEFAULT_FULL_SYNC_INTERVAL_HOURS,
+	DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
+	DEFAULT_MAX_ENTRIES,
+	DEFAULT_REFRESH_PERIOD_MINUTES,
+	DEFAULT_SHOW_NOTIFICATIONS,
+	DEFAULT_THEME,
+	DEFAULT_TOKEN,
+	DEFAULT_URL,
+	minifluxRequest,
+	notifyRefreshTheme,
+	refreshActionBehavior,
+	refreshAlarm,
+	refreshEntries,
+	refreshTheme,
+	updateBadgeColor,
 } from "./common.js";
 import { clearIcons } from "./db.js";
 
@@ -40,22 +38,22 @@ let savePending = false;
 // ============================================================================
 
 const elements = {
-  url: () => document.querySelector("#inputMinifluxUrl"),
-  token: () => document.querySelector("#inputMinifluxToken"),
-  periodInMinutes: () =>
-    document.querySelector("#inputMinifluxPeriodInMinutes"),
-  maxEntries: () => document.querySelector("#inputMinifluxMaxEntries"),
-  fullSyncIntervalHours: () =>
-    document.querySelector("#inputMinifluxFullSyncInterval"),
-  extensionClickBehavior: () =>
-    document.querySelector("#selectExtensionClickBehavior"),
-  markEntryAsReadWhenOpenedAsTab: () =>
-    document.querySelector("#checkMarkEntryAsReadWhenOpenedAsTab"),
-  theme: () => document.querySelector("#selectTheme"),
-  badgeBackgroundColor: () =>
-    document.querySelector("#inputBadgeBackgroundColor"),
-  badgeTextColor: () => document.querySelector("#inputBadgeTextColor"),
-  showNotifications: () => document.querySelector("#checkShowNotifications"),
+	url: () => document.querySelector("#inputMinifluxUrl"),
+	token: () => document.querySelector("#inputMinifluxToken"),
+	periodInMinutes: () =>
+		document.querySelector("#inputMinifluxPeriodInMinutes"),
+	maxEntries: () => document.querySelector("#inputMinifluxMaxEntries"),
+	fullSyncIntervalHours: () =>
+		document.querySelector("#inputMinifluxFullSyncInterval"),
+	extensionClickBehavior: () =>
+		document.querySelector("#selectExtensionClickBehavior"),
+	markEntryAsReadWhenOpenedAsTab: () =>
+		document.querySelector("#checkMarkEntryAsReadWhenOpenedAsTab"),
+	theme: () => document.querySelector("#selectTheme"),
+	badgeBackgroundColor: () =>
+		document.querySelector("#inputBadgeBackgroundColor"),
+	badgeTextColor: () => document.querySelector("#inputBadgeTextColor"),
+	showNotifications: () => document.querySelector("#checkShowNotifications"),
 };
 
 // ============================================================================
@@ -67,19 +65,19 @@ const elements = {
  * @returns {Promise<object>}
  */
 async function getStoredValues() {
-  return browser.storage.local.get([
-    "url",
-    "token",
-    "periodInMinutes",
-    "maxEntries",
-    "fullSyncIntervalHours",
-    "extensionClickBehavior",
-    "markEntryAsReadWhenOpenedAsTab",
-    "theme",
-    "badgeBackgroundColor",
-    "badgeTextColor",
-    "showNotifications",
-  ]);
+	return browser.storage.local.get([
+		"url",
+		"token",
+		"periodInMinutes",
+		"maxEntries",
+		"fullSyncIntervalHours",
+		"extensionClickBehavior",
+		"markEntryAsReadWhenOpenedAsTab",
+		"theme",
+		"badgeBackgroundColor",
+		"badgeTextColor",
+		"showNotifications",
+	]);
 }
 
 /**
@@ -90,7 +88,7 @@ async function getStoredValues() {
  * @returns {number|null}
  */
 const readNumberOrNull = (input) =>
-  Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : null;
+	Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : null;
 
 /**
  * Read the refresh period, clamping to the alarm minimum (1 minute): the
@@ -100,8 +98,8 @@ const readNumberOrNull = (input) =>
  * @returns {number|null}
  */
 const readPeriodInMinutes = (input) => {
-  const value = readNumberOrNull(input);
-  return value === null ? null : Math.max(1, value);
+	const value = readNumberOrNull(input);
+	return value === null ? null : Math.max(1, value);
 };
 
 /**
@@ -112,8 +110,8 @@ const readPeriodInMinutes = (input) => {
  * @returns {number|null}
  */
 const readFullSyncIntervalHours = (input) => {
-  const value = readNumberOrNull(input);
-  return value === null ? null : Math.max(0, value);
+	const value = readNumberOrNull(input);
+	return value === null ? null : Math.max(0, value);
 };
 
 /**
@@ -121,22 +119,22 @@ const readFullSyncIntervalHours = (input) => {
  * @returns {object}
  */
 function readFormValues() {
-  return {
-    url: elements.url().value,
-    token: elements.token().value,
-    periodInMinutes: readPeriodInMinutes(elements.periodInMinutes()),
-    maxEntries: readNumberOrNull(elements.maxEntries()),
-    fullSyncIntervalHours: readFullSyncIntervalHours(
-      elements.fullSyncIntervalHours(),
-    ),
-    extensionClickBehavior: elements.extensionClickBehavior().value,
-    markEntryAsReadWhenOpenedAsTab:
-      elements.markEntryAsReadWhenOpenedAsTab().checked,
-    theme: elements.theme().value,
-    badgeBackgroundColor: elements.badgeBackgroundColor().value,
-    badgeTextColor: elements.badgeTextColor().value,
-    showNotifications: elements.showNotifications().checked,
-  };
+	return {
+		url: elements.url().value,
+		token: elements.token().value,
+		periodInMinutes: readPeriodInMinutes(elements.periodInMinutes()),
+		maxEntries: readNumberOrNull(elements.maxEntries()),
+		fullSyncIntervalHours: readFullSyncIntervalHours(
+			elements.fullSyncIntervalHours(),
+		),
+		extensionClickBehavior: elements.extensionClickBehavior().value,
+		markEntryAsReadWhenOpenedAsTab:
+			elements.markEntryAsReadWhenOpenedAsTab().checked,
+		theme: elements.theme().value,
+		badgeBackgroundColor: elements.badgeBackgroundColor().value,
+		badgeTextColor: elements.badgeTextColor().value,
+		showNotifications: elements.showNotifications().checked,
+	};
 }
 
 // ============================================================================
@@ -150,13 +148,13 @@ function readFormValues() {
  * @returns {object} Map of changed setting keys to `true`.
  */
 function computeChanges(currentValues, storedValues) {
-  const changes = {};
-  for (const key of Object.keys(currentValues)) {
-    if (currentValues[key] !== storedValues[key]) {
-      changes[key] = true;
-    }
-  }
-  return changes;
+	const changes = {};
+	for (const key of Object.keys(currentValues)) {
+		if (currentValues[key] !== storedValues[key]) {
+			changes[key] = true;
+		}
+	}
+	return changes;
 }
 
 /**
@@ -165,51 +163,51 @@ function computeChanges(currentValues, storedValues) {
  * @param {object} currentValues
  */
 async function applySideEffects(changes, currentValues) {
-  if (
-    (changes.url || changes.token || changes.maxEntries) &&
-    currentValues.url &&
-    currentValues.token
-  ) {
-    // A changed endpoint or token means the stored watermark belongs to
-    // another instance, so force a full resync. A maxEntries change alone is
-    // picked up by the next sync (the incremental merge trims the cache to
-    // the new limit), so it can run in auto mode.
-    const forceFullSync = Boolean(changes.url || changes.token);
-    await refreshEntries(forceFullSync ? "manual" : "auto");
-  }
+	if (
+		(changes.url || changes.token || changes.maxEntries) &&
+		currentValues.url &&
+		currentValues.token
+	) {
+		// A changed endpoint or token means the stored watermark belongs to
+		// another instance, so force a full resync. A maxEntries change alone is
+		// picked up by the next sync (the incremental merge trims the cache to
+		// the new limit), so it can run in auto mode.
+		const forceFullSync = Boolean(changes.url || changes.token);
+		await refreshEntries(forceFullSync ? "manual" : "auto");
+	}
 
-  if (changes.extensionClickBehavior) {
-    await refreshActionBehavior();
-  }
+	if (changes.extensionClickBehavior) {
+		await refreshActionBehavior();
+	}
 
-  if (changes.periodInMinutes) {
-    await refreshAlarm();
-  }
+	if (changes.periodInMinutes) {
+		await refreshAlarm();
+	}
 
-  if (changes.theme) {
-    await refreshTheme();
-    await notifyRefreshTheme();
-  }
+	if (changes.theme) {
+		await refreshTheme();
+		await notifyRefreshTheme();
+	}
 
-  if (changes.badgeBackgroundColor || changes.badgeTextColor) {
-    await updateBadgeColor();
-  }
+	if (changes.badgeBackgroundColor || changes.badgeTextColor) {
+		await updateBadgeColor();
+	}
 }
 
 /** Show the floating "Saved" toast, hiding it again after a short delay. */
 let saveToastTimeout = null;
 
 function showSaveToast() {
-  const toast = document.getElementById("saveToast");
-  if (!toast) return;
+	const toast = document.getElementById("saveToast");
+	if (!toast) return;
 
-  toast.classList.add("is-visible");
-  if (saveToastTimeout) {
-    clearTimeout(saveToastTimeout);
-  }
-  saveToastTimeout = setTimeout(() => {
-    toast.classList.remove("is-visible");
-  }, 2000);
+	toast.classList.add("is-visible");
+	if (saveToastTimeout) {
+		clearTimeout(saveToastTimeout);
+	}
+	saveToastTimeout = setTimeout(() => {
+		toast.classList.remove("is-visible");
+	}, 2000);
 }
 
 /**
@@ -217,89 +215,89 @@ function showSaveToast() {
  * Edits made while a save is in progress are queued and saved once it finishes.
  */
 async function debouncedSave() {
-  if (isSaving) {
-    savePending = true;
-    return;
-  }
+	if (isSaving) {
+		savePending = true;
+		return;
+	}
 
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-  }
+	if (saveTimeout) {
+		clearTimeout(saveTimeout);
+	}
 
-  saveTimeout = setTimeout(async () => {
-    saveTimeout = null;
-    isSaving = true;
+	saveTimeout = setTimeout(async () => {
+		saveTimeout = null;
+		isSaving = true;
 
-    let changes;
-    let currentValues;
-    try {
-      currentValues = readFormValues();
-      const storedValues = await getStoredValues();
-      changes = computeChanges(currentValues, storedValues);
-      await browser.storage.local.set(currentValues);
-      showSaveToast();
-    } catch (error) {
-      console.warn("Failed to save options:", error);
-    }
+		let changes;
+		let currentValues;
+		try {
+			currentValues = readFormValues();
+			const storedValues = await getStoredValues();
+			changes = computeChanges(currentValues, storedValues);
+			await browser.storage.local.set(currentValues);
+			showSaveToast();
+		} catch (error) {
+			console.warn("Failed to save options:", error);
+		}
 
-    // Side effects run (and fail) independently of the save above: the values
-    // are already persisted and the toast already shown, so a transient
-    // refresh failure must not hide the "Saved" feedback.
-    if (changes) {
-      try {
-        await applySideEffects(changes, currentValues);
-      } catch (error) {
-        console.warn("Failed to apply option side effects:", error);
-      }
-    }
+		// Side effects run (and fail) independently of the save above: the values
+		// are already persisted and the toast already shown, so a transient
+		// refresh failure must not hide the "Saved" feedback.
+		if (changes) {
+			try {
+				await applySideEffects(changes, currentValues);
+			} catch (error) {
+				console.warn("Failed to apply option side effects:", error);
+			}
+		}
 
-    isSaving = false;
-    if (savePending) {
-      savePending = false;
-      debouncedSave();
-    }
-  }, SAVE_DEBOUNCE_MS);
+		isSaving = false;
+		if (savePending) {
+			savePending = false;
+			debouncedSave();
+		}
+	}, SAVE_DEBOUNCE_MS);
 }
 
 /**
  * Populate form fields with stored values.
  */
 async function restoreOptions() {
-  const storedValues = await getStoredValues();
+	const storedValues = await getStoredValues();
 
-  // Use nullish coalescing so an explicitly stored falsy value (e.g. `false`)
-  // is honored instead of being replaced by the default.
-  elements.url().value = storedValues.url ?? DEFAULT_URL;
-  elements.token().value = storedValues.token ?? DEFAULT_TOKEN;
-  elements.periodInMinutes().valueAsNumber =
-    storedValues.periodInMinutes ?? DEFAULT_REFRESH_PERIOD_MINUTES;
-  elements.maxEntries().valueAsNumber =
-    storedValues.maxEntries ?? DEFAULT_MAX_ENTRIES;
-  elements.fullSyncIntervalHours().valueAsNumber =
-    storedValues.fullSyncIntervalHours ?? DEFAULT_FULL_SYNC_INTERVAL_HOURS;
-  elements.extensionClickBehavior().value =
-    storedValues.extensionClickBehavior ?? DEFAULT_EXTENSION_CLICK_BEHAVIOR;
-  elements.markEntryAsReadWhenOpenedAsTab().checked =
-    storedValues.markEntryAsReadWhenOpenedAsTab ??
-    DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
-  elements.theme().value = storedValues.theme ?? DEFAULT_THEME;
-  elements.badgeBackgroundColor().value =
-    storedValues.badgeBackgroundColor ?? DEFAULT_BADGE_BACKGROUND_COLOR;
-  elements.badgeTextColor().value =
-    storedValues.badgeTextColor ?? DEFAULT_BADGE_TEXT_COLOR;
+	// Use nullish coalescing so an explicitly stored falsy value (e.g. `false`)
+	// is honored instead of being replaced by the default.
+	elements.url().value = storedValues.url ?? DEFAULT_URL;
+	elements.token().value = storedValues.token ?? DEFAULT_TOKEN;
+	elements.periodInMinutes().valueAsNumber =
+		storedValues.periodInMinutes ?? DEFAULT_REFRESH_PERIOD_MINUTES;
+	elements.maxEntries().valueAsNumber =
+		storedValues.maxEntries ?? DEFAULT_MAX_ENTRIES;
+	elements.fullSyncIntervalHours().valueAsNumber =
+		storedValues.fullSyncIntervalHours ?? DEFAULT_FULL_SYNC_INTERVAL_HOURS;
+	elements.extensionClickBehavior().value =
+		storedValues.extensionClickBehavior ?? DEFAULT_EXTENSION_CLICK_BEHAVIOR;
+	elements.markEntryAsReadWhenOpenedAsTab().checked =
+		storedValues.markEntryAsReadWhenOpenedAsTab ??
+		DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB;
+	elements.theme().value = storedValues.theme ?? DEFAULT_THEME;
+	elements.badgeBackgroundColor().value =
+		storedValues.badgeBackgroundColor ?? DEFAULT_BADGE_BACKGROUND_COLOR;
+	elements.badgeTextColor().value =
+		storedValues.badgeTextColor ?? DEFAULT_BADGE_TEXT_COLOR;
 
-  const hasPermission = await browser.permissions.contains({
-    permissions: ["notifications"],
-  });
-  const storedSetting =
-    storedValues.showNotifications ?? DEFAULT_SHOW_NOTIFICATIONS;
-  elements.showNotifications().checked = storedSetting && hasPermission;
+	const hasPermission = await browser.permissions.contains({
+		permissions: ["notifications"],
+	});
+	const storedSetting =
+		storedValues.showNotifications ?? DEFAULT_SHOW_NOTIFICATIONS;
+	elements.showNotifications().checked = storedSetting && hasPermission;
 
-  // Persist the effective value so storage, checkbox, and actual behavior
-  // always agree (e.g. after the notifications permission is revoked).
-  if (storedSetting && !hasPermission) {
-    await browser.storage.local.set({ showNotifications: false });
-  }
+	// Persist the effective value so storage, checkbox, and actual behavior
+	// always agree (e.g. after the notifications permission is revoked).
+	if (storedSetting && !hasPermission) {
+		await browser.storage.local.set({ showNotifications: false });
+	}
 }
 
 // ============================================================================
@@ -320,23 +318,23 @@ const i18n = (key, fallback) => chrome.i18n.getMessage(key) || fallback;
  * A previous test result is cleared when the credentials change.
  */
 function updateTestButtonState() {
-  const url = elements.url().value;
-  const token = elements.token().value;
-  const btnTest = document.getElementById("btnTest");
-  if (!btnTest) return;
+	const url = elements.url().value;
+	const token = elements.token().value;
+	const btnTest = document.getElementById("btnTest");
+	if (!btnTest) return;
 
-  btnTest.disabled = !url || !token;
+	btnTest.disabled = !url || !token;
 
-  if (
-    btnTest.classList.contains("status-success") ||
-    btnTest.classList.contains("status-error")
-  ) {
-    btnTest.classList.remove("status-success", "status-error");
-    btnTest.innerText = i18n(
-      "pageSettingsMinifluxInstanceTestConnection",
-      "Test Connection",
-    );
-  }
+	if (
+		btnTest.classList.contains("status-success") ||
+		btnTest.classList.contains("status-error")
+	) {
+		btnTest.classList.remove("status-success", "status-error");
+		btnTest.innerText = i18n(
+			"pageSettingsMinifluxInstanceTestConnection",
+			"Test Connection",
+		);
+	}
 }
 
 // ============================================================================
@@ -348,38 +346,38 @@ function updateTestButtonState() {
  * @returns {Promise<void>}
  */
 async function testMinifluxApi() {
-  const url = elements.url().value;
-  const token = elements.token().value;
+	const url = elements.url().value;
+	const token = elements.token().value;
 
-  const btnTest = document.getElementById("btnTest");
-  btnTest.innerText = i18n("pageSettingsTesting", "Testing …");
-  btnTest.disabled = true;
-  btnTest.classList.remove("status-success", "status-error");
+	const btnTest = document.getElementById("btnTest");
+	btnTest.innerText = i18n("pageSettingsTesting", "Testing …");
+	btnTest.disabled = true;
+	btnTest.classList.remove("status-success", "status-error");
 
-  try {
-    const response = await minifluxRequest("/v1/me", { url, token });
+	try {
+		const response = await minifluxRequest("/v1/me", { url, token });
 
-    if (!response.ok) {
-      btnTest.classList.add("status-error");
-      btnTest.innerText = i18n(
-        "pageSettingsTestError",
-        "Test failed. Try again?",
-      );
-      return;
-    }
+		if (!response.ok) {
+			btnTest.classList.add("status-error");
+			btnTest.innerText = i18n(
+				"pageSettingsTestError",
+				"Test failed. Try again?",
+			);
+			return;
+		}
 
-    btnTest.classList.add("status-success");
-    btnTest.innerText = i18n("pageSettingsTestOK", "Test OK");
-  } catch (error) {
-    btnTest.classList.add("status-error");
-    btnTest.innerText = i18n(
-      "pageSettingsTestError",
-      "Test failed. Try again?",
-    );
-    console.error("Failed to test Miniflux API:", error);
-  } finally {
-    btnTest.disabled = false;
-  }
+		btnTest.classList.add("status-success");
+		btnTest.innerText = i18n("pageSettingsTestOK", "Test OK");
+	} catch (error) {
+		btnTest.classList.add("status-error");
+		btnTest.innerText = i18n(
+			"pageSettingsTestError",
+			"Test failed. Try again?",
+		);
+		console.error("Failed to test Miniflux API:", error);
+	} finally {
+		btnTest.disabled = false;
+	}
 }
 
 /**
@@ -387,22 +385,22 @@ async function testMinifluxApi() {
  * @returns {Promise<void>}
  */
 async function clearIconsCache() {
-  const btn = document.getElementById("btnCleanIconsCache");
-  const originalText = btn?.innerText || "Clear FavIcons Cache";
-  if (btn) btn.disabled = true;
+	const btn = document.getElementById("btnCleanIconsCache");
+	const originalText = btn?.innerText || "Clear FavIcons Cache";
+	if (btn) btn.disabled = true;
 
-  await clearIcons();
+	await clearIcons();
 
-  if (btn) {
-    btn.innerText = i18n(
-      "pageSettingsMinifluxInstanceFaviconsCacheCleared",
-      "Favicons cache cleared.",
-    );
-    setTimeout(() => {
-      btn.innerText = originalText;
-      btn.disabled = false;
-    }, 2000);
-  }
+	if (btn) {
+		btn.innerText = i18n(
+			"pageSettingsMinifluxInstanceFaviconsCacheCleared",
+			"Favicons cache cleared.",
+		);
+		setTimeout(() => {
+			btn.innerText = originalText;
+			btn.disabled = false;
+		}, 2000);
+	}
 }
 
 // ============================================================================
@@ -410,79 +408,79 @@ async function clearIconsCache() {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Prevent implicit form submission (e.g. pressing Enter in a text field),
-  // which would reload the page and discard unsaved edits.
-  document
-    .querySelector("form")
-    ?.addEventListener("submit", (event) => event.preventDefault());
+	// Prevent implicit form submission (e.g. pressing Enter in a text field),
+	// which would reload the page and discard unsaved edits.
+	document
+		.querySelector("form")
+		?.addEventListener("submit", (event) => event.preventDefault());
 
-  await Promise.all([refreshTheme(), restoreOptions()]);
-  updateTestButtonState();
+	await Promise.all([refreshTheme(), restoreOptions()]);
+	updateTestButtonState();
 
-  // Attach auto-save listeners to input fields
-  const autoSaveElements = [
-    elements.url(),
-    elements.token(),
-    elements.periodInMinutes(),
-    elements.maxEntries(),
-    elements.fullSyncIntervalHours(),
-    elements.extensionClickBehavior(),
-    elements.markEntryAsReadWhenOpenedAsTab(),
-    elements.theme(),
-    elements.badgeBackgroundColor(),
-    elements.badgeTextColor(),
-  ];
+	// Attach auto-save listeners to input fields
+	const autoSaveElements = [
+		elements.url(),
+		elements.token(),
+		elements.periodInMinutes(),
+		elements.maxEntries(),
+		elements.fullSyncIntervalHours(),
+		elements.extensionClickBehavior(),
+		elements.markEntryAsReadWhenOpenedAsTab(),
+		elements.theme(),
+		elements.badgeBackgroundColor(),
+		elements.badgeTextColor(),
+	];
 
-  for (const el of autoSaveElements) {
-    el.addEventListener("input", debouncedSave);
-    el.addEventListener("change", debouncedSave);
-  }
+	for (const el of autoSaveElements) {
+		el.addEventListener("input", debouncedSave);
+		el.addEventListener("change", debouncedSave);
+	}
 
-  // Update Test Connection button state on URL/Token input
-  for (const el of [elements.url(), elements.token()]) {
-    el.addEventListener("input", updateTestButtonState);
-  }
+	// Update Test Connection button state on URL/Token input
+	for (const el of [elements.url(), elements.token()]) {
+		el.addEventListener("input", updateTestButtonState);
+	}
 
-  // Notification permission toggle
-  elements.showNotifications().addEventListener("change", async (event) => {
-    const checkbox = event.target;
+	// Notification permission toggle
+	elements.showNotifications().addEventListener("change", async (event) => {
+		const checkbox = event.target;
 
-    if (checkbox.checked) {
-      const granted = await browser.permissions.request({
-        permissions: ["notifications"],
-      });
+		if (checkbox.checked) {
+			const granted = await browser.permissions.request({
+				permissions: ["notifications"],
+			});
 
-      if (!granted) {
-        checkbox.checked = false;
-        return;
-      }
-    } else {
-      await browser.permissions.remove({
-        permissions: ["notifications"],
-      });
-    }
+			if (!granted) {
+				checkbox.checked = false;
+				return;
+			}
+		} else {
+			await browser.permissions.remove({
+				permissions: ["notifications"],
+			});
+		}
 
-    debouncedSave();
-  });
+		debouncedSave();
+	});
 
-  // Toggle token visibility
-  const btnToggleToken = document.getElementById("btnToggleToken");
-  btnToggleToken?.addEventListener("click", () => {
-    const tokenInput = elements.token();
-    const isHidden = tokenInput.type === "password";
-    tokenInput.type = isHidden ? "text" : "password";
-    btnToggleToken.innerText = i18n(
-      isHidden ? "pageSettingsHideToken" : "pageSettingsShowToken",
-      isHidden ? "Hide" : "Show",
-    );
-  });
+	// Toggle token visibility
+	const btnToggleToken = document.getElementById("btnToggleToken");
+	btnToggleToken?.addEventListener("click", () => {
+		const tokenInput = elements.token();
+		const isHidden = tokenInput.type === "password";
+		tokenInput.type = isHidden ? "text" : "password";
+		btnToggleToken.innerText = i18n(
+			isHidden ? "pageSettingsHideToken" : "pageSettingsShowToken",
+			isHidden ? "Hide" : "Show",
+		);
+	});
 
-  // Action buttons
-  document
-    .getElementById("btnTest")
-    ?.addEventListener("click", testMinifluxApi);
+	// Action buttons
+	document
+		.getElementById("btnTest")
+		?.addEventListener("click", testMinifluxApi);
 
-  document
-    .getElementById("btnCleanIconsCache")
-    ?.addEventListener("click", clearIconsCache);
+	document
+		.getElementById("btnCleanIconsCache")
+		?.addEventListener("click", clearIconsCache);
 });

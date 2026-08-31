@@ -1,0 +1,22 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+	"javascript": {
+		"globals": [
+			"browser",
+			"chrome",
+			"expect",
+			"fakeClock",
+			"resetDOM",
+			"runtimeMessageListeners",
+			"test"
+		]
+	},
+	"linter": {
+		"rules": {
+			"preset": "recommended",
+			"correctness": {
+				"noUndeclaredVariables": "error"
+			}
+		}
+	}
+}
