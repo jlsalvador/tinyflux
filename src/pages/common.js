@@ -162,7 +162,9 @@ export const resolveMaxEntries = (maxEntries) => {
 /**
  * Resolve the stored full sync interval (in hours). Zero means "never" (full
  * syncs only on first use and manual refresh); invalid values fall back to
- * the default.
+ * the default. This setting is no longer exposed in the options UI; the
+ * storage key is still honored so values customized before the option was
+ * removed keep working.
  * @param {unknown} hours
  * @returns {number}
  */

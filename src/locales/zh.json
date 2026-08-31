@@ -90,16 +90,6 @@
 		"description": "Help text for the max entries input field."
 	},
 
-	"pageSettingsSyncFullSyncInterval": {
-		"message": "完整同步间隔（小时）",
-		"description": "Label for the full sync interval input field."
-	},
-
-	"pageSettingsSyncFullSyncIntervalHelp": {
-		"message": "Tinyflux 重新下载完整文章列表的频率。两次完整同步之间仅获取更改。0 表示禁用定期完整同步。",
-		"description": "Help text for the full sync interval input field."
-	},
-
 	"pageSettingsBrowserBehavior": {
 		"message": "浏览器行为",
 		"description": "Label for the browser behavior section."

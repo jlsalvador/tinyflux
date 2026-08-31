@@ -90,16 +90,6 @@
 		"description": "Help text for the max entries input field."
 	},
 
-	"pageSettingsSyncFullSyncInterval": {
-		"message": "Full sync interval (hours)",
-		"description": "Label for the full sync interval input field."
-	},
-
-	"pageSettingsSyncFullSyncIntervalHelp": {
-		"message": "How often Tinyflux re-downloads the complete entry list. Between full syncs, only the changes are fetched. 0 disables periodic full syncs.",
-		"description": "Help text for the full sync interval input field."
-	},
-
 	"pageSettingsBrowserBehavior": {
 		"message": "Browser behavior",
 		"description": "Label for the browser behavior section."

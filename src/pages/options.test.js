@@ -5,7 +5,6 @@ import {
 	DEFAULT_BADGE_BACKGROUND_COLOR,
 	DEFAULT_BADGE_TEXT_COLOR,
 	DEFAULT_EXTENSION_CLICK_BEHAVIOR,
-	DEFAULT_FULL_SYNC_INTERVAL_HOURS,
 	DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
 	DEFAULT_MAX_ENTRIES,
 	DEFAULT_REFRESH_PERIOD_MINUTES,
@@ -103,7 +102,6 @@ test("restoreOptions populates the form from stored values", async (t) => {
 		...fullDefaults,
 		periodInMinutes: 30,
 		maxEntries: 250,
-		fullSyncIntervalHours: 6,
 		extensionClickBehavior: "sidepanel",
 		markEntryAsReadWhenOpenedAsTab: true,
 		theme: "dark",
@@ -126,9 +124,6 @@ test("restoreOptions populates the form from stored values", async (t) => {
 	expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
 		250,
 	);
-	expect(
-		document.getElementById("inputMinifluxFullSyncInterval").valueAsNumber,
-	).toBe(6);
 	expect(document.getElementById("selectExtensionClickBehavior").value).toBe(
 		"sidepanel",
 	);
@@ -159,9 +154,6 @@ test("restoreOptions falls back to defaults when storage is empty", async (t) =>
 	expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
 		DEFAULT_MAX_ENTRIES,
 	);
-	expect(
-		document.getElementById("inputMinifluxFullSyncInterval").valueAsNumber,
-	).toBe(DEFAULT_FULL_SYNC_INTERVAL_HOURS);
 	expect(document.getElementById("selectExtensionClickBehavior").value).toBe(
 		DEFAULT_EXTENSION_CLICK_BEHAVIOR,
 	);
