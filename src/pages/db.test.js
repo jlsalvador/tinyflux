@@ -11,7 +11,7 @@ import {
   setIcon,
   syncEntries,
   updateEntry,
-  upsertEntries,
+  insertEntriesIfAbsent,
 } from "./db.js";
 import { __resetIDB } from "../test/fixtures/indexeddb.js";
 
@@ -69,9 +69,9 @@ test("deleteEntries tolerates unknown ids", async () => {
   expect((await getEntries()).map((e) => e.id)).toEqual([1]);
 });
 
-test("upsertEntries inserts missing entries and skips existing ones", async () => {
+test("insertEntriesIfAbsent inserts missing entries and skips existing ones", async () => {
   await replaceEntries([{ id: 1, title: "orig" }]);
-  await upsertEntries([
+  await insertEntriesIfAbsent([
     { id: 1, title: "new" },
     { id: 2, title: "added" },
   ]);

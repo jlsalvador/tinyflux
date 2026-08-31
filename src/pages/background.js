@@ -9,14 +9,19 @@ import {
   MESSAGE_MARK_ENTRY_IDS_AS_READ,
   MESSAGE_TOGGLE_ENTRY_BOOKMARK,
   MinifluxConnectionError,
+  minifluxRequest,
   notifyRefreshEntries,
   openSettings,
   refreshActionBehavior,
   refreshEntries,
-  request,
   updateBadge,
 } from "./common.js";
-import { deleteEntries, getEntries, updateEntry, upsertEntries } from "./db.js";
+import {
+  deleteEntries,
+  getEntries,
+  insertEntriesIfAbsent,
+  updateEntry,
+} from "./db.js";
 
 /**
  * @typedef {import('./common.js').Entry} Entry
@@ -61,7 +66,7 @@ export const markEntriesAsRead = async (entryIds) => {
   await Promise.all([notifyRefreshEntries(), updateBadge()]);
 
   try {
-    const response = await request(`/v1/entries`, {
+    const response = await minifluxRequest(`/v1/entries`, {
       method: "PUT",
       body: JSON.stringify({ entry_ids: entryIds, status: "read" }),
     });
@@ -76,12 +81,12 @@ export const markEntriesAsRead = async (entryIds) => {
 
     return remainingEntries;
   } catch (error) {
-    // Roll back by re-inserting the removed entries. upsertEntries only writes
-    // ids that are absent, so a concurrent refresh that already restored some
-    // of them is not duplicated.
+    // Roll back by re-inserting the removed entries. insertEntriesIfAbsent
+    // only writes ids that are absent, so a concurrent refresh that already
+    // restored some of them is not duplicated.
     if (removedEntries.length > 0) {
       try {
-        await upsertEntries(removedEntries);
+        await insertEntriesIfAbsent(removedEntries);
       } catch (rollbackError) {
         console.error("Failed to revert the entries cache:", rollbackError);
       }
@@ -117,7 +122,7 @@ export const toggleBookmark = async (entryId) => {
   await notifyRefreshEntries();
 
   try {
-    const response = await request(`/v1/entries/${entryId}/bookmark`, {
+    const response = await minifluxRequest(`/v1/entries/${entryId}/bookmark`, {
       method: "PUT",
     });
 
@@ -149,13 +154,15 @@ export const toggleBookmark = async (entryId) => {
 // ============================================================================
 
 /**
- * Remove legacy entries and icon records that older versions kept in
- * storage.local. The migration to IndexedDB does not copy them over (they are
- * re-downloaded on the next refresh), so we just drop the now-unused keys.
- * Idempotent: a no-op once the keys are gone.
+ * Remove legacy persisted state left behind by older versions. 0.12.0 moved
+ * the entries and icons caches from storage.local to IndexedDB without copying
+ * them over (they are re-downloaded on the next refresh) and renamed the
+ * refresh alarm; drop the now-unused storage keys and the stale alarm, which
+ * would keep firing forever since alarms are not removed when their name
+ * changes. Idempotent: a no-op once the state is gone.
  * @returns {Promise<void>}
  */
-const cleanupLegacyStorage = async () => {
+const cleanupLegacyState = async () => {
   // Matches the legacy per-icon cache keys ("icon123") older versions wrote
   // to storage.local before icons moved to IndexedDB.
   const legacyIconKeyPattern = /^icon\d+$/;
@@ -166,6 +173,9 @@ const cleanupLegacyStorage = async () => {
   if (staleKeys.length > 0) {
     await browser.storage.local.remove(staleKeys);
   }
+  // The alarm's pre-0.12.0 name: alarms persist across extension updates and
+  // are not removed when the constant that creates them is renamed.
+  await browser.alarms.clear("ALARM_REFRESH");
 };
 
 /**
@@ -173,9 +183,11 @@ const cleanupLegacyStorage = async () => {
  */
 export const handleStartup = async () => {
   console.log("Extension started.");
-  cleanupLegacyStorage().catch((error) => {
-    console.error("Failed to clean up legacy storage:", error);
-  });
+  try {
+    await cleanupLegacyState();
+  } catch (error) {
+    console.error("Failed to clean up legacy state:", error);
+  }
   try {
     await Promise.all([refreshActionBehavior(), refreshEntries()]);
   } catch (error) {

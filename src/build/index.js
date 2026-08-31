@@ -313,11 +313,7 @@ async function buildPack(label, pkg, resdir, outdir) {
     label = `${label}[${name}]{${basename(output)}}`;
     console.time(label);
 
-    const copyResourcesIntoTemporalDirectory = async function (
-      label,
-      tdir,
-      files,
-    ) {
+    const copyFilesToDirectory = async function (label, tdir, files) {
       console.time(label);
 
       for (const file of files) {
@@ -340,19 +336,15 @@ async function buildPack(label, pkg, resdir, outdir) {
       console.timeEnd(label);
     };
 
-    const decompressDir = resolve(dirname(output), name);
-    await fs.mkdir(decompressDir, {
+    const stagingDir = resolve(dirname(output), name);
+    await fs.mkdir(stagingDir, {
       recursive: true,
     });
-    await copyResourcesIntoTemporalDirectory(
-      `${label}[cp_resources]`,
-      decompressDir,
-      files,
-    );
+    await copyFilesToDirectory(`${label}[cp_resources]`, stagingDir, files);
     await compressDirectory(
-      `${label}[compress]{${decompressDir}}`,
+      `${label}[compress]{${stagingDir}}`,
       output,
-      decompressDir,
+      stagingDir,
     );
 
     console.timeEnd(label);
@@ -382,7 +374,7 @@ async function buildPack(label, pkg, resdir, outdir) {
   console.timeEnd(label);
 }
 
-async function cleanDist(label, resources) {
+async function removeDirectory(label, resources) {
   label = `${label}[clean]`;
   console.time(label);
 
@@ -409,12 +401,12 @@ async function buildExtensions(dev) {
     .readFile(resolve(import.meta.dirname, "../../package.json"))
     .then((content) => JSON.parse(content));
 
-  await cleanDist(label, outdir);
+  await removeDirectory(label, outdir);
   await buildResources(label, pkg, dev, srcdir, resources);
   await buildPack(label, pkg, resources, outdir);
   // Remove the intermediate resources directory so dist/ only contains the
   // final artifacts (crx, xpi and the unpacked chromium/firefox folders).
-  await cleanDist(label, resources);
+  await removeDirectory(label, resources);
 
   console.timeEnd(label);
 }

@@ -10,7 +10,7 @@ import {
   DEFAULT_FULL_SYNC_INTERVAL_HOURS,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_MAX_ENTRIES,
-  DEFAULT_PERIOD_REFRESH,
+  DEFAULT_REFRESH_PERIOD_MINUTES,
   DEFAULT_THEME,
   DEFAULT_TOKEN,
   DEFAULT_URL,
@@ -32,7 +32,7 @@ const optionsHtml = readFileSync(resolve(__dirname, "options.html"), "utf8");
 const fullDefaults = {
   url: "https://miniflux.example.com",
   token: "test-token",
-  periodInMinutes: DEFAULT_PERIOD_REFRESH,
+  periodInMinutes: DEFAULT_REFRESH_PERIOD_MINUTES,
   maxEntries: DEFAULT_MAX_ENTRIES,
   extensionClickBehavior: DEFAULT_EXTENSION_CLICK_BEHAVIOR,
   markEntryAsReadWhenOpenedAsTab: DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
@@ -157,7 +157,7 @@ test("restoreOptions falls back to defaults when storage is empty", async (t) =>
   );
   expect(
     document.getElementById("inputMinifluxPeriodInMinutes").valueAsNumber,
-  ).toBe(DEFAULT_PERIOD_REFRESH);
+  ).toBe(DEFAULT_REFRESH_PERIOD_MINUTES);
   expect(document.getElementById("inputMinifluxMaxEntries").valueAsNumber).toBe(
     DEFAULT_MAX_ENTRIES,
   );
@@ -345,7 +345,7 @@ test("autosave stores null for an emptied numeric input", async (t) => {
   expect(sets[0].periodInMinutes).toBe(null);
   // The (invalid) stored value falls back to the default refresh period.
   expect(alarms.length).toBe(1);
-  expect(alarms[0][1].periodInMinutes).toBe(DEFAULT_PERIOD_REFRESH);
+  expect(alarms[0][1].periodInMinutes).toBe(DEFAULT_REFRESH_PERIOD_MINUTES);
 });
 
 test("autosave clamps the refresh period to the alarm minimum", async (t) => {

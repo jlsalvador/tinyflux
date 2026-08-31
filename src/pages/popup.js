@@ -5,17 +5,17 @@
 import "./localize.js";
 import {
   createSvg,
-  svg_path_calendar,
-  svg_path_clock,
-  svg_path_eye,
-  svg_path_question_mark,
-  svg_path_star_empty,
-  svg_path_star_filled,
-  svg_path_toggle_close,
-  svg_path_toggle_open,
+  CALENDAR_PATH,
+  CLOCK_PATH,
+  EYE_PATH,
+  QUESTION_MARK_PATH,
+  STAR_EMPTY_PATH,
+  STAR_FILLED_PATH,
+  TOGGLE_CLOSE_PATH,
+  TOGGLE_OPEN_PATH,
 } from "./icons.js";
 import browser from "webextension-polyfill";
-import { TimeAgo, Style } from "./timeago.js";
+import { timeAgo, Style } from "./timeago.js";
 import DOMPurify from "dompurify";
 import {
   DEFAULT_MAX_ENTRIES,
@@ -30,18 +30,13 @@ import {
   getPopupStyle,
   notifyRefreshTheme,
   refreshEntries,
+  minifluxRequest,
+  openPopupWindow,
   refreshTheme,
-  request,
   resolveMaxEntries,
   openSettings,
 } from "./common.js";
-import {
-  deleteIcons,
-  getEntries,
-  getIcon as getStoredIcon,
-  listIcons,
-  setIcon as setStoredIcon,
-} from "./db.js";
+import { deleteIcons, getEntries, getIcon, listIcons, setIcon } from "./db.js";
 
 /**
  * @typedef {import('./common.js').Entry} Entry
@@ -52,7 +47,7 @@ import {
 // Constants
 // ============================================================================
 
-const MARK_ENTRIES_AS_READ_TIMEOUT_MS = 5000;
+const MARK_ALL_AS_READ_CONFIRM_TIMEOUT_MS = 5000;
 const ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ============================================================================
@@ -112,34 +107,34 @@ const pruneIconCache = async () => {
 
 /**
  * Fetch Icon from cache or API
- * @param {number} iconID
+ * @param {number} iconId
  * @returns {Promise<Icon>}
  */
-const getIcon = async (iconID) => {
+const fetchIcon = async (iconId) => {
   // Check memory cache
-  if (state.iconCache.has(iconID)) {
-    return state.iconCache.get(iconID);
+  if (state.iconCache.has(iconId)) {
+    return state.iconCache.get(iconId);
   }
 
-  if (state.iconPromises.has(iconID)) {
-    return state.iconPromises.get(iconID);
+  if (state.iconPromises.has(iconId)) {
+    return state.iconPromises.get(iconId);
   }
 
   const fetchIconPromise = (async () => {
     // Check the IndexedDB cache
-    const cachedIcon = await getStoredIcon(iconID);
+    const cachedIcon = await getIcon(iconId);
 
     if (
       cachedIcon?.icon &&
       Date.now() - (cachedIcon.fetchedAt || 0) < ICON_CACHE_TTL_MS
     ) {
-      state.iconCache.set(iconID, cachedIcon.icon);
+      state.iconCache.set(iconId, cachedIcon.icon);
       return cachedIcon.icon;
     }
 
     // Fetch from API
     try {
-      const response = await request(`/v1/icons/${iconID}`);
+      const response = await minifluxRequest(`/v1/icons/${iconId}`);
 
       if (response.status !== 200) {
         console.error("Failed to fetch icon:", response);
@@ -149,8 +144,8 @@ const getIcon = async (iconID) => {
       const icon = await response.json();
 
       // Cache the icon (with a fetch timestamp for TTL and pruning)
-      state.iconCache.set(iconID, icon);
-      await setStoredIcon(iconID, { icon, fetchedAt: Date.now() });
+      state.iconCache.set(iconId, icon);
+      await setIcon(iconId, { icon, fetchedAt: Date.now() });
       await pruneIconCache();
 
       return icon;
@@ -160,12 +155,12 @@ const getIcon = async (iconID) => {
     }
   })();
 
-  state.iconPromises.set(iconID, fetchIconPromise);
+  state.iconPromises.set(iconId, fetchIconPromise);
 
   try {
     return await fetchIconPromise;
   } finally {
-    state.iconPromises.delete(iconID);
+    state.iconPromises.delete(iconId);
   }
 };
 
@@ -181,7 +176,7 @@ const getIcon = async (iconID) => {
 export const setBookmarkButtonState = (button, isStarred) => {
   button.classList.toggle("starred", isStarred);
   button.replaceChildren(
-    createSvg(isStarred ? svg_path_star_filled : svg_path_star_empty),
+    createSvg(isStarred ? STAR_FILLED_PATH : STAR_EMPTY_PATH),
   );
 };
 
@@ -283,7 +278,7 @@ const createEntryTitle = async (entry) => {
 
   // Feed info
   const iconId = entry.feed?.icon?.icon_id;
-  const icon = iconId ? await getIcon(iconId) : { data: "" };
+  const icon = iconId ? await fetchIcon(iconId) : { data: "" };
   const feedInfo = document.createElement("div");
   feedInfo.className = "entry-feed-info";
   feedInfo.title = entry.feed?.title ?? "";
@@ -319,8 +314,8 @@ const createEntryTitle = async (entry) => {
     timeStyle: "long",
   });
   const publishedTime = document.createElement("span");
-  publishedTime.textContent = TimeAgo(entry.published_at, Style.ExtremeNarrow);
-  publishedStat.replaceChildren(createSvg(svg_path_calendar), publishedTime);
+  publishedTime.textContent = timeAgo(entry.published_at, Style.ExtremeNarrow);
+  publishedStat.replaceChildren(createSvg(CALENDAR_PATH), publishedTime);
   stats.appendChild(publishedStat);
 
   // Reading time
@@ -342,7 +337,7 @@ const createEntryTitle = async (entry) => {
       "pagePopupReadingTimeShort",
       String(entry.reading_time),
     );
-    readingTimeStat.replaceChildren(createSvg(svg_path_clock), readingText);
+    readingTimeStat.replaceChildren(createSvg(CLOCK_PATH), readingText);
     stats.appendChild(readingTimeStat);
   }
 
@@ -356,7 +351,7 @@ const createEntryTitle = async (entry) => {
   bookmarkBtn.type = "button";
   bookmarkBtn.title = chrome.i18n.getMessage("pagePopupToggleBookmark");
   bookmarkBtn.replaceChildren(
-    createSvg(entry.starred ? svg_path_star_filled : svg_path_star_empty),
+    createSvg(entry.starred ? STAR_FILLED_PATH : STAR_EMPTY_PATH),
   );
 
   bookmarkBtn.addEventListener("click", async (e) => {
@@ -383,7 +378,7 @@ const createEntryTitle = async (entry) => {
   markReadBtn.className = "entry-action-btn";
   markReadBtn.type = "button";
   markReadBtn.title = chrome.i18n.getMessage("pagePopupMarkAsRead");
-  markReadBtn.replaceChildren(createSvg(svg_path_eye));
+  markReadBtn.replaceChildren(createSvg(EYE_PATH));
 
   markReadBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
@@ -410,7 +405,7 @@ const createEntryTitle = async (entry) => {
   toggleBtn.className = "entry-action-btn";
   toggleBtn.type = "button";
   toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
-  toggleBtn.replaceChildren(createSvg(svg_path_toggle_open));
+  toggleBtn.replaceChildren(createSvg(TOGGLE_OPEN_PATH));
 
   toggleBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -423,13 +418,13 @@ const createEntryTitle = async (entry) => {
     if (entryContent) {
       // Collapse
       titleContainer.classList.remove("expanded");
-      toggleBtn.replaceChildren(createSvg(svg_path_toggle_open));
+      toggleBtn.replaceChildren(createSvg(TOGGLE_OPEN_PATH));
       toggleBtn.title = chrome.i18n.getMessage("pagePopupShowContent");
       entryContent.remove();
     } else {
       // Expand
       titleContainer.classList.add("expanded");
-      toggleBtn.replaceChildren(createSvg(svg_path_toggle_close));
+      toggleBtn.replaceChildren(createSvg(TOGGLE_CLOSE_PATH));
       toggleBtn.title = chrome.i18n.getMessage("pagePopupHideContent");
       entryContainer.appendChild(createEntryContent(entry));
     }
@@ -618,7 +613,7 @@ const setupMarkAllAsReadButton = () => {
     if (!button.classList.contains("danger")) {
       // First click: show confirmation
       button.classList.add("danger");
-      pathElement.setAttribute("d", svg_path_question_mark); // Change to question mark
+      pathElement.setAttribute("d", QUESTION_MARK_PATH); // Change to question mark
       button.title = chrome.i18n.getMessage(
         "pagePopupAreYouSureToMarkAllEntriesAsRead",
       );
@@ -633,7 +628,7 @@ const setupMarkAllAsReadButton = () => {
         button.classList.remove("danger");
         pathElement.setAttribute("d", previousIconPath); // Restore original icon
         button.title = chrome.i18n.getMessage("pagePopupMarkEntriesAsRead");
-      }, MARK_ENTRIES_AS_READ_TIMEOUT_MS);
+      }, MARK_ALL_AS_READ_CONFIRM_TIMEOUT_MS);
     } else {
       // Second click: execute
       if (state.confirmMarkAllEntriesTimeout) {
@@ -775,13 +770,7 @@ const initializePopup = async () => {
 
   const btnOpenWindow = document.getElementById("btnOpenWindow");
   btnOpenWindow?.addEventListener("click", async () => {
-    await browser.windows.create({
-      url: "/pages/popup.html?style=window",
-      type: "popup",
-      width: 360,
-      height: 600,
-    });
-
+    await openPopupWindow();
     await browser.sidebarAction?.close();
     window.close();
   });

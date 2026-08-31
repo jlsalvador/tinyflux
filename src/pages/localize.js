@@ -11,12 +11,14 @@ document.addEventListener("DOMContentLoaded", async () => {
    * If any referenced message is missing, the element keeps its fallback
    * text and a warning is logged (a missing message is a translation/build
    * error, not something to fix silently at runtime).
-   * @param {HTMLElement} obj
-   * @param {string} tag
-   * @param {string} [dst="innerHTML"]
+   * @param {HTMLElement} element
+   * @param {string} template
+   * @param {string} [property="innerHTML"]
    */
-  const replaceI18n = (obj, tag, dst = "innerHTML") => {
-    const keys = [...tag.matchAll(/__MSG_(\w+)__/g)].map((match) => match[1]);
+  const replaceI18n = (element, template, property = "innerHTML") => {
+    const keys = [...template.matchAll(/__MSG_(\w+)__/g)].map(
+      (match) => match[1],
+    );
     const missing = [
       ...new Set(keys.filter((key) => !chrome.i18n.getMessage(key))),
     ];
@@ -25,16 +27,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.warn(
         `[localize] Missing i18n message(s): ${missing.join(", ")}. ` +
           "Keeping the element's fallback text.",
-        obj,
+        element,
       );
       return;
     }
 
-    const msg = tag.replace(/__MSG_(\w+)__/g, (_match, key) =>
+    const msg = template.replace(/__MSG_(\w+)__/g, (_match, key) =>
       chrome.i18n.getMessage(key),
     );
 
-    if (msg !== tag) obj[dst] = msg;
+    if (msg !== template) element[property] = msg;
   };
 
   /**
@@ -44,11 +46,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const elements = document.querySelectorAll(
       "[data-localize],[data-title-localize]",
     );
-    elements.forEach((obj) => {
-      const tag = obj.getAttribute("data-localize")?.toString();
-      if (tag) replaceI18n(obj, tag, "innerHTML");
-      const title = obj.getAttribute("data-title-localize")?.toString();
-      if (title) replaceI18n(obj, title, "title");
+    elements.forEach((element) => {
+      const template = element.getAttribute("data-localize")?.toString();
+      if (template) replaceI18n(element, template, "innerHTML");
+      const title = element.getAttribute("data-title-localize")?.toString();
+      if (title) replaceI18n(element, title, "title");
     });
   };
 

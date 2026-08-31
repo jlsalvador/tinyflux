@@ -15,7 +15,7 @@ import {
   refreshAlarm,
   refreshEntries,
   refreshTheme,
-  request,
+  minifluxRequest,
   resolveFullSyncIntervalHours,
   updateBadge,
   updateBadgeColor,
@@ -108,16 +108,16 @@ test("MinifluxConnectionError preserves cause", () => {
   expect(error.cause).toBe(cause);
 });
 
-// --- request tests ---
+// --- minifluxRequest tests ---
 
-test("request joins API path onto a base URL with subpath", async (t) => {
+test("minifluxRequest joins API path onto a base URL with subpath", async (t) => {
   const captured = [];
   t.mock.method(globalThis, "fetch", (req) => {
     captured.push(req);
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
   });
 
-  await request("/v1/entries", {
+  await minifluxRequest("/v1/entries", {
     url: "https://miniflux.example.com/subpath",
     token: "token",
   });
@@ -125,25 +125,25 @@ test("request joins API path onto a base URL with subpath", async (t) => {
     "https://miniflux.example.com/subpath/v1/entries",
   );
 
-  await request("/v1/me/", {
+  await minifluxRequest("/v1/me/", {
     url: "https://miniflux.example.com/",
     token: "token",
   });
   expect(captured[1].url).toBe("https://miniflux.example.com/v1/me/");
 });
 
-test("request sends auth token and content-type only with a body", async (t) => {
+test("minifluxRequest sends auth token and content-type only with a body", async (t) => {
   const captured = [];
   t.mock.method(globalThis, "fetch", (req) => {
     captured.push(req);
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
   });
 
-  await request("/v1/me", {
+  await minifluxRequest("/v1/me", {
     url: "https://miniflux.example.com",
     token: "token",
   });
-  await request("/v1/entries", {
+  await minifluxRequest("/v1/entries", {
     url: "https://miniflux.example.com",
     token: "token",
     method: "PUT",
@@ -155,19 +155,19 @@ test("request sends auth token and content-type only with a body", async (t) => 
   expect(captured[1].headers.get("Content-Type")).toBe("application/json");
 });
 
-test("request throws InvalidUrlOrTokenError when credentials are missing", async (t) => {
+test("minifluxRequest throws InvalidUrlOrTokenError when credentials are missing", async (t) => {
   mockStorage(t, {});
 
   let caught = null;
   try {
-    await request("/v1/me");
+    await minifluxRequest("/v1/me");
   } catch (error) {
     caught = error;
   }
   expect(caught instanceof InvalidUrlOrTokenError).toBe(true);
 });
 
-test("request throws MinifluxConnectionError for an invalid URL", async (t) => {
+test("minifluxRequest throws MinifluxConnectionError for an invalid URL", async (t) => {
   const captured = [];
   t.mock.method(globalThis, "fetch", (req) => {
     captured.push(req);
@@ -176,7 +176,7 @@ test("request throws MinifluxConnectionError for an invalid URL", async (t) => {
 
   let caught = null;
   try {
-    await request("/v1/me", {
+    await minifluxRequest("/v1/me", {
       url: "reader.miniflux.app",
       token: "token",
     });
@@ -444,7 +444,7 @@ test("refreshAlarm creates alarm with default period", async (t) => {
   await refreshAlarm();
 
   expect(created.length).toBe(1);
-  expect(created[0].name).toBe("ALARM_REFRESH");
+  expect(created[0].name).toBe("refresh");
   expect(created[0].periodInMinutes).toBe(15);
 });
 
@@ -1207,7 +1207,7 @@ test("refreshActionBehavior opens window on click when configured", async (t) =>
   await refreshActionBehavior();
 
   expect(listeners.length).toBe(1);
-  expect(listeners[0].name).toBe("actionWindow");
+  expect(listeners[0].name).toBe("openPopupWindow");
 });
 
 test("refreshActionBehavior toggles side panel on click when configured", async (t) => {
@@ -1220,5 +1220,5 @@ test("refreshActionBehavior toggles side panel on click when configured", async 
   await refreshActionBehavior();
 
   expect(listeners.length).toBe(1);
-  expect(listeners[0].name).toBe("actionSidePanel");
+  expect(listeners[0].name).toBe("toggleSidePanel");
 });

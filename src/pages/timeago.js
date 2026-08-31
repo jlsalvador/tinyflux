@@ -56,7 +56,7 @@ const timeFormatsLong = [
  * @param {string} [style=Style.Long] - Use `Style.ExtremeNarrow` for compact format
  * @returns {string}
  */
-export function TimeAgo(time, style = Style.Long) {
+export function timeAgo(time, style = Style.Long) {
   const timestamp =
     typeof time === "number"
       ? time

@@ -9,7 +9,7 @@ import {
   DEFAULT_FULL_SYNC_INTERVAL_HOURS,
   DEFAULT_MARK_ENTRY_AS_READ_WHEN_OPENED_AS_TAB,
   DEFAULT_MAX_ENTRIES,
-  DEFAULT_PERIOD_REFRESH,
+  DEFAULT_REFRESH_PERIOD_MINUTES,
   DEFAULT_THEME,
   DEFAULT_TOKEN,
   DEFAULT_URL,
@@ -19,7 +19,7 @@ import {
   refreshAlarm,
   refreshEntries,
   refreshTheme,
-  request,
+  minifluxRequest,
   updateBadgeColor,
 } from "./common.js";
 import { clearIcons } from "./db.js";
@@ -272,7 +272,7 @@ async function restoreOptions() {
   elements.url().value = storedValues.url ?? DEFAULT_URL;
   elements.token().value = storedValues.token ?? DEFAULT_TOKEN;
   elements.periodInMinutes().valueAsNumber =
-    storedValues.periodInMinutes ?? DEFAULT_PERIOD_REFRESH;
+    storedValues.periodInMinutes ?? DEFAULT_REFRESH_PERIOD_MINUTES;
   elements.maxEntries().valueAsNumber =
     storedValues.maxEntries ?? DEFAULT_MAX_ENTRIES;
   elements.fullSyncIntervalHours().valueAsNumber =
@@ -357,7 +357,7 @@ async function testMinifluxApi() {
   btnTest.classList.remove("status-success", "status-error");
 
   try {
-    const response = await request("/v1/me", { url, token });
+    const response = await minifluxRequest("/v1/me", { url, token });
 
     if (!response.ok) {
       btnTest.classList.add("status-error");

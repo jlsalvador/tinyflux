@@ -129,7 +129,7 @@ export async function deleteEntries(ids) {
 // Insert each entry only if its id is not already present. Used to restore
 // entries that were optimistically removed but could not be confirmed with the
 // server.
-export async function upsertEntries(entries) {
+export async function insertEntriesIfAbsent(entries) {
   const db = await openDB();
   const txn = db.transaction(STORE_ENTRIES, "readwrite");
   const store = txn.objectStore(STORE_ENTRIES);

@@ -34,7 +34,7 @@ const okFetch = () =>
 
 const failFetch = () => Promise.reject(new Error("API error"));
 
-// Mock the Miniflux credentials (read by request()) and fetch for the duration
+// Mock the Miniflux credentials (read by minifluxRequest()) and fetch for the duration
 // of a test; node:test restores the originals automatically when the test ends.
 const mockApi = (t, fetchMock) => {
   t.mock.method(browser.storage.local, "get", () =>
@@ -280,4 +280,36 @@ test("handleStartup logs non-credential errors without throwing", async (t) => {
   expect(threw).toBe(false);
   expect(errors.length).toBe(1);
   expect(String(errors[0][1])).toContain("unexpected action error");
+});
+
+test("handleStartup removes legacy storage keys and the stale refresh alarm", async (t) => {
+  t.mock.method(console, "log", () => {});
+  t.mock.method(console, "error", () => {});
+  const removedKeys = [];
+  t.mock.method(browser.storage.local, "getKeys", () =>
+    Promise.resolve(["entries", "icon123", "url", "token"]),
+  );
+  t.mock.method(browser.storage.local, "remove", (keys) => {
+    removedKeys.push(...keys);
+    return Promise.resolve();
+  });
+  const clearedAlarms = [];
+  t.mock.method(browser.alarms, "clear", (name) => {
+    clearedAlarms.push(name);
+    return Promise.resolve(true);
+  });
+  t.mock.method(browser.storage.local, "get", () =>
+    Promise.resolve({
+      url: "",
+      token: "",
+    }),
+  );
+  t.mock.method(browser.runtime, "openOptionsPage", () => Promise.resolve());
+  resetDOM("<!doctype html><html><head></head><body></body></html>");
+
+  await handleStartup();
+
+  // Only the legacy keys are removed; current settings keys are kept.
+  expect(removedKeys).toEqual(["entries", "icon123"]);
+  expect(clearedAlarms).toEqual(["ALARM_REFRESH"]);
 });

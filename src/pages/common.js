@@ -132,11 +132,12 @@ import { getEntries, replaceEntries, syncEntries } from "./db.js";
 // Default configuration values
 export const DEFAULT_URL = "";
 export const DEFAULT_TOKEN = "";
-export const DEFAULT_PERIOD_REFRESH = 15;
+export const DEFAULT_REFRESH_PERIOD_MINUTES = 15;
 export const DEFAULT_MAX_ENTRIES = 100;
 export const DEFAULT_FULL_SYNC_INTERVAL_HOURS = 3;
-// Max value accepted by the Miniflux API for the `limit` query parameter.
-const MAX_ENTRIES_LIMIT = 500;
+// Upper bound for the max entries setting: the full sync never downloads
+// (and the cache never keeps) more entries than this.
+const MAX_ENTRIES_CAP = 500;
 // Max `limit` accepted by the Miniflux API (`model.MaxEntryLimit`); used for
 // incremental sync pages so the whole change set is fetched in few requests.
 const INCREMENTAL_FETCH_LIMIT = 1000;
@@ -158,7 +159,7 @@ const WATERMARK_FALLBACK_WINDOW_SECONDS = 24 * 60 * 60;
 export const resolveMaxEntries = (maxEntries) => {
   const requested = Number(maxEntries);
   return Number.isFinite(requested) && requested >= 1
-    ? Math.min(Math.floor(requested), MAX_ENTRIES_LIMIT)
+    ? Math.min(Math.floor(requested), MAX_ENTRIES_CAP)
     : DEFAULT_MAX_ENTRIES;
 };
 
@@ -188,7 +189,7 @@ export const DEFAULT_BADGE_TEXT_COLOR = "#ffffff";
 export const DEFAULT_SHOW_NOTIFICATIONS = false;
 
 // Alarm identifiers
-export const ALARM_REFRESH = "ALARM_REFRESH";
+export const ALARM_REFRESH = "refresh";
 
 // Message action types
 export const MESSAGE_REFRESH_THEME = "refresh_theme";
@@ -275,7 +276,7 @@ export const validateCredentials = (url, token) => {
  * @returns {Promise<Response>}
  * @throws {InvalidUrlOrTokenError|TypeError}
  */
-export async function request(path, options = {}) {
+export async function minifluxRequest(path, options = {}) {
   const {
     url: providedUrl = "",
     token: providedToken = "",
@@ -539,7 +540,7 @@ async function fetchChangedEntries(changedAfter) {
   let total;
 
   do {
-    const response = await request(
+    const response = await minifluxRequest(
       `/v1/entries?changed_after=${changedAfter}&order=id&direction=asc&limit=${INCREMENTAL_FETCH_LIMIT}&offset=${offset}`,
     );
 
@@ -572,7 +573,7 @@ async function fetchChangedEntries(changedAfter) {
  * @throws {MinifluxConnectionError}
  */
 async function fetchUnreadCount() {
-  const response = await request(
+  const response = await minifluxRequest(
     "/v1/entries?status=unread&globally_visible=true&limit=1",
   );
 
@@ -649,7 +650,7 @@ const fallbackWatermark = () =>
  */
 export async function refreshEntries(reason = "auto") {
   const {
-    maxEntries = DEFAULT_MAX_ENTRIES,
+    maxEntries: storedMaxEntries = DEFAULT_MAX_ENTRIES,
     fullSyncIntervalHours = DEFAULT_FULL_SYNC_INTERVAL_HOURS,
     entriesSeeded,
     entriesChangedAfter,
@@ -662,7 +663,7 @@ export async function refreshEntries(reason = "auto") {
     "entriesLastFullSyncAt",
   ]);
 
-  const limit = resolveMaxEntries(maxEntries);
+  const maxEntries = resolveMaxEntries(storedMaxEntries);
   const intervalMs =
     resolveFullSyncIntervalHours(fullSyncIntervalHours) * 60 * 60 * 1000;
   const dueForFullSync =
@@ -677,8 +678,8 @@ export async function refreshEntries(reason = "auto") {
 
   try {
     if (dueForFullSync) {
-      const response = await request(
-        `/v1/entries?status=unread&order=published_at&direction=desc&limit=${limit}`,
+      const response = await minifluxRequest(
+        `/v1/entries?status=unread&order=published_at&direction=desc&limit=${maxEntries}`,
       );
 
       if (!response.ok) {
@@ -745,7 +746,7 @@ export async function refreshEntries(reason = "auto") {
       ...(isFirstSync ? { entriesSeeded: true } : {}),
     });
   } else {
-    await syncEntries(fetchedEntries, limit);
+    await syncEntries(fetchedEntries, maxEntries);
     await browser.storage.local.set({ entriesChangedAfter: watermark });
   }
 
@@ -772,10 +773,10 @@ export async function refreshEntries(reason = "auto") {
 }
 
 /**
- * Open extension in window
+ * Open the Tinyflux reader in a standalone popup window.
  * @returns {Promise<browser.windows.Window>}
  */
-async function actionWindow() {
+export async function openPopupWindow() {
   return browser.windows.create({
     url: "/pages/popup.html?style=window",
     type: "popup",
@@ -788,7 +789,7 @@ async function actionWindow() {
  * Toggle side panel
  * @returns {Promise<void>}
  */
-async function actionSidePanel() {
+async function toggleSidePanel() {
   return browser.sidebarAction.toggle();
 }
 
@@ -796,8 +797,8 @@ async function actionSidePanel() {
  * Remove action listeners
  */
 const removeActionListeners = () => {
-  browser.action.onClicked.removeListener(actionWindow);
-  browser.action.onClicked.removeListener(actionSidePanel);
+  browser.action.onClicked.removeListener(openPopupWindow);
+  browser.action.onClicked.removeListener(toggleSidePanel);
 };
 
 /**
@@ -817,14 +818,14 @@ export async function refreshActionBehavior() {
 
   switch (extensionClickBehavior) {
     case "window":
-      browser.action.onClicked.addListener(actionWindow);
+      browser.action.onClicked.addListener(openPopupWindow);
       break;
 
     case "sidepanel":
       if (!browser.sidebarAction && chrome?.sidePanel) {
         chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
       } else if (browser.sidebarAction) {
-        browser.action.onClicked.addListener(actionSidePanel);
+        browser.action.onClicked.addListener(toggleSidePanel);
       }
       break;
 
@@ -842,14 +843,16 @@ export async function refreshActionBehavior() {
  * @returns {Promise<void>}
  */
 export async function refreshAlarm() {
-  const { periodInMinutes = DEFAULT_PERIOD_REFRESH } =
+  const { periodInMinutes = DEFAULT_REFRESH_PERIOD_MINUTES } =
     await browser.storage.local.get("periodInMinutes");
 
   const period = Number(periodInMinutes);
   // The alarms API rejects periods below 1 minute, so treat sub-minute
   // values as invalid and fall back to the default.
   const safePeriod =
-    Number.isFinite(period) && period >= 1 ? period : DEFAULT_PERIOD_REFRESH;
+    Number.isFinite(period) && period >= 1
+      ? period
+      : DEFAULT_REFRESH_PERIOD_MINUTES;
 
   await browser.alarms.create(ALARM_REFRESH, {
     periodInMinutes: safePeriod,

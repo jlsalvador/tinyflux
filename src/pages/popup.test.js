@@ -5,12 +5,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   createSvg,
-  svg_path_eye,
-  svg_path_question_mark,
-  svg_path_star_empty,
-  svg_path_star_filled,
-  svg_path_toggle_close,
-  svg_path_toggle_open,
+  EYE_PATH,
+  QUESTION_MARK_PATH,
+  STAR_EMPTY_PATH,
+  STAR_FILLED_PATH,
+  TOGGLE_CLOSE_PATH,
+  TOGGLE_OPEN_PATH,
 } from "./icons.js";
 import {
   filterVisibleEntries,
@@ -611,11 +611,11 @@ test("addDOMEntry renders entry title, feed info, stats and actions", async (t) 
   const buttons = entryEl.querySelectorAll(".entry-action-btn");
   expect(buttons.length).toBe(3);
   expect(buttons[0].querySelector("path").getAttribute("d")).toBe(
-    svg_path_star_empty,
+    STAR_EMPTY_PATH,
   );
-  expect(buttons[1].querySelector("path").getAttribute("d")).toBe(svg_path_eye);
+  expect(buttons[1].querySelector("path").getAttribute("d")).toBe(EYE_PATH);
   expect(buttons[2].querySelector("path").getAttribute("d")).toBe(
-    svg_path_toggle_open,
+    TOGGLE_OPEN_PATH,
   );
   expect(document.getElementById("entryContent-1")).toBeFalsy();
 });
@@ -630,7 +630,7 @@ test("addDOMEntry renders starred state and reading time stat", async (t) => {
   const bookmarkBtn = entryEl.querySelector(".entry-action-btn");
   expect(bookmarkBtn.classList.contains("starred")).toBe(true);
   expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
-    svg_path_star_filled,
+    STAR_FILLED_PATH,
   );
 
   const stats = entryEl.querySelectorAll(".entry-stat");
@@ -817,14 +817,14 @@ test("toggle button expands and collapses entry content", async (t) => {
   expect(content).toBeTruthy();
   expect(content.textContent).toContain("Entry content.");
   expect(toggleBtn.querySelector("path").getAttribute("d")).toBe(
-    svg_path_toggle_close,
+    TOGGLE_CLOSE_PATH,
   );
 
   toggleBtn.click();
   expect(titleEl.classList.contains("expanded")).toBe(false);
   expect(document.getElementById("entryContent-1")).toBeFalsy();
   expect(toggleBtn.querySelector("path").getAttribute("d")).toBe(
-    svg_path_toggle_open,
+    TOGGLE_OPEN_PATH,
   );
 });
 
@@ -847,7 +847,7 @@ test("bookmark click toggles star and sends toggle message", async (t) => {
 
   expect(bookmarkBtn.classList.contains("starred")).toBe(true);
   expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
-    svg_path_star_filled,
+    STAR_FILLED_PATH,
   );
   expect(sent.length).toBe(1);
   expect(sent[0]).toEqual({
@@ -879,7 +879,7 @@ test("bookmark click reverts star when message fails", async (t) => {
 
   expect(bookmarkBtn.classList.contains("starred")).toBe(true);
   expect(bookmarkBtn.querySelector("path").getAttribute("d")).toBe(
-    svg_path_star_filled,
+    STAR_FILLED_PATH,
   );
   expect(errors.length).toBe(1);
   expect(String(errors[0][0])).toContain("Failed to toggle bookmark");
@@ -1090,7 +1090,7 @@ test("mark all as read first click shows confirmation state", async (t) => {
   await flushMicrotasks();
 
   expect(button.classList.contains("danger")).toBe(true);
-  expect(path.getAttribute("d")).toBe(svg_path_question_mark);
+  expect(path.getAttribute("d")).toBe(QUESTION_MARK_PATH);
   expect(button.title).toBe("pagePopupAreYouSureToMarkAllEntriesAsRead");
   expect(button.disabled).toBe(false);
   expect(sent.length).toBe(0);
@@ -1151,7 +1151,7 @@ test("mark all as read confirmation resets after the timeout", async (t) => {
 
   button.click();
   expect(button.classList.contains("danger")).toBe(true);
-  expect(path.getAttribute("d")).toBe(svg_path_question_mark);
+  expect(path.getAttribute("d")).toBe(QUESTION_MARK_PATH);
 
   clock.tick(5000);
 
