@@ -408,7 +408,7 @@ test("groupEntriesByFeed handles single feed", () => {
 		},
 	];
 	const grouped = groupEntriesByFeed(entries);
-	expect(grouped["Tech"].length).toBe(3);
+	expect(grouped.Tech.length).toBe(3);
 });
 
 // --- refreshTheme tests ---

@@ -16,6 +16,9 @@
 			"preset": "recommended",
 			"correctness": {
 				"noUndeclaredVariables": "error"
+			},
+			"complexity": {
+				"noImportantStyles": "off"
 			}
 		}
 	}

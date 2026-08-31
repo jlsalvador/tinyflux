@@ -64,7 +64,7 @@ After modifying source files, run in this order:
 
 Format runs **before** lint because it rewrites files (formatting, import order, safe fixes); lint must validate the final state that gets committed. All four steps (format, lint, test, build) are **required before every `git commit`** — never commit code that has not been linted, formatted, and verified to build.
 
-The Biome config lives in `biome.json`: it enables `noUndeclaredVariables` on top of the recommended preset (Biome 2.x does not include it in the preset) and declares the extension/test globals (`chrome`, `browser`, `test`, `expect`, ...). Everything else — formatting, indentation (tabs), import organization — uses Biome's defaults.
+The Biome config lives in `biome.json`: it enables `noUndeclaredVariables` on top of the recommended preset (Biome 2.x does not include it in the preset), declares the extension/test globals (`chrome`, `browser`, `test`, `expect`, ...), and turns off `noImportantStyles` (the extension relies on `!important` in the global reduced-motion/print media queries and the `.hidden` utility, where it is load-bearing). Everything else — formatting, indentation (tabs), import organization — uses Biome's defaults. Keep `biome.json` free of comments: this Biome version silently ignores rule overrides when the config file contains them.
 
 ## Git commits
 

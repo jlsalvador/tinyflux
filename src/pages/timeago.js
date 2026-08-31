@@ -64,13 +64,13 @@ export function timeAgo(time, style = Style.Long) {
 				? +new Date(time)
 				: time instanceof Date
 					? time.getTime()
-					: +new Date();
+					: Date.now();
 
 	if (!Number.isFinite(timestamp)) {
 		return "now";
 	}
 
-	let seconds = Math.round((+new Date() - timestamp) / 1000);
+	let seconds = Math.round((Date.now() - timestamp) / 1000);
 	if (seconds === 0) {
 		return "now";
 	}

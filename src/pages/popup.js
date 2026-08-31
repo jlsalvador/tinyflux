@@ -206,7 +206,9 @@ export const sortDOMEntries = () => {
 			if (Number.isFinite(timeB)) return -1;
 			return 0;
 		})
-		.forEach((entry) => container.appendChild(entry));
+		.forEach((entry) => {
+			container.appendChild(entry);
+		});
 };
 
 /**
@@ -631,7 +633,7 @@ const setupMarkAllAsReadButton = () => {
 
 			const entryIds = Array.from(document.querySelectorAll(".entry"))
 				.map((entry) => Number(entry.dataset.entryId))
-				.filter((id) => !isNaN(id));
+				.filter((id) => !Number.isNaN(id));
 
 			button.disabled = true;
 			icon.classList.add("loading");

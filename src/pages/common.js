@@ -825,7 +825,6 @@ export async function refreshActionBehavior() {
 			}
 			break;
 
-		case "popup":
 		default:
 			await browser.action.setPopup({
 				popup: "/pages/popup.html?style=popup",
