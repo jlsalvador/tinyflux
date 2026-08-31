@@ -575,12 +575,9 @@ const setupDropdown = () => {
 		}
 	});
 
-	// Close on menu item click (prevent the href="#" navigation)
+	// Close on menu item click
 	menu.querySelectorAll(".dropdown-item").forEach((item) => {
-		item.addEventListener("click", (e) => {
-			e.preventDefault();
-			closeDropdown();
-		});
+		item.addEventListener("click", () => closeDropdown());
 	});
 
 	// Close on Escape

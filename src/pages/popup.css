@@ -266,7 +266,12 @@ body.window #btnOpenSidePanel {
 	gap: var(--spacing-md);
 	width: 100%;
 	padding: var(--spacing-md);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-family: inherit;
 	font-size: var(--font-size-sm);
+	text-align: left;
 	color: var(--color-text);
 	text-decoration: none;
 	transition: background-color var(--transition-fast);
